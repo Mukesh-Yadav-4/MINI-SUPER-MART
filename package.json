@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "3D Casual Arcade Idle Store Tycoon",
   "scripts": {
+    "build": "echo Static build ready",
     "start": "node server.js"
   },
   "keywords": [
