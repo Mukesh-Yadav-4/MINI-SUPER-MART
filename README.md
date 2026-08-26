@@ -1,4 +1,4 @@
-﻿# 🌾 Organic Farm Market - 3D Arcade Idle Tycoon (CrazyGames Ready)
+# 🌾 Organic Farm Market - 3D Arcade Idle Tycoon (CrazyGames Ready)
 
 A fast-paced, high-performance 3D casual arcade-idle / store tycoon game built for **CrazyGames.com** using **Three.js** and procedural low-poly aesthetics.
 

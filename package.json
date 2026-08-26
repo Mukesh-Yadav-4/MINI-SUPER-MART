@@ -1,12 +1,16 @@
-﻿{
-  "name": "organic-farm-mart",
+{
+  "name": "mini-super-mart",
   "version": "1.0.0",
-  "description": "3D Casual Arcade Idle Store Tycoon for CrazyGames.com",
-  "main": "server.js",
+  "description": "3D Casual Arcade Idle Store Tycoon",
   "scripts": {
     "start": "node server.js"
   },
-  "keywords": ["game", "arcade-idle", "threejs", "crazygames", "tycoon", "farm-market"],
+  "keywords": [
+    "game",
+    "arcade-idle",
+    "threejs",
+    "tycoon"
+  ],
   "author": "",
   "license": "MIT"
 }
