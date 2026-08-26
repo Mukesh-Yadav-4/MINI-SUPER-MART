@@ -2,7 +2,7 @@
 class CrazySDKWrapper {
   constructor() {
     this.isInitialized = false;
-    this.hasCrazySDK = typeof window.CrazyGames !== 'undefined';
+    this.hasCrazySDK = typeof window !== 'undefined' && typeof window.CrazyGames !== 'undefined';
     this.boostActive = false;
     this.boostMultiplier = 1;
     this.boostTimer = 0;
@@ -11,16 +11,16 @@ class CrazySDKWrapper {
   }
 
   async init() {
-    if (this.hasCrazySDK && window.CrazyGames.SDK) {
-      try {
+    try {
+      if (typeof window !== 'undefined' && window.CrazyGames && window.CrazyGames.SDK) {
         await window.CrazyGames.SDK.init();
         this.isInitialized = true;
         console.log('[CrazyGames SDK] Initialized successfully');
-      } catch (err) {
-        console.warn('[CrazyGames SDK] Initialization failed, using fallback:', err);
+      } else {
+        console.log('[CrazyGames SDK] Running in local/test mode');
       }
-    } else {
-      console.log('[CrazyGames SDK] Running in local/test mode');
+    } catch (err) {
+      console.warn('[CrazyGames SDK] Fallback mode active:', err);
     }
   }
 

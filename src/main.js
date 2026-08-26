@@ -1150,6 +1150,18 @@ class GameEngine {
   }
 }
 
-window.addEventListener('DOMContentLoaded', () => {
-  window.game = new GameEngine();
-});
+function initGame() {
+  if (!window.game) {
+    try {
+      window.game = new GameEngine();
+    } catch (e) {
+      console.error('Failed to initialize GameEngine:', e);
+    }
+  }
+}
+
+if (document.readyState === 'loading') {
+  window.addEventListener('DOMContentLoaded', initGame);
+} else {
+  initGame();
+}
