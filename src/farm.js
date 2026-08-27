@@ -339,8 +339,8 @@ class AnimalPen {
       const milkSpdLvl = CONFIG.UPGRADES.milk_speed.currentLevel;
       this.speedMult = CONFIG.UPGRADES.milk_speed.levels[milkSpdLvl];
 
-      this.feedCapacity = Math.max(6, this.animalCount * 3);
-      this.produceCapacity = Math.max(6, this.animalCount * 3);
+      this.feedCapacity = Math.max(12, this.animalCount * 4);
+      this.produceCapacity = Math.max(12, this.animalCount * 4);
     }
 
     if (this.animalContainer) {
@@ -789,7 +789,7 @@ class ProcessingMachine {
     this.unlocked = config.unlocked || false;
     this.ingredients = []; // Array of ingredient strings, e.g. ['TOMATO', 'TOMATO'] or ['WHEAT', 'EGG']
     this.outputStock = 0;
-    this.outputCapacity = 6;
+    this.outputCapacity = 12;
     this.processTimer = 0;
 
     this.refreshStats();
@@ -951,8 +951,9 @@ class ProcessingMachine {
     } else if (this.config.type === 'BAKERY') {
       const wheatCount = this.ingredients.filter(i => i === 'WHEAT').length;
       const eggCount = this.ingredients.filter(i => i === 'EGG').length;
-      if (itemType === 'WHEAT') return wheatCount < Math.max(3, Math.floor(this.inputCapacity * 0.7));
-      if (itemType === 'EGG') return eggCount < Math.max(2, Math.floor(this.inputCapacity * 0.5));
+      const maxPerType = Math.max(3, Math.floor(this.inputCapacity / 2));
+      if (itemType === 'WHEAT') return wheatCount < maxPerType;
+      if (itemType === 'EGG') return eggCount < maxPerType;
       return false;
     } else if (this.config.type === 'CAKERY') {
       const milkCount = this.ingredients.filter(i => i === 'MILK').length;

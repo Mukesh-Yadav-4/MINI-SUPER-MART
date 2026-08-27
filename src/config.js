@@ -392,7 +392,7 @@ const CONFIG = {
       category: 'Appliances',
       title: 'Machine Input Hopper',
       icon: '⚙️',
-      levels: [6, 9, 12, 15, 18],
+      levels: [6, 10, 14, 18, 24],
       unit: 'max ingredients',
       costs: [80, 240, 750, 2200],
       currentLevel: 0
@@ -443,7 +443,7 @@ const CONFIG = {
       title: 'Helper Staff Carry & Speed',
       icon: '👥',
       levels: [1.0, 1.25, 1.55, 1.9, 2.3],
-      capacityLevels: [3, 4, 5, 6, 6],
+      capacityLevels: [3, 5, 7, 9, 12],
       unit: 'x stats',
       costs: [45, 160, 580, 1900],
       currentLevel: 0
