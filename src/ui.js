@@ -246,6 +246,18 @@ class UIManager {
       this.lastAnnouncedRank = 9;
     }
 
+    // Auto-detect CrazyGames account username on startup
+    if (typeof sdk !== 'undefined' && sdk.getCrazyUser) {
+      sdk.getCrazyUser().then(user => {
+        if (user && user.username) {
+          if (!localStorage.getItem('ofm_farm_name') || this.playerFarmName === '🧑‍🌾 Green Acres Mart') {
+            this.playerFarmName = `🎮 ${user.username}'s Mart`;
+            try { localStorage.setItem('ofm_farm_name', this.playerFarmName); } catch (e) {}
+          }
+        }
+      }).catch(() => {});
+    }
+
     // Leaderboard Modal
     const modalLeaderboard = document.getElementById('modal-leaderboard');
     const btnLeaderboard = document.getElementById('btn-leaderboard');
