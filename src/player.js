@@ -212,11 +212,18 @@ class Player {
 
     } else if (itemId === 'EGG') {
       const eggMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-      const egg = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 8), eggMat);
-      egg.scale.set(0.85, 1.25, 0.85);
+      const egg = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), eggMat);
+      egg.scale.set(0.88, 1.3, 0.88);
+      egg.position.y = 0.16;
       egg.castShadow = true;
       addSketchLines(egg, 0x111111);
       group.add(egg);
+
+      const nestMat = new THREE.MeshLambertMaterial({ color: 0xffca28 });
+      const nestCushion = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.08, 12), nestMat);
+      nestCushion.position.y = 0.04;
+      addSketchLines(nestCushion, 0x111111);
+      group.add(nestCushion);
 
     } else if (itemId === 'MILK') {
       const cartonMat = new THREE.MeshLambertMaterial({ color: 0x0288d1 });

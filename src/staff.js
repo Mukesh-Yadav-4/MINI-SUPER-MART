@@ -30,6 +30,8 @@ class HelperWorker {
     this.farmer_task = null;
     this.wheatRefillActive = false;
     this.chickenFeedRefillActive = false;
+    this.tomatoRefillActive = false;
+    this.juicerInputActive = false;
 
     this.createMesh();
   }
@@ -198,7 +200,7 @@ class HelperWorker {
     }
   }
 
-  // Worker 1 (Stocker AI): Smooth Active Priority Pipeline (Tomato Shelf -> Tomato Mixer -> Juice Shelf -> Bread Shelf)
+  // Worker 1 (Stocker AI): Smooth Active Priority Pipeline (Canned Juice Delivery -> Jam Machine Max Loading -> Tomato Shelf Hysteresis -> Bread Shelf)
   updateStockerAI(dt, patches, pens, machines, stands, dustbins) {
     const standTomato = stands.find(s => s.config.itemId === 'TOMATO');
     const juicer = machines.find(m => m.config.type === 'JUICER');
@@ -213,45 +215,53 @@ class HelperWorker {
       this.isDelivering = false;
     }
 
-    // 1. Priority 1: If Tomato Shelf is empty (0), top priority emergency refill
-    if (standTomato && standTomato.unlocked && standTomato.stock.length === 0) {
-      this.w1_task = 'TOMATO_SHELF';
-    }
-    if (this.w1_task === 'TOMATO_SHELF' && standTomato && standTomato.isFull()) {
-      this.w1_task = null;
-    }
-
-    // 2. Priority 2: Once Tomato Shelf is full, fill Tomato Mixer if unlocked & needs ingredients
-    if (!this.w1_task && juicer && juicer.unlocked && !juicer.isInputFull()) {
-      this.w1_task = 'TOMATO_MIXER';
-    }
-    if (this.w1_task === 'TOMATO_MIXER' && juicer && juicer.isInputFull()) {
-      this.w1_task = null;
+    // 1. TOMATO SHELF HYSTERESIS (0 -> Max):
+    // Starts restocking only when empty (0), and once full (6/6), stops and waits until empty again
+    if (standTomato && standTomato.unlocked) {
+      if (standTomato.stock.length === 0) {
+        this.tomatoRefillActive = true;
+      }
+      if (standTomato.isFull()) {
+        this.tomatoRefillActive = false;
+        if (this.w1_task === 'TOMATO_SHELF') this.w1_task = null;
+      }
     }
 
-    // 3. Priority 3: Once Mixer is full, restock Canned Ketchup/Juice Shelf if unlocked & needs stock
-    if (!this.w1_task && standJuice && standJuice.unlocked && !standJuice.isFull() && juicer && juicer.outputStock > 0) {
+    // 2. JAM / CANNERY MACHINE (JUICER) INPUT HOPPER (0/Low -> Max):
+    // When Juicer is unlocked and not full, Worker 1 continuously loads tomatoes one by one until input is 100% full
+    if (juicer && juicer.unlocked) {
+      if (!juicer.isInputFull()) {
+        this.juicerInputActive = true;
+      }
+      if (juicer.isInputFull()) {
+        this.juicerInputActive = false;
+        if (this.w1_task === 'TOMATO_MIXER') this.w1_task = null;
+      }
+    }
+
+    // 3. PRIORITY TASK SELECTION:
+    // A. Priority 1: Take finished Canned Jam/Juice from Juicer output tray to stand_juice shelf
+    if (!this.w1_task && standJuice && standJuice.unlocked && !standJuice.isFull() && juicer && (juicer.outputStock > 0 || this.stack.some(i => i.type === 'JUICE'))) {
       this.w1_task = 'JUICE_SHELF';
     }
-    if (this.w1_task === 'JUICE_SHELF' && standJuice && standJuice.isFull()) {
-      this.w1_task = null;
+
+    // B. Priority 2: Fill Jam Machine (Juicer) to max/max capacity with fresh tomatoes
+    if (!this.w1_task && this.juicerInputActive && juicer && juicer.unlocked && !juicer.isInputFull()) {
+      this.w1_task = 'TOMATO_MIXER';
     }
 
-    // 4. Priority 4: Restock Warm Bread Shelf if bakery has ready bread
-    if (!this.w1_task && standBread && standBread.unlocked && !standBread.isFull() && bakery && bakery.outputStock > 0) {
-      this.w1_task = 'BREAD_SHELF';
-    }
-    if (this.w1_task === 'BREAD_SHELF' && standBread && standBread.isFull()) {
-      this.w1_task = null;
-    }
-
-    // 5. Active Maintenance: Keep Tomato Shelf stocked if mixer & juice are full or locked
-    if (!this.w1_task && standTomato && standTomato.unlocked && !standTomato.isFull()) {
+    // C. Priority 3: Restock Tomato Shelf when empty (hysteresis active)
+    if (!this.w1_task && this.tomatoRefillActive && standTomato && standTomato.unlocked && !standTomato.isFull()) {
       this.w1_task = 'TOMATO_SHELF';
     }
 
-    // Emergency Interrupt: Tomato Shelf reaching 0 ALWAYS interrupts lower priorities
-    if (standTomato && standTomato.unlocked && standTomato.stock.length === 0) {
+    // D. Priority 4: Restock Fresh Bread from Bakery to Bread Shelf
+    if (!this.w1_task && standBread && standBread.unlocked && !standBread.isFull() && bakery && (bakery.outputStock > 0 || this.stack.some(i => i.type === 'BREAD'))) {
+      this.w1_task = 'BREAD_SHELF';
+    }
+
+    // E. Priority 5: Fallback general maintenance for Tomato Shelf if idle
+    if (!this.w1_task && standTomato && standTomato.unlocked && !standTomato.isFull() && (!juicer || !juicer.unlocked || juicer.isInputFull())) {
       this.w1_task = 'TOMATO_SHELF';
     }
 
@@ -263,8 +273,12 @@ class HelperWorker {
         if (this.position.distanceTo(standTomato.pos) < 3.2) {
           const item = this.popItem('TOMATO');
           if (item) standTomato.addItem();
-          if (standTomato.isFull()) {
-            this.w1_task = null;
+          if (standTomato.isFull() || !this.stack.some(i => i.type === 'TOMATO')) {
+            if (standTomato.isFull()) {
+              this.w1_task = null;
+              this.tomatoRefillActive = false;
+            }
+            this.isDelivering = false;
           }
         }
         return;
@@ -284,16 +298,20 @@ class HelperWorker {
         return;
       }
     } else if (this.w1_task === 'TOMATO_MIXER' && juicer) {
-      // Deliver full batch to mixer
+      // Deliver tomatoes to juicer input hopper
       if (this.isDelivering && this.stack.some(i => i.type === 'TOMATO')) {
-        const inputX = juicer.config.pos.x - 0.7;
+        const inputX = juicer.config.pos.x - 0.9;
         const inputZ = juicer.config.pos.z + 0.9;
         this.setTarget(inputX, inputZ);
         if (this.position.distanceTo(new THREE.Vector3(inputX, 0, inputZ)) < 3.2 || this.position.distanceTo(juicer.config.pos) < 3.2) {
           const item = this.popItem('TOMATO');
           if (item) juicer.addIngredient(item);
-          if (juicer.isInputFull()) {
-            this.w1_task = null;
+          if (juicer.isInputFull() || !this.stack.some(i => i.type === 'TOMATO')) {
+            if (juicer.isInputFull()) {
+              this.w1_task = null;
+              this.juicerInputActive = false;
+            }
+            this.isDelivering = false;
           }
         }
         return;
@@ -313,22 +331,25 @@ class HelperWorker {
         return;
       }
     } else if (this.w1_task === 'JUICE_SHELF' && standJuice) {
-      // Deliver full batch of juice to shelf
+      // Deliver full batch of canned juice to shelf
       if (this.isDelivering && this.stack.some(i => i.type === 'JUICE')) {
         this.setTarget(standJuice.pos.x, standJuice.pos.z + 1.2);
-        if (this.position.distanceTo(standJuice.pos) < 3.5 || Math.hypot(this.position.x - standJuice.pos.x, this.position.z - (standJuice.pos.z + 1.2)) < 2.0) {
+        if (this.position.distanceTo(standJuice.pos) < 3.5 || Math.hypot(this.position.x - standJuice.pos.x, this.position.z - (standJuice.pos.z + 1.2)) < 2.2) {
           const item = this.popItem('JUICE');
           if (item) standJuice.addItem();
-          if (standJuice.isFull()) {
-            this.w1_task = null;
+          if (standJuice.isFull() || !this.stack.some(i => i.type === 'JUICE')) {
+            if (standJuice.isFull()) this.w1_task = null;
+            this.isDelivering = false;
           }
         }
         return;
       }
       // Gather juice from juicer output tray
       if (juicer && juicer.outputStock > 0) {
-        this.setTarget(juicer.group.position.x, juicer.group.position.z + 0.8);
-        if (this.position.distanceTo(juicer.group.position) < 3.0) {
+        const outX = juicer.config.pos.x + 0.9;
+        const outZ = juicer.config.pos.z + 0.9;
+        this.setTarget(outX, outZ);
+        if (this.position.distanceTo(new THREE.Vector3(outX, 0, outZ)) < 3.2 || this.position.distanceTo(juicer.config.pos) < 3.2) {
           const out = juicer.harvestOutput();
           if (out) this.addItem(out);
         }
@@ -345,8 +366,9 @@ class HelperWorker {
         if (this.position.distanceTo(standBread.pos) < 3.2) {
           const bread = this.popItem('BREAD');
           if (bread) standBread.addItem();
-          if (standBread.isFull()) {
-            this.w1_task = null;
+          if (standBread.isFull() || !this.stack.some(i => i.type === 'BREAD')) {
+            if (standBread.isFull()) this.w1_task = null;
+            this.isDelivering = false;
           }
         }
         return;

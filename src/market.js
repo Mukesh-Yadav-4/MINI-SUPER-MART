@@ -178,7 +178,7 @@ class MarketStand {
     }
 
     this.itemGridAnchor = new THREE.Group();
-    this.itemGridAnchor.position.set(0, itemId === 'MILK' ? 0.6 : (itemId === 'EGG' ? 0.85 : 0.75), 0);
+    this.itemGridAnchor.position.set(0, itemId === 'MILK' ? 0.6 : (itemId === 'EGG' ? 1.05 : 0.75), 0);
     this.group.add(this.itemGridAnchor);
 
     // Large Canvas Badge Sprite for Shelf Capacity
