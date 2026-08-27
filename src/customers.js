@@ -12,20 +12,17 @@ const GATES = {
   WEST: {
     spawn: new THREE.Vector3(-15.0, 0, -4.5),
     door: new THREE.Vector3(-12.0, 0, -4.5),
-    foyer: new THREE.Vector3(-9.5, 0, -4.5),
-    entryAisle: new THREE.Vector3(-6.0, 0, -3.0)
+    foyer: new THREE.Vector3(-9.5, 0, -4.5)
   },
   NORTH: {
     spawn: new THREE.Vector3(-6.0, 0, -15.5),
     door: new THREE.Vector3(-6.0, 0, -13.5),
-    foyer: new THREE.Vector3(-6.0, 0, -11.0),
-    entryAisle: new THREE.Vector3(-6.0, 0, -7.0)
+    foyer: new THREE.Vector3(-6.0, 0, -11.0)
   },
   EAST: {
     spawn: new THREE.Vector3(19.5, 0, -15.5),
     door: new THREE.Vector3(19.5, 0, -13.5),
-    foyer: new THREE.Vector3(19.5, 0, -11.0),
-    entryAisle: new THREE.Vector3(19.5, 0, -7.0)
+    foyer: new THREE.Vector3(19.5, 0, -11.0)
   },
   EAST_EXIT: {
     foyer: new THREE.Vector3(19.5, 0, -4.5),
@@ -39,20 +36,37 @@ function getCorridorPath(start, dest) {
   const startZ = start.z;
   const destZ = dest.z;
 
-  // Clear vertical transit arteries: North Runway (-6.0), Aisle 1 (2.15), Aisle 2 (7.45), Aisle 3 (12.75), East Aisle (18.0)
-  const arteries = [-6.0, 2.15, 7.45, 12.75, 18.0];
-  let bestArtery = arteries[0];
-  let minD = 999;
-  for (let a of arteries) {
-    const d = Math.abs(start.x - a) + Math.abs(dest.x - a);
-    if (d < minD) { minD = d; bestArtery = a; }
+  const NORTH_CORRIDOR_Z = -11.0;
+  const SOUTH_CORRIDOR_Z = -4.5;
+  const arteries = [-6.0, 2.15, 7.45, 12.75, 19.5];
+
+  const startInNorth = startZ < -8.5;
+  const destInNorth = destZ < -8.5;
+
+  if (startInNorth === destInNorth) {
+    // Same corridor (e.g. North wall shelf to North wall shelf, or South to South)
+    const corridorZ = startInNorth ? NORTH_CORRIDOR_Z : SOUTH_CORRIDOR_Z;
+    if (Math.abs(start.x - dest.x) > 0.6) {
+      waypoints.push(new THREE.Vector3(dest.x, 0, corridorZ));
+    }
+  } else {
+    // Cross-aisle transition (North <-> South)
+    let bestArtery = arteries[0];
+    let minD = 999;
+    for (let a of arteries) {
+      const d = Math.abs(start.x - a) + Math.abs(dest.x - a);
+      if (d < minD) { minD = d; bestArtery = a; }
+    }
+    const startCorridorZ = startInNorth ? NORTH_CORRIDOR_Z : SOUTH_CORRIDOR_Z;
+    const destCorridorZ = destInNorth ? NORTH_CORRIDOR_Z : SOUTH_CORRIDOR_Z;
+
+    waypoints.push(new THREE.Vector3(bestArtery, 0, startCorridorZ));
+    waypoints.push(new THREE.Vector3(bestArtery, 0, destCorridorZ));
+    if (Math.abs(bestArtery - dest.x) > 0.4) {
+      waypoints.push(new THREE.Vector3(dest.x, 0, destCorridorZ));
+    }
   }
 
-  // Only dogleg via artery if changing aisles
-  if (Math.abs(startZ - destZ) > 0.8) {
-    waypoints.push(new THREE.Vector3(bestArtery, 0, startZ));
-    waypoints.push(new THREE.Vector3(bestArtery, 0, destZ));
-  }
   waypoints.push(new THREE.Vector3(dest.x, 0, dest.z));
   return waypoints;
 }
@@ -82,11 +96,10 @@ class Customer {
     this.targetPos = this.position.clone();
     this.lastPosition.copy(this.position);
 
-    // Initial entrance route
+    // Initial entrance route - enters directly into foyer and begins shopping immediately
     this.waypoints = [
       GATES[this.gate].door.clone(),
-      GATES[this.gate].foyer.clone(),
-      GATES[this.gate].entryAisle.clone()
+      GATES[this.gate].foyer.clone()
     ];
     this.targetPos.copy(this.waypoints.shift());
 
@@ -462,20 +475,54 @@ class CustomerManager {
     for (let i = this.customers.length - 1; i >= 0; i--) {
       const cust = this.customers[i];
 
-      // 1. Smooth Waypoint Movement with Snap-To-Target (No Overshoot Oscillation)
+      // 1. Smooth Waypoint Movement with Predictive Obstacle Sidestepping
       const dx = cust.targetPos.x - cust.position.x;
       const dz = cust.targetPos.z - cust.position.z;
       const dist = Math.sqrt(dx * dx + dz * dz);
       const stepDist = cust.speed * dt;
 
       if (dist > 0.05) {
-        cust.currentRotation = Math.atan2(dx, dz);
+        let moveX = dx / dist;
+        let moveZ = dz / dist;
+
+        // Dynamic Predictive Sidestepping: Look for oncoming or blocking shoppers in forward path
+        if (cust.state !== 'PAY' && cust.state !== 'QUEUE') {
+          for (let j = 0; j < this.customers.length; j++) {
+            if (i === j) continue;
+            const other = this.customers[j];
+            const toOtherX = other.position.x - cust.position.x;
+            const toOtherZ = other.position.z - cust.position.z;
+            const otherDistSq = toOtherX * toOtherX + toOtherZ * toOtherZ;
+
+            if (otherDistSq < 2.0 && otherDistSq > 0.01) {
+              const otherDist = Math.sqrt(otherDistSq);
+              const dot = (toOtherX / otherDist) * moveX + (toOtherZ / otherDist) * moveZ;
+              // If other person is ahead in the forward cone (> 30°)
+              if (dot > 0.35) {
+                // Steer perpendicular (right-hand rule sidewalk passing)
+                const perpX = -moveZ;
+                const perpZ = moveX;
+                const steerWeight = (1.41 - otherDist) * 0.8;
+                moveX += perpX * steerWeight;
+                moveZ += perpZ * steerWeight;
+              }
+            }
+          }
+          // Re-normalize movement vector
+          const moveLen = Math.sqrt(moveX * moveX + moveZ * moveZ);
+          if (moveLen > 0.001) {
+            moveX /= moveLen;
+            moveZ /= moveLen;
+          }
+        }
+
+        cust.currentRotation = Math.atan2(moveX, moveZ);
         if (dist <= stepDist) {
           cust.position.x = cust.targetPos.x;
           cust.position.z = cust.targetPos.z;
         } else {
-          cust.position.x += (dx / dist) * stepDist;
-          cust.position.z += (dz / dist) * stepDist;
+          cust.position.x += moveX * stepDist;
+          cust.position.z += moveZ * stepDist;
         }
         cust.walkCycle += dt * 10;
         cust.leftLeg.rotation.x = Math.sin(cust.walkCycle) * 0.45;
@@ -490,15 +537,16 @@ class CustomerManager {
         }
       }
 
-      // Anti-Stuck Watchdog: Teleport to next waypoint if pinned
+      // Responsive Anti-Stuck Watchdog: Nudge and dislodge if pinned
       const moveDelta = cust.position.distanceTo(cust.lastPosition);
       cust.lastPosition.copy(cust.position);
-      if (moveDelta < 0.05 * dt && (cust.state === 'SHOP' || cust.state === 'LEAVE')) {
+      if (moveDelta < 0.06 * dt && (cust.state === 'SHOP' || cust.state === 'LEAVE')) {
         cust.stuckTimer += dt;
-        if (cust.stuckTimer > 4.5) {
+        if (cust.stuckTimer > 1.2) {
+          cust.position.x += (Math.random() - 0.5) * 0.45;
+          cust.position.z += (Math.random() - 0.5) * 0.45;
           cust.stuckTimer = 0;
           if (cust.waypoints.length > 0) {
-            cust.position.copy(cust.targetPos);
             cust.targetPos.copy(cust.waypoints.shift());
           }
         }
@@ -511,9 +559,10 @@ class CustomerManager {
 
       // 2. State Machine (ENTER -> SHOP -> QUEUE -> PAY -> LEAVE)
       if (cust.state === 'ENTER') {
-        const entryTarget = GATES[cust.gate].entryAisle;
-        if (cust.position.distanceTo(entryTarget) < 0.5) {
+        const foyerTarget = GATES[cust.gate].foyer;
+        if (cust.position.distanceTo(foyerTarget) < 0.8 || cust.waypoints.length === 0) {
           cust.state = 'SHOP';
+          cust.waypoints = [];
         }
 
       } else if (cust.state === 'SHOP') {
@@ -625,12 +674,12 @@ class CustomerManager {
                 GATES.EAST_EXIT.spawn.clone()
               ];
             } else {
-              // Exit via West Gate
-              const exitLeftOfCounter = new THREE.Vector3(cust.assignedRegister.pos.x - 3.2, 0, cust.assignedRegister.customerCheckoutPos.z);
-              const exitAisleAvenue = new THREE.Vector3(cust.assignedRegister.pos.x - 3.2, 0, GATES.WEST.foyer.z);
+              // Exit via West Gate - wide route avoiding the cashier queue
+              const exitAvenueZ = GATES.WEST.foyer.z;
+              const exitClearX = -10.0;
               cust.waypoints = [
-                exitLeftOfCounter,
-                exitAisleAvenue,
+                new THREE.Vector3(exitClearX, 0, cust.assignedRegister.customerCheckoutPos.z),
+                new THREE.Vector3(exitClearX, 0, exitAvenueZ),
                 GATES.WEST.foyer.clone(),
                 GATES.WEST.door.clone(),
                 GATES.WEST.spawn.clone()
@@ -655,29 +704,45 @@ class CustomerManager {
       }
     }
 
-    // 3. Lateral Sidestepping Spatial Separation (Prevents head-on stalemates & freezing)
+    // 3. Mutual Soft Contact Separation (Breaks 3+ person cluster deadlocks with tangential twist)
     for (let i = 0; i < this.customers.length; i++) {
       for (let j = i + 1; j < this.customers.length; j++) {
         const c1 = this.customers[i];
         const c2 = this.customers[j];
         if (c1.state === 'PAY' && c2.state === 'PAY') continue;
-        if (c1.state === 'QUEUE' && c2.state === 'QUEUE' && c1.targetPos.distanceTo(c2.targetPos) > 0.5) continue;
+        if (c1.state === 'QUEUE' && c2.state === 'QUEUE') continue;
 
-        const dist = c1.position.distanceTo(c2.position);
+        const dx = c1.position.x - c2.position.x;
+        const dz = c1.position.z - c2.position.z;
+        const distSq = dx * dx + dz * dz;
         const minDist = 0.85;
-        if (dist < minDist && dist > 0.001) {
+        const minDistSq = minDist * minDist;
+
+        if (distSq < minDistSq && distSq > 0.0001) {
+          const dist = Math.sqrt(distSq);
           const overlap = (minDist - dist) * 0.5;
-          const nx = (c1.position.x - c2.position.x) / dist;
-          const nz = (c1.position.z - c2.position.z) / dist;
+          const nx = dx / dist;
+          const nz = dz / dist;
 
-          // Perpendicular lateral deflection vector lets shoppers slip past each other smoothly
-          const perpX = -nz * 0.35;
-          const perpZ = nx * 0.35;
+          // Tangential rotational component breaks symmetric head-on deadlock
+          const perpX = -nz * 0.4;
+          const perpZ = nx * 0.4;
 
-          c1.position.x += (nx * 0.65 + perpX) * overlap;
-          c1.position.z += (nz * 0.65 + perpZ) * overlap;
-          c2.position.x -= (nx * 0.65 - perpX) * overlap;
-          c2.position.z -= (nz * 0.65 - perpZ) * overlap;
+          const isC1Static = (c1.state === 'QUEUE' || c1.state === 'PAY');
+          const isC2Static = (c2.state === 'QUEUE' || c2.state === 'PAY');
+
+          if (isC1Static && !isC2Static) {
+            c2.position.x -= (nx + perpX) * (overlap * 2.0);
+            c2.position.z -= (nz + perpZ) * (overlap * 2.0);
+          } else if (!isC1Static && isC2Static) {
+            c1.position.x += (nx + perpX) * (overlap * 2.0);
+            c1.position.z += (nz + perpZ) * (overlap * 2.0);
+          } else {
+            c1.position.x += (nx * 0.65 + perpX) * overlap;
+            c1.position.z += (nz * 0.65 + perpZ) * overlap;
+            c2.position.x -= (nx * 0.65 - perpX) * overlap;
+            c2.position.z -= (nz * 0.65 - perpZ) * overlap;
+          }
         }
       }
     }
