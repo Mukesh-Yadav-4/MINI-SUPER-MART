@@ -21,7 +21,7 @@ const CONFIG = {
       name: 'Wheat Field',
       cost: 10,
       unlocked: false,
-      pos: { x: 3.5, z: 7.0 },
+      pos: { x: 2.25, z: 7.0 },
       radius: 1.8
     },
     stand_wheat: {
@@ -38,7 +38,7 @@ const CONFIG = {
       name: 'Hire Farm Hand',
       cost: 25,
       unlocked: false,
-      pos: { x: 0.0, z: 4.5 },
+      pos: { x: -1.5, z: 4.5 },
       radius: 1.6,
       requires: 'stand_wheat'
     },
@@ -105,7 +105,7 @@ const CONFIG = {
       name: 'Dairy Cow Pasture',
       cost: 450,
       unlocked: false,
-      pos: { x: 10.5, z: 6.5 },
+      pos: { x: 18.0, z: 6.5 },
       radius: 2.0,
       requires: 'stand_juice'
     },
@@ -161,7 +161,7 @@ const CONFIG = {
       name: 'Hire Field Harvester',
       cost: 1200,
       unlocked: false,
-      pos: { x: 4.8, z: 2.5 },
+      pos: { x: 6.0, z: 4.5 },
       radius: 1.6,
       requires: 'stand_bread'
     },
@@ -170,7 +170,7 @@ const CONFIG = {
       name: 'Sweetcorn Field',
       cost: 1800,
       unlocked: false,
-      pos: { x: 0.0, z: 9.5 },
+      pos: { x: 10.0, z: 7.0 },
       radius: 1.8,
       requires: 'stand_bread'
     },

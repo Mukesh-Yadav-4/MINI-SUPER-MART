@@ -111,11 +111,12 @@ class GameEngine {
       createPaver(x, 2.0, 0.85, 0.65, Math.abs(x) % 2 > 1);
     }
     // Farm Trails to Plots & Pens
-    for (let z = 3.5; z <= 6.5; z += 0.95) {
-      createPaver(-5.0, z, 0.8, 0.65, z > 5); // Tomato trail
-      createPaver(3.5, z, 0.8, 0.65, z < 5);  // Wheat trail
+    for (let z = 3.2; z <= 5.8; z += 0.95) {
       createPaver(-11.5, z, 0.85, 0.65);      // Chicken coop trail
-      createPaver(10.5, z, 0.85, 0.65);       // Cow pasture trail
+      createPaver(-5.5, z, 0.8, 0.65, z > 5); // Tomato trail (under Left Register #1)
+      createPaver(2.25, z, 0.8, 0.65, z < 5); // Wheat trail
+      createPaver(10.0, z, 0.8, 0.65);        // Sweetcorn trail
+      createPaver(18.0, z, 0.85, 0.65);       // Cow pasture trail (under Right Register #2)
     }
 
     // 3. Flower Tufts & Grass Clusters in Outdoors
@@ -168,7 +169,7 @@ class GameEngine {
 
     const treePositions = [
       [-16.5, 7.5], [-16.5, -3.5], [-16.5, -12.5],
-      [18.5, 8.5], [18.5, -2.5],
+      [24.0, 7.5], [24.0, -2.5],
       [-8.5, 14.5], [0.0, 15.0], [7.5, 14.5], [14.0, 15.0]
     ];
 
@@ -606,7 +607,7 @@ class GameEngine {
     // Burlap Seed Sacks beside Wheat Plot
     const sackMat = new THREE.MeshLambertMaterial({ color: 0xd7ccc8 });
     const sack1 = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.52, 8), sackMat);
-    sack1.position.set(5.8, 0.26, 7.0);
+    sack1.position.set(4.6, 0.26, 7.0);
     sack1.castShadow = true;
     addSketch(sack1, 0x111111);
     this.scene.add(sack1);
@@ -620,8 +621,8 @@ class GameEngine {
       addSketch(can, 0x111111);
       this.scene.add(can);
     };
-    createMilkCan(8.5, 6.2);
-    createMilkCan(8.9, 6.4);
+    createMilkCan(15.2, 6.2);
+    createMilkCan(15.6, 6.4);
 
     // Entrance Wicker Shopping Baskets & Chalkboard Stand
     const basketMat = new THREE.MeshLambertMaterial({ color: 0xc8a26e });
@@ -849,14 +850,14 @@ class GameEngine {
     this.player = new Player(this.scene);
 
     this.cropPatches = [
-      new CropPatch(this.scene, { id: 'plot_tomato', itemId: 'TOMATO', growthInterval: 3.0, pos: { x: -5.0, z: 7.0 }, unlocked: true }),
-      new CropPatch(this.scene, { id: 'plot_wheat', itemId: 'WHEAT', growthInterval: 4.5, pos: { x: 3.5, z: 7.0 }, unlocked: false }),
-      new CropPatch(this.scene, { id: 'plot_carrot', itemId: 'CARROT', growthInterval: 7.5, pos: { x: 0.0, z: 9.5 }, unlocked: false })
+      new CropPatch(this.scene, { id: 'plot_tomato', itemId: 'TOMATO', growthInterval: 3.0, pos: { x: -5.5, z: 7.0 }, unlocked: true }),
+      new CropPatch(this.scene, { id: 'plot_wheat', itemId: 'WHEAT', growthInterval: 4.5, pos: { x: 2.25, z: 7.0 }, unlocked: false }),
+      new CropPatch(this.scene, { id: 'plot_carrot', itemId: 'CARROT', growthInterval: 7.5, pos: { x: 10.0, z: 7.0 }, unlocked: false })
     ];
 
     this.animalPens = [
       new AnimalPen(this.scene, { id: 'pen_chicken', type: 'CHICKEN', produceId: 'EGG', pos: { x: -11.5, z: 6.5 }, unlocked: false }),
-      new AnimalPen(this.scene, { id: 'pen_cow', type: 'COW', produceId: 'MILK', pos: { x: 10.5, z: 6.5 }, unlocked: false })
+      new AnimalPen(this.scene, { id: 'pen_cow', type: 'COW', produceId: 'MILK', pos: { x: 18.0, z: 6.5 }, unlocked: false })
     ];
 
     this.processingMachines = [
@@ -887,8 +888,8 @@ class GameEngine {
     ];
 
     this.staffStocker = new HelperWorker(this.scene, 'STOCKER', { x: -5.0, z: 0.5 });
-    this.staffFarmer = new HelperWorker(this.scene, 'FARMER', { x: 0.0, z: 4.5 });
-    this.staffHarvester = new HelperWorker(this.scene, 'HARVESTER', { x: 3.5, z: 4.5 });
+    this.staffFarmer = new HelperWorker(this.scene, 'FARMER', { x: -1.5, z: 4.5 });
+    this.staffHarvester = new HelperWorker(this.scene, 'HARVESTER', { x: 6.0, z: 4.5 });
     this.staffCashier = new HelperCashier(this.scene, { x: -6.5, z: 2.35 }, 0x8e24aa, 0xab47bc, 0x6a1b9a);
     this.staffCashier2 = new HelperCashier(this.scene, { x: 19.5, z: 2.35 }, 0x0284c7, 0x38bdf8, 0x0369a1);
 
