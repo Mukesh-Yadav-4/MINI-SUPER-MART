@@ -20,6 +20,12 @@ const GATES = {
     door: new THREE.Vector3(-6.0, 0, -13.5),
     foyer: new THREE.Vector3(-6.0, 0, -11.0),
     entryAisle: new THREE.Vector3(-6.0, 0, -7.0)
+  },
+  EAST: {
+    spawn: new THREE.Vector3(22.0, 0, -4.5),
+    door: new THREE.Vector3(19.0, 0, -4.5),
+    foyer: new THREE.Vector3(17.0, 0, -4.5),
+    entryAisle: new THREE.Vector3(15.4, 0, -3.0)
   }
 };
 
@@ -64,8 +70,9 @@ class Customer {
     this.stuckTimer = 0;
     this.lastPosition = new THREE.Vector3();
 
-    // Enter through the Front Gate (North Glass Door)
-    this.gate = 'NORTH';
+    // Determine entry gate
+    this.gate = gateChoice || 'NORTH';
+    if (!GATES[this.gate]) this.gate = 'NORTH';
     this.position = GATES[this.gate].spawn.clone();
     this.targetPos = this.position.clone();
     this.lastPosition.copy(this.position);
@@ -419,25 +426,33 @@ class CustomerManager {
   }
 
   spawnVipWave(count = 5) {
+    const isEastOpen = CONFIG.UNLOCKS.door_east && CONFIG.UNLOCKS.door_east.unlocked;
     for (let c = 0; c < count; c++) {
       setTimeout(() => {
-        this.customers.push(new Customer(this.scene, true, 'NORTH'));
+        const gate = (isEastOpen && c % 2 === 1) ? 'EAST' : 'NORTH';
+        this.customers.push(new Customer(this.scene, true, gate));
       }, c * 600);
     }
   }
 
-  update(dt, stands, cashRegisters, isCashierPresent, onCheckoutComplete, player, staffList = []) {
+  update(dt, stands, cashRegisters, isCashier1Present, isCashier2Present = false, onCheckoutComplete = null, player = null, staffList = []) {
+    // Backward compatibility if single boolean passed
+    if (typeof isCashier2Present !== 'boolean') {
+      onCheckoutComplete = isCashier2Present;
+      isCashier2Present = false;
+    }
+
     this.spawnTimer += dt;
     const maxCust = CONFIG.CUSTOMER.maxCustomers;
+    const isEastOpen = CONFIG.UNLOCKS.door_east && CONFIG.UNLOCKS.door_east.unlocked && CONFIG.UNLOCKS.helper_cashier_2 && CONFIG.UNLOCKS.helper_cashier_2.unlocked;
 
     if (this.spawnTimer >= CONFIG.CUSTOMER.spawnInterval && this.customers.length < maxCust) {
       this.spawnTimer = 0;
       this.spawnCounter++;
       const isVip = Math.random() < CONFIG.CUSTOMER.vipChance;
-      this.customers.push(new Customer(this.scene, isVip, 'NORTH'));
+      const gate = (isEastOpen && this.spawnCounter % 2 === 1) ? 'EAST' : 'NORTH';
+      this.customers.push(new Customer(this.scene, isVip, gate));
     }
-
-    const activeRegister = cashRegisters[0];
 
     for (let i = this.customers.length - 1; i >= 0; i--) {
       const cust = this.customers[i];
@@ -448,44 +463,42 @@ class CustomerManager {
       const dist = Math.sqrt(dx * dx + dz * dz);
       const stepDist = cust.speed * dt;
 
-      if (dist <= stepDist || dist < 0.08) {
-        cust.position.copy(cust.targetPos);
+      if (dist > 0.05) {
+        cust.currentRotation = Math.atan2(dx, dz);
+        if (dist <= stepDist) {
+          cust.position.x = cust.targetPos.x;
+          cust.position.z = cust.targetPos.z;
+        } else {
+          cust.position.x += (dx / dist) * stepDist;
+          cust.position.z += (dz / dist) * stepDist;
+        }
+        cust.walkCycle += dt * 10;
+        cust.leftLeg.rotation.x = Math.sin(cust.walkCycle) * 0.45;
+        cust.rightLeg.rotation.x = -Math.sin(cust.walkCycle) * 0.45;
+        cust.leftArm.rotation.x = -Math.sin(cust.walkCycle) * 0.35;
+      } else {
+        cust.leftLeg.rotation.x = 0;
+        cust.rightLeg.rotation.x = 0;
+        cust.leftArm.rotation.x = 0;
         if (cust.waypoints.length > 0) {
           cust.targetPos.copy(cust.waypoints.shift());
         }
-        cust.leftLeg.rotation.x = 0;
-        cust.rightLeg.rotation.x = 0;
-        if (cust.leftArm) cust.leftArm.rotation.x = 0;
-        if (cust.rightArm) cust.rightArm.rotation.x = 0;
-      } else {
-        const dirX = dx / dist;
-        const dirZ = dz / dist;
-        cust.position.x += dirX * stepDist;
-        cust.position.z += dirZ * stepDist;
-
-        const targetRot = Math.atan2(dirX, dirZ);
-        let angleDiff = targetRot - cust.currentRotation;
-        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-        cust.currentRotation += angleDiff * Math.min(1.0, 10 * dt);
-
-        cust.walkCycle += dt * 6.0;
-        cust.leftLeg.rotation.x = Math.sin(cust.walkCycle) * 0.45;
-        cust.rightLeg.rotation.x = -Math.sin(cust.walkCycle) * 0.45;
-        if (cust.leftArm) cust.leftArm.rotation.x = -Math.sin(cust.walkCycle) * 0.4;
-        if (cust.rightArm) cust.rightArm.rotation.x = Math.sin(cust.walkCycle) * 0.2;
       }
 
-      // Anti-Stuck Auto-Recovery Watchdog
-      if (cust.position.distanceTo(cust.lastPosition) < 0.02 && cust.state !== 'PAY' && !cust.waitingForRestock) {
+      // Anti-Stuck Watchdog: Teleport to next waypoint if pinned
+      const moveDelta = cust.position.distanceTo(cust.lastPosition);
+      cust.lastPosition.copy(cust.position);
+      if (moveDelta < 0.05 * dt && (cust.state === 'SHOP' || cust.state === 'LEAVE')) {
         cust.stuckTimer += dt;
-        if (cust.stuckTimer > 2.5) {
+        if (cust.stuckTimer > 4.5) {
           cust.stuckTimer = 0;
-          cust.waypoints = []; // Clear waypoints to force fresh path recalculation
+          if (cust.waypoints.length > 0) {
+            cust.position.copy(cust.targetPos);
+            cust.targetPos.copy(cust.waypoints.shift());
+          }
         }
       } else {
         cust.stuckTimer = 0;
-        cust.lastPosition.copy(cust.position);
       }
 
       cust.mesh.position.copy(cust.position);
@@ -494,7 +507,7 @@ class CustomerManager {
       // 2. State Machine (ENTER -> SHOP -> QUEUE -> PAY -> LEAVE)
       if (cust.state === 'ENTER') {
         const entryTarget = GATES[cust.gate].entryAisle;
-        if (cust.position.distanceTo(entryTarget) < 0.4) {
+        if (cust.position.distanceTo(entryTarget) < 0.5) {
           cust.state = 'SHOP';
         }
 
@@ -504,13 +517,11 @@ class CustomerManager {
           const targetStand = stands.find(s => s.unlocked && s.config.itemId === nextItem);
 
           if (!targetStand || !targetStand.unlocked) {
-            // Stand not available -> skip item gracefully without stalling
             cust.shoppingList.shift();
             cust.updateThoughtBadge();
             continue;
           }
 
-          // Dynamic front approach point: exactly 1.1m in front of any shelf (+Z side)
           const shelfFrontX = targetStand.pos.x;
           const shelfFrontZ = targetStand.pos.z + 1.1;
           const shelfTargetPos = new THREE.Vector3(shelfFrontX, 0, shelfFrontZ);
@@ -520,7 +531,6 @@ class CustomerManager {
             cust.targetPos.copy(cust.waypoints.shift());
           }
 
-          // Reach Check: Grabs product from shelf when near the front interaction point (1.3m) or center (2.2m)
           const distToFront = cust.position.distanceTo(shelfTargetPos);
           const distToCenter = cust.position.distanceTo(targetStand.pos);
           if (distToFront < 1.3 || distToCenter < 2.2) {
@@ -530,7 +540,7 @@ class CustomerManager {
                 cust.basketItems.push(item);
                 cust.shoppingList.shift();
                 cust.waitingForRestock = false;
-                cust.waypoints = []; // Clear path for next item
+                cust.waypoints = [];
                 cust.updateThoughtBadge();
                 sounds.playPop();
               }
@@ -544,14 +554,21 @@ class CustomerManager {
           if (cust.basketItems.length > 0) {
             cust.waitingForRestock = false;
             cust.state = 'QUEUE';
-            cust.assignedRegister = activeRegister;
+
+            // Route to Register #2 if unlocked and customer is on the East side
+            const hasReg2 = cashRegisters.length > 1 && ((CONFIG.UNLOCKS.helper_cashier_2 && CONFIG.UNLOCKS.helper_cashier_2.unlocked) || isCashier2Present);
+            if (hasReg2 && (cust.gate === 'EAST' || cust.position.x > 5.0)) {
+              cust.assignedRegister = cashRegisters[1];
+            } else {
+              cust.assignedRegister = cashRegisters[0];
+            }
+
             cust.waypoints = [];
             cust.updateThoughtBadge();
           }
         }
 
       } else if (cust.state === 'QUEUE') {
-        cust.assignedRegister = activeRegister;
         const queue = this.customers.filter(c => (c.state === 'QUEUE' || c.state === 'PAY') && c.assignedRegister === cust.assignedRegister);
         const indexInQueue = queue.indexOf(cust);
 
@@ -575,11 +592,11 @@ class CustomerManager {
         cust.targetPos.copy(cust.assignedRegister.customerCheckoutPos);
         cust.currentRotation = 0;
 
-        // Customer MUST physically be standing right in front of the cash counter
         const isStandingAtCounter = cust.position.distanceTo(cust.assignedRegister.customerCheckoutPos) < 0.45;
+        const isReg2 = (cashRegisters.length > 1 && cust.assignedRegister === cashRegisters[1]);
+        const isStaffed = isReg2 ? isCashier2Present : isCashier1Present;
 
-        // ONLY process payment when customer is standing at counter AND cashier/player is present!
-        if (isStandingAtCounter && isCashierPresent) {
+        if (isStandingAtCounter && isStaffed) {
           cust.checkoutTimer += dt;
 
           if (cust.checkoutTimer >= CONFIG.CUSTOMER.checkoutDuration) {
@@ -593,17 +610,29 @@ class CustomerManager {
             cust.state = 'LEAVE';
             cust.updateThoughtBadge();
 
-            // One-way Exit Flow: Move to the LEFT (-X) of the counter first, then north to the West exit gate
-            const exitLeftOfCounter = new THREE.Vector3(cust.assignedRegister.pos.x - 3.2, 0, cust.assignedRegister.customerCheckoutPos.z);
-            const exitAisleAvenue = new THREE.Vector3(cust.assignedRegister.pos.x - 3.2, 0, GATES.WEST.foyer.z);
-
-            cust.waypoints = [
-              exitLeftOfCounter,
-              exitAisleAvenue,
-              GATES.WEST.foyer.clone(),
-              GATES.WEST.door.clone(),
-              GATES.WEST.spawn.clone()
-            ];
+            if (isReg2) {
+              // Exit via East Gate
+              const exitRightOfCounter = new THREE.Vector3(cust.assignedRegister.pos.x + 3.2, 0, cust.assignedRegister.customerCheckoutPos.z);
+              const exitAisleEast = new THREE.Vector3(18.0, 0, GATES.EAST.foyer.z);
+              cust.waypoints = [
+                exitRightOfCounter,
+                exitAisleEast,
+                GATES.EAST.foyer.clone(),
+                GATES.EAST.door.clone(),
+                GATES.EAST.spawn.clone()
+              ];
+            } else {
+              // Exit via West Gate
+              const exitLeftOfCounter = new THREE.Vector3(cust.assignedRegister.pos.x - 3.2, 0, cust.assignedRegister.customerCheckoutPos.z);
+              const exitAisleAvenue = new THREE.Vector3(cust.assignedRegister.pos.x - 3.2, 0, GATES.WEST.foyer.z);
+              cust.waypoints = [
+                exitLeftOfCounter,
+                exitAisleAvenue,
+                GATES.WEST.foyer.clone(),
+                GATES.WEST.door.clone(),
+                GATES.WEST.spawn.clone()
+              ];
+            }
             cust.targetPos.copy(cust.waypoints.shift());
           }
         } else {
@@ -611,7 +640,11 @@ class CustomerManager {
         }
 
       } else if (cust.state === 'LEAVE') {
-        if (cust.waypoints.length === 0 && cust.position.distanceTo(GATES.WEST.spawn) < 0.6) {
+        if (cust.waypoints.length === 0 && (
+          cust.position.distanceTo(GATES.WEST.spawn) < 0.8 ||
+          cust.position.distanceTo(GATES.EAST.spawn) < 0.8 ||
+          cust.position.distanceTo(GATES.NORTH.spawn) < 0.8
+        )) {
           cust.destroy();
           this.customers.splice(i, 1);
         }

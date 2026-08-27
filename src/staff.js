@@ -833,9 +833,12 @@ class HelperWorker {
 
 // Purple Uniform Cashier: Stands on Tomato Farm Side Facing North
 class HelperCashier {
-  constructor(scene, pos = { x: -6.5, z: 2.35 }) {
+  constructor(scene, pos = { x: -6.5, z: 2.35 }, uniformColor = 0x8e24aa, vestColor = 0xab47bc, capColor = 0x6a1b9a) {
     this.scene = scene;
     this.pos = new THREE.Vector3(pos.x, 0, pos.z);
+    this.uniformColor = uniformColor;
+    this.vestColor = vestColor;
+    this.capColor = capColor;
     this.unlocked = false;
 
     this.createMesh();
@@ -846,9 +849,9 @@ class HelperCashier {
     this.mesh.position.set(this.pos.x, 0, this.pos.z);
 
     const skinMat = new THREE.MeshLambertMaterial({ color: 0xffd180 });
-    const shirtMat = new THREE.MeshLambertMaterial({ color: 0x8e24aa }); // Purple/Plum store uniform
-    const vestMat = new THREE.MeshLambertMaterial({ color: 0xab47bc });
-    const capMat = new THREE.MeshLambertMaterial({ color: 0x6a1b9a });
+    const shirtMat = new THREE.MeshLambertMaterial({ color: this.uniformColor });
+    const vestMat = new THREE.MeshLambertMaterial({ color: this.vestColor });
+    const capMat = new THREE.MeshLambertMaterial({ color: this.capColor });
     const hairMat = new THREE.MeshLambertMaterial({ color: 0x4e342e });
     const pantsMat = new THREE.MeshLambertMaterial({ color: 0x263238 });
     const shoeMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });

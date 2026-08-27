@@ -118,16 +118,34 @@ const CONFIG = {
       radius: 1.6,
       requires: 'pen_cow'
     },
+    door_east: {
+      id: 'door_east',
+      name: 'East Wing Entrance Door',
+      cost: 750,
+      unlocked: false,
+      pos: { x: 19.5, z: -4.5 },
+      radius: 1.8,
+      requires: 'stand_milk'
+    },
+    helper_cashier_2: {
+      id: 'helper_cashier_2',
+      name: 'Hire Express Cashier (Reg #2)',
+      cost: 950,
+      unlocked: false,
+      pos: { x: 14.4, z: 2.35 },
+      radius: 1.6,
+      requires: 'door_east'
+    },
 
     // Phase 4 (28 - 40 mins): Artisan Bakery & Master Crops
     machine_bakery: {
       id: 'machine_bakery',
       name: 'Artisan Oven Counter',
-      cost: 950,
+      cost: 1100,
       unlocked: false,
       pos: { x: 4.8, z: -0.8 },
       radius: 1.8,
-      requires: 'stand_milk'
+      requires: 'helper_cashier_2'
     },
     stand_bread: {
       id: 'stand_bread',

@@ -722,6 +722,66 @@ class GameEngine {
       awningGroup.add(stripe);
     }
     this.scene.add(awningGroup);
+
+    // East Grand Entrance (Expansion)
+    const eastPillar1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.8, 0.3), pillarMat);
+    eastPillar1.position.set(22.0, 1.4, -7.0);
+    eastPillar1.castShadow = true;
+    addSketch(eastPillar1, 0x111111);
+    this.scene.add(eastPillar1);
+
+    const eastPillar1Cap = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.15, 0.35), pillarHighlight);
+    eastPillar1Cap.position.set(22.0, 2.8, -7.0);
+    addSketch(eastPillar1Cap, 0x111111);
+    this.scene.add(eastPillar1Cap);
+
+    const eastPillar2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.8, 0.3), pillarMat);
+    eastPillar2.position.set(22.0, 1.4, -2.0);
+    eastPillar2.castShadow = true;
+    addSketch(eastPillar2, 0x111111);
+    this.scene.add(eastPillar2);
+
+    const eastPillar2Cap = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.15, 0.35), pillarHighlight);
+    eastPillar2Cap.position.set(22.0, 2.8, -2.0);
+    addSketch(eastPillar2Cap, 0x111111);
+    this.scene.add(eastPillar2Cap);
+
+    // East Entrance Mat & Awning Group (Visible when unlocked)
+    this.eastDoorGroup = new THREE.Group();
+    const eastEntryMat = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.2), new THREE.MeshLambertMaterial({ color: 0xba8c59 }));
+    eastEntryMat.rotation.x = -Math.PI / 2;
+    eastEntryMat.position.set(22.0, 0.018, -4.5);
+    eastEntryMat.receiveShadow = true;
+    addSketch(eastEntryMat, 0x111111);
+    this.eastDoorGroup.add(eastEntryMat);
+
+    const eastAwningGroup = new THREE.Group();
+    eastAwningGroup.position.set(22.0, 2.4, -4.5);
+    for (let i = 0; i < stripeCount; i++) {
+      const isRed = i % 2 === 0;
+      const stripeMat = new THREE.MeshLambertMaterial({ color: isRed ? CONFIG.COLORS.AWNING_RED : CONFIG.COLORS.AWNING_WHITE });
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, stripeW), stripeMat);
+      stripe.position.set(-0.6, 0, (i - stripeCount/2 + 0.5) * stripeW);
+      stripe.rotation.z = 0.35;
+      stripe.castShadow = true;
+      addSketch(stripe, 0x111111);
+      eastAwningGroup.add(stripe);
+    }
+    this.eastDoorGroup.add(eastAwningGroup);
+    this.eastDoorGroup.visible = false;
+    this.scene.add(this.eastDoorGroup);
+
+    // East Under-Renovation Barricade when locked
+    this.eastBarricadeGroup = new THREE.Group();
+    this.eastBarricadeGroup.position.set(22.0, 0, -4.5);
+    for (let p = 0; p < 3; p++) {
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.28, 4.4), new THREE.MeshLambertMaterial({ color: 0xa1887f }));
+      plank.position.set(0, 0.5 + p * 0.6, 0);
+      plank.castShadow = true;
+      addSketch(plank, 0x111111);
+      this.eastBarricadeGroup.add(plank);
+    }
+    this.scene.add(this.eastBarricadeGroup);
   }
 
   initGameObjects() {
@@ -760,15 +820,16 @@ class GameEngine {
       new CashRegister(this.scene, { x: 14.4, z: 2.0 })
     ];
 
+    // Single central dustbin (rightmost removed as requested)
     this.dustbins = [
-      new Dustbin(this.scene, { x: 2.4, z: -12.8 }),
-      new Dustbin(this.scene, { x: 17.0, z: -12.8 })
+      new Dustbin(this.scene, { x: 2.4, z: -12.8 })
     ];
 
     this.staffStocker = new HelperWorker(this.scene, 'STOCKER', { x: -5.0, z: 0.5 });
     this.staffFarmer = new HelperWorker(this.scene, 'FARMER', { x: 0.0, z: 4.5 });
     this.staffHarvester = new HelperWorker(this.scene, 'HARVESTER', { x: 3.5, z: 4.5 });
-    this.staffCashier = new HelperCashier(this.scene, { x: -6.5, z: 2.35 });
+    this.staffCashier = new HelperCashier(this.scene, { x: -6.5, z: 2.35 }, 0x8e24aa, 0xab47bc, 0x6a1b9a);
+    this.staffCashier2 = new HelperCashier(this.scene, { x: 14.4, z: 2.35 }, 0x0284c7, 0x38bdf8, 0x0369a1);
 
     this.customerManager = new CustomerManager(this.scene);
 
@@ -877,8 +938,11 @@ class GameEngine {
       this.resolveBoxCollision(entityPos, reg.pos, 0.55, 0.35, radius);
     });
 
-    if (this.staffCashier.unlocked) {
+    if (this.staffCashier && this.staffCashier.unlocked) {
       this.resolveBoxCollision(entityPos, this.staffCashier.pos, 0.25, 0.25, radius);
+    }
+    if (this.staffCashier2 && this.staffCashier2.unlocked) {
+      this.resolveBoxCollision(entityPos, this.staffCashier2.pos, 0.25, 0.25, radius);
     }
 
     // Animal pens (Chicken Coop & Cow Booth) are fully walkthrough for player & helpers
@@ -972,8 +1036,13 @@ class GameEngine {
       this.staffFarmer.setUnlocked(true);
     } else if (zoneId === 'helper_cashier') {
       this.staffCashier.setUnlocked(true);
+    } else if (zoneId === 'helper_cashier_2') {
+      this.staffCashier2.setUnlocked(true);
     } else if (zoneId === 'helper_harvester') {
       this.staffHarvester.setUnlocked(true);
+    } else if (zoneId === 'door_east') {
+      if (this.eastDoorGroup) this.eastDoorGroup.visible = true;
+      if (this.eastBarricadeGroup) this.eastBarricadeGroup.visible = false;
     }
   }
 
@@ -994,6 +1063,8 @@ class GameEngine {
       stand_juice: '🥫 Canned Goods Stand Unlocked!',
       stand_bread: '🍞 Warm Bakery Showcase Unlocked!',
       stand_milk: '🥛 Glass Door Milk Refrigerator Unlocked!',
+      door_east: '🚪 East Grand Entrance Unlocked! (Area Expansion)',
+      helper_cashier_2: '👩‍💼 Express Cashier (Register #2) Hired!',
       stand_carrot: '🌽 Golden Corn Stand Unlocked!',
       stand_cake: '🎂 Royal Cake Pedestal Stand Unlocked!',
       helper_stocker: '🧑‍🌾 Shelf Stocker Helper Hired!',
@@ -1210,11 +1281,15 @@ class GameEngine {
     const inputVec = this.ui.getInputVector();
     this.player.update(dt, inputVec);
 
-    const isPlayerAtCounter = this.cashRegisters.some(reg => 
-      this.player.position.distanceTo(reg.pos) < 2.2 ||
-      this.player.position.distanceTo(reg.cashierZonePos) < 2.2
-    );
-    this.isCashierPresent = isPlayerAtCounter || this.staffCashier.unlocked;
+    const isPlayerAtReg1 = this.player.position.distanceTo(this.cashRegisters[0].pos) < 2.2 ||
+                           this.player.position.distanceTo(this.cashRegisters[0].cashierZonePos) < 2.2;
+    const isPlayerAtReg2 = this.cashRegisters.length > 1 && (
+                           this.player.position.distanceTo(this.cashRegisters[1].pos) < 2.2 ||
+                           this.player.position.distanceTo(this.cashRegisters[1].cashierZonePos) < 2.2);
+
+    const isCashier1Present = isPlayerAtReg1 || (this.staffCashier && this.staffCashier.unlocked);
+    const isCashier2Present = isPlayerAtReg2 || (this.staffCashier2 && this.staffCashier2.unlocked);
+    this.isCashierPresent = isCashier1Present || isCashier2Present;
 
     this.resolveObstacleCollisions(this.player.position, 0.42);
 
@@ -1234,7 +1309,7 @@ class GameEngine {
       if (s.unlocked) {
         this.resolveObstacleCollisions(s.position, 0.35, false); // Shelf bypass enabled for staff!
 
-        if (this.staffCashier.unlocked) {
+        if (this.staffCashier && this.staffCashier.unlocked) {
           const dCashier = s.position.distanceTo(this.staffCashier.pos);
           if (dCashier < 0.8 && dCashier > 0.001) {
             const nx = (s.position.x - this.staffCashier.pos.x) / dCashier;
@@ -1243,12 +1318,23 @@ class GameEngine {
             s.position.z += nz * (0.8 - dCashier);
           }
         }
+        if (this.staffCashier2 && this.staffCashier2.unlocked) {
+          const dCashier2 = s.position.distanceTo(this.staffCashier2.pos);
+          if (dCashier2 < 0.8 && dCashier2 > 0.001) {
+            const nx = (s.position.x - this.staffCashier2.pos.x) / dCashier2;
+            const nz = (s.position.z - this.staffCashier2.pos.z) / dCashier2;
+            s.position.x += nx * (0.8 - dCashier2);
+            s.position.z += nz * (0.8 - dCashier2);
+          }
+        }
       }
     });
 
-    this.customerManager.update(dt, this.marketStands, this.cashRegisters, this.isCashierPresent, (cust, total) => {
-      if (isPlayerAtCounter) {
-        // If player is present at the counter, instantly credit cash to balance!
+    this.customerManager.update(dt, this.marketStands, this.cashRegisters, isCashier1Present, isCashier2Present, (cust, total) => {
+      const isPlayerAtCustReg = (cust.assignedRegister === this.cashRegisters[0] && isPlayerAtReg1) ||
+                                (this.cashRegisters.length > 1 && cust.assignedRegister === this.cashRegisters[1] && isPlayerAtReg2);
+      if (isPlayerAtCustReg) {
+        // If player is present at that register counter, instantly credit cash to balance!
         const earned = cust.assignedRegister.collectAllCash();
         if (earned > 0) {
           this.money += earned;
