@@ -39,65 +39,159 @@ class HelperWorker {
   createMesh() {
     this.mesh = new THREE.Group();
 
-    let shirtColor = 0x43a047; // Stocker: Emerald Green
-    let capColor = 0x2e7d32;
+    let shirtColor = 0x2e7d32; // Stocker: Crisp Forest Emerald Green
+    let capColor = 0x1b5e20;
+    let hairColor = 0x451a03;
 
     if (this.type === 'FARMER') {
-      shirtColor = 0x1e88e5; // Farm Hand: Denim Blue
-      capColor = 0xffb74d;   // Straw Hat Yellow
+      shirtColor = 0x0288d1; // Farm Hand: Ocean Blue
+      capColor = 0x01579b;
+      hairColor = 0x78350f;
     } else if (this.type === 'HARVESTER') {
-      shirtColor = 0xff9800; // Harvester: Vibrant Orange
-      capColor = 0xe65100;
+      shirtColor = 0xf97316; // Harvester: Radiant Orange
+      capColor = 0xc2410c;
+      hairColor = 0x1c1917;
     }
 
     const skinMat = new THREE.MeshLambertMaterial({ color: 0xffd180 });
     const shirtMat = new THREE.MeshLambertMaterial({ color: shirtColor });
+    const apronMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
     const capMat = new THREE.MeshLambertMaterial({ color: capColor });
-    const pantsMat = new THREE.MeshLambertMaterial({ color: 0x37474f });
+    const hairMat = new THREE.MeshLambertMaterial({ color: hairColor });
+    const pantsMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+    const bootMat = new THREE.MeshLambertMaterial({ color: 0x5d4037 });
+    const darkEyeMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
+    const toolMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
     const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28 });
 
+    // 1. Soft contact shadow
     const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.44, 14), shadowMat);
     shadow.rotation.x = -Math.PI / 2;
     shadow.position.y = 0.02;
     this.mesh.add(shadow);
 
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.65, 0.8, 0.4), shirtMat);
-    torso.position.y = 0.95;
-    torso.castShadow = true;
-    addSketchLines(torso, 0x111111);
-    this.mesh.add(torso);
-
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 8), skinMat);
-    head.position.y = 1.6;
+    // 2. Human Head & Friendly Face
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), skinMat);
+    head.position.y = 1.55;
     head.castShadow = true;
     addSketchLines(head, 0x111111);
     this.mesh.add(head);
 
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.15, 12), capMat);
-    cap.position.y = 1.78;
-    addSketchLines(cap, 0x111111);
-    this.mesh.add(cap);
+    // Expressive Eyes
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), darkEyeMat);
+    eyeL.position.set(-0.09, 1.57, 0.23);
+    this.mesh.add(eyeL);
 
-    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.3), capMat);
-    visor.position.set(0, 1.72, 0.3);
+    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), darkEyeMat);
+    eyeR.position.set(0.09, 1.57, 0.23);
+    this.mesh.add(eyeR);
+
+    // Friendly smile
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.05, 0.015, 4, 8, Math.PI), new THREE.MeshLambertMaterial({ color: 0xc2410c }));
+    smile.rotation.x = Math.PI;
+    smile.position.set(0, 1.50, 0.24);
+    this.mesh.add(smile);
+
+    // 3. Hair & Worker Baseball Cap
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), hairMat);
+    hair.position.set(0, 1.56, -0.04);
+    addSketchLines(hair, 0x111111);
+    this.mesh.add(hair);
+
+    const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.30, 0.16, 14), capMat);
+    capCrown.position.y = 1.70;
+    addSketchLines(capCrown, 0x111111);
+    this.mesh.add(capCrown);
+
+    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.04, 0.22), capMat);
+    visor.position.set(0, 1.66, 0.26);
+    visor.rotation.x = 0.15;
     addSketchLines(visor, 0x111111);
     this.mesh.add(visor);
 
-    const legGeo = new THREE.BoxGeometry(0.22, 0.6, 0.22);
-    this.leftLeg = new THREE.Mesh(legGeo, pantsMat);
-    this.leftLeg.position.set(-0.18, 0.4, 0);
-    this.leftLeg.castShadow = true;
-    addSketchLines(this.leftLeg, 0x111111);
+    // 4. Human Torso & Worker Apron / Uniform
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.30, 0.72, 10), shirtMat);
+    torso.position.y = 1.0;
+    torso.castShadow = true;
+    addSketchLines(torso, 0x111111);
+    this.mesh.add(torso);
+
+    // Work Utility Apron
+    const apron = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.52, 0.44), apronMat);
+    apron.position.set(0, 0.90, 0.04);
+    apron.castShadow = true;
+    addSketchLines(apron, 0x111111);
+    this.mesh.add(apron);
+
+    // Mini Garden Trowel in Pocket
+    const trowelBlade = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.14, 4), toolMat);
+    trowelBlade.rotation.x = 0.3;
+    trowelBlade.position.set(0.14, 1.05, 0.25);
+    this.mesh.add(trowelBlade);
+
+    // 5. Articulated Human Arms
+    const armGeo = new THREE.BoxGeometry(0.12, 0.46, 0.12);
+
+    this.leftArm = new THREE.Group();
+    this.leftArm.position.set(-0.36, 1.25, 0);
+    const lArmMesh = new THREE.Mesh(armGeo, shirtMat);
+    lArmMesh.position.y = -0.20;
+    lArmMesh.castShadow = true;
+    addSketchLines(lArmMesh, 0x111111);
+    this.leftArm.add(lArmMesh);
+
+    const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.065, 6, 6), skinMat);
+    lHand.position.y = -0.45;
+    this.leftArm.add(lHand);
+    this.mesh.add(this.leftArm);
+
+    this.rightArm = new THREE.Group();
+    this.rightArm.position.set(0.36, 1.25, 0);
+    const rArmMesh = new THREE.Mesh(armGeo, shirtMat);
+    rArmMesh.position.y = -0.20;
+    rArmMesh.castShadow = true;
+    addSketchLines(rArmMesh, 0x111111);
+    this.rightArm.add(rArmMesh);
+
+    const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.065, 6, 6), skinMat);
+    rHand.position.y = -0.45;
+    this.rightArm.add(rHand);
+    this.mesh.add(this.rightArm);
+
+    // 6. Human Legs & Sturdy Leather Boots
+    const legGeo = new THREE.BoxGeometry(0.16, 0.50, 0.16);
+
+    this.leftLeg = new THREE.Group();
+    this.leftLeg.position.set(-0.16, 0.65, 0);
+    const lLegMesh = new THREE.Mesh(legGeo, pantsMat);
+    lLegMesh.position.y = -0.25;
+    lLegMesh.castShadow = true;
+    addSketchLines(lLegMesh, 0x111111);
+    this.leftLeg.add(lLegMesh);
+
+    const lBoot = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.26), bootMat);
+    lBoot.position.set(0, -0.52, 0.04);
+    addSketchLines(lBoot, 0x111111);
+    this.leftLeg.add(lBoot);
     this.mesh.add(this.leftLeg);
 
-    this.rightLeg = new THREE.Mesh(legGeo, pantsMat);
-    this.rightLeg.position.set(0.18, 0.4, 0);
-    this.rightLeg.castShadow = true;
-    addSketchLines(this.rightLeg, 0x111111);
+    this.rightLeg = new THREE.Group();
+    this.rightLeg.position.set(0.16, 0.65, 0);
+    const rLegMesh = new THREE.Mesh(legGeo, pantsMat);
+    rLegMesh.position.y = -0.25;
+    rLegMesh.castShadow = true;
+    addSketchLines(rLegMesh, 0x111111);
+    this.rightLeg.add(rLegMesh);
+
+    const rBoot = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.26), bootMat);
+    rBoot.position.set(0, -0.52, 0.04);
+    addSketchLines(rBoot, 0x111111);
+    this.rightLeg.add(rBoot);
     this.mesh.add(this.rightLeg);
 
+    // 7. Stack Anchor for carried produce
     this.stackAnchor = new THREE.Group();
-    this.stackAnchor.position.set(0, 1.1, -0.3);
+    this.stackAnchor.position.set(0, 1.15, -0.32);
     this.mesh.add(this.stackAnchor);
 
     this.mesh.visible = false;
@@ -171,6 +265,8 @@ class HelperWorker {
       this.position.copy(this.targetPos);
       this.leftLeg.rotation.x = 0;
       this.rightLeg.rotation.x = 0;
+      if (this.leftArm) this.leftArm.rotation.x = 0;
+      if (this.rightArm) this.rightArm.rotation.x = 0;
     } else {
       const dirX = dx / dist;
       const dirZ = dz / dist;
@@ -186,6 +282,8 @@ class HelperWorker {
       this.walkCycle += dt * 5.5;
       this.leftLeg.rotation.x = Math.sin(this.walkCycle) * 0.5;
       this.rightLeg.rotation.x = -Math.sin(this.walkCycle) * 0.5;
+      if (this.leftArm) this.leftArm.rotation.x = -Math.sin(this.walkCycle) * 0.45;
+      if (this.rightArm) this.rightArm.rotation.x = Math.sin(this.walkCycle) * 0.45;
     }
 
     this.mesh.position.copy(this.position);

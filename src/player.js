@@ -186,18 +186,45 @@ class Player {
     if (!def) return group;
 
     if (itemId === 'TOMATO') {
-      const redMat = new THREE.MeshLambertMaterial({ color: def.color });
-      const stemMat = new THREE.MeshLambertMaterial({ color: 0x2e7d32 });
+      const redMat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
+      const stemMat = new THREE.MeshLambertMaterial({ color: 0x166534 });
+      const leafMat = new THREE.MeshLambertMaterial({ color: 0x22c55e });
 
-      const tomato = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), redMat);
-      tomato.castShadow = true;
-      addSketchLines(tomato, 0x111111);
-      group.add(tomato);
+      // Plump organic tomato body with slight squashed top and rounded lobes
+      const tomatoBody = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), redMat);
+      tomatoBody.scale.set(1.2, 0.95, 1.2);
+      tomatoBody.position.y = 0.18;
+      tomatoBody.castShadow = true;
+      addSketchLines(tomatoBody, 0x111111);
+      group.add(tomatoBody);
 
-      const leaf = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.08, 5), stemMat);
-      leaf.position.y = 0.18;
-      addSketchLines(leaf, 0x111111);
-      group.add(leaf);
+      // Top calyx star sepals (5 green leaves radiating outward)
+      const calyxCenter = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.08, 0.02, 6), leafMat);
+      calyxCenter.position.y = 0.36;
+      group.add(calyxCenter);
+
+      for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * Math.PI * 2;
+        const sepal = new THREE.Mesh(new THREE.ConeGeometry(0.045, 0.12, 4), leafMat);
+        sepal.rotation.x = Math.PI / 2 + 0.2;
+        sepal.rotation.z = -angle;
+        sepal.position.set(Math.cos(angle) * 0.09, 0.35, Math.sin(angle) * 0.09);
+        addSketchLines(sepal, 0x111111);
+        group.add(sepal);
+      }
+
+      // Curved realistic green vine stem
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.035, 0.12, 6), stemMat);
+      stem.position.set(0.02, 0.42, 0);
+      stem.rotation.z = -0.25;
+      addSketchLines(stem, 0x111111);
+      group.add(stem);
+
+      // Small fresh vine leaf
+      const babyLeaf = new THREE.Mesh(new THREE.ConeGeometry(0.035, 0.09, 3), leafMat);
+      babyLeaf.rotation.z = -1.1;
+      babyLeaf.position.set(0.07, 0.43, 0.02);
+      group.add(babyLeaf);
 
     } else if (itemId === 'WHEAT') {
       const wheatMat = new THREE.MeshLambertMaterial({ color: def.color });

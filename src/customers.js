@@ -85,58 +85,213 @@ class Customer {
   createMesh() {
     this.mesh = new THREE.Group();
 
-    const normalColors = [0x42a5f5, 0xab47bc, 0x26a69a, 0xff7043, 0x8d6e63, 0x78909c, 0xec407a];
-    const bodyColor = this.isVip ? CONFIG.COLORS.VIP_GOLD : normalColors[Math.floor(Math.random() * normalColors.length)];
+    // Natural human skin tones
+    const skinTones = [0xffe0bd, 0xfcd0a1, 0xe0ac69, 0xc68642, 0x8d5524];
+    const skinColor = skinTones[Math.floor(Math.random() * skinTones.length)];
 
-    const skinMat = new THREE.MeshLambertMaterial({ color: bodyColor });
+    // Stylish casual clothing palette
+    const shirtColors = [0x38bdf8, 0xf43f5e, 0xa855f7, 0x10b981, 0xfbbf24, 0xf472b6, 0xf97316];
+    const shirtColor = this.isVip ? 0xd97706 : shirtColors[Math.floor(Math.random() * shirtColors.length)];
+
+    const pantsColors = [0x1e3a8a, 0x334155, 0x475569, 0x1e293b, 0x0284c7];
+    const pantsColor = this.isVip ? 0x1e293b : pantsColors[Math.floor(Math.random() * pantsColors.length)];
+
+    const hairColors = [0x1c1917, 0x451a03, 0x78350f, 0xb45309, 0xd97706, 0x18181b];
+    const hairColor = this.isVip ? 0x1c1917 : hairColors[Math.floor(Math.random() * hairColors.length)];
+
+    const skinMat = new THREE.MeshLambertMaterial({ color: skinColor });
+    const shirtMat = new THREE.MeshLambertMaterial({ color: shirtColor });
+    const pantsMat = new THREE.MeshLambertMaterial({ color: pantsColor });
+    const hairMat = new THREE.MeshLambertMaterial({ color: hairColor });
+    const shoeMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const darkEyeMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
+    const blushMat = new THREE.MeshLambertMaterial({ color: 0xf472b6 });
     const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28 });
 
-    const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.38, 12), shadowMat);
+    // 1. Soft contact shadow
+    const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.38, 14), shadowMat);
     shadow.rotation.x = -Math.PI / 2;
     shadow.position.y = 0.02;
     this.mesh.add(shadow);
 
-    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.7, 8), skinMat);
-    torso.position.y = 0.9;
-    torso.castShadow = true;
-    addSketchLines(torso, 0x111111);
-    this.mesh.add(torso);
-
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.25, 8, 8), skinMat);
-    head.position.y = 1.45;
+    // 2. Human Head & Facial Features
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 10), skinMat);
+    head.position.y = 1.44;
     head.castShadow = true;
     addSketchLines(head, 0x111111);
     this.mesh.add(head);
 
-    const hatMat = new THREE.MeshLambertMaterial({ color: this.isVip ? 0xffd700 : 0x37474f });
-    const hat = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.28, 0.12, 8), hatMat);
-    hat.position.y = 1.62;
-    addSketchLines(hat, 0x111111);
-    this.mesh.add(hat);
+    // Expressive Eyes
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.038, 6, 6), darkEyeMat);
+    eyeL.position.set(-0.08, 1.46, 0.21);
+    this.mesh.add(eyeL);
 
-    const legMat = new THREE.MeshLambertMaterial({ color: 0x263238 });
-    const legGeo = new THREE.BoxGeometry(0.16, 0.55, 0.16);
+    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.038, 6, 6), darkEyeMat);
+    eyeR.position.set(0.08, 1.46, 0.21);
+    this.mesh.add(eyeR);
 
-    this.leftLeg = new THREE.Mesh(legGeo, legMat);
-    this.leftLeg.position.set(-0.14, 0.35, 0);
-    this.leftLeg.castShadow = true;
-    addSketchLines(this.leftLeg, 0x111111);
+    // Cheerful rosy cheeks
+    const blushL = new THREE.Mesh(new THREE.CircleGeometry(0.03, 6), blushMat);
+    blushL.position.set(-0.12, 1.40, 0.21);
+    this.mesh.add(blushL);
+    const blushR = new THREE.Mesh(new THREE.CircleGeometry(0.03, 6), blushMat);
+    blushR.position.set(0.12, 1.40, 0.21);
+    this.mesh.add(blushR);
+
+    // 3. Hair & Accessories (4 distinct hairstyles)
+    const hairStyle = this.isVip ? 'fedora' : ['crop', 'bob', 'ponytail', 'beanie'][Math.floor(Math.random() * 4)];
+
+    if (hairStyle === 'fedora') {
+      const hatMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 16), hatMat);
+      brim.position.y = 1.60;
+      addSketchLines(brim, 0x111111);
+      this.mesh.add(brim);
+
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.28, 0.18, 16), hatMat);
+      crown.position.y = 1.70;
+      addSketchLines(crown, 0x111111);
+      this.mesh.add(crown);
+
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.285, 0.285, 0.05, 16), new THREE.MeshLambertMaterial({ color: 0x991b1b }));
+      band.position.y = 1.63;
+      this.mesh.add(band);
+
+    } else if (hairStyle === 'crop') {
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), hairMat);
+      hair.scale.set(1.02, 0.8, 1.05);
+      hair.position.set(0, 1.54, -0.02);
+      addSketchLines(hair, 0x111111);
+      this.mesh.add(hair);
+
+      const bangs = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.12), hairMat);
+      bangs.position.set(0, 1.58, 0.16);
+      this.mesh.add(bangs);
+
+    } else if (hairStyle === 'bob') {
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), hairMat);
+      hair.position.set(0, 1.48, -0.04);
+      addSketchLines(hair, 0x111111);
+      this.mesh.add(hair);
+
+      const leftSide = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.24), hairMat);
+      leftSide.position.set(-0.22, 1.38, 0.02);
+      this.mesh.add(leftSide);
+
+      const rightSide = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.24), hairMat);
+      rightSide.position.set(0.22, 1.38, 0.02);
+      this.mesh.add(rightSide);
+
+    } else if (hairStyle === 'ponytail') {
+      const hair = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), hairMat);
+      hair.position.set(0, 1.52, -0.02);
+      addSketchLines(hair, 0x111111);
+      this.mesh.add(hair);
+
+      const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.04, 0.28, 8), hairMat);
+      tail.rotation.x = -0.6;
+      tail.position.set(0, 1.48, -0.26);
+      addSketchLines(tail, 0x111111);
+      this.mesh.add(tail);
+
+    } else { // Beanie
+      const beanieMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+      const beanie = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), beanieMat);
+      beanie.position.set(0, 1.54, -0.02);
+      addSketchLines(beanie, 0x111111);
+      this.mesh.add(beanie);
+    }
+
+    // 4. Human Torso & Stylish Clothes
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.27, 0.65, 10), shirtMat);
+    torso.position.y = 0.95;
+    torso.castShadow = true;
+    addSketchLines(torso, 0x111111);
+    this.mesh.add(torso);
+
+    // Collar / neckline detail
+    const collar = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.03, 4, 8), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    collar.rotation.x = Math.PI / 2;
+    collar.position.set(0, 1.25, 0);
+    this.mesh.add(collar);
+
+    // 5. Articulated Human Arms
+    const armGeo = new THREE.BoxGeometry(0.1, 0.42, 0.1);
+
+    // Left Arm (Free swinging)
+    this.leftArm = new THREE.Group();
+    this.leftArm.position.set(-0.32, 1.2, 0);
+    const leftArmMesh = new THREE.Mesh(armGeo, shirtMat);
+    leftArmMesh.position.y = -0.18;
+    leftArmMesh.castShadow = true;
+    addSketchLines(leftArmMesh, 0x111111);
+    this.leftArm.add(leftArmMesh);
+
+    const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), skinMat);
+    leftHand.position.y = -0.4;
+    this.leftArm.add(leftHand);
+    this.mesh.add(this.leftArm);
+
+    // Right Arm (Holding basket)
+    this.rightArm = new THREE.Group();
+    this.rightArm.position.set(0.32, 1.2, 0);
+    const rightArmMesh = new THREE.Mesh(armGeo, shirtMat);
+    rightArmMesh.position.y = -0.18;
+    rightArmMesh.castShadow = true;
+    addSketchLines(rightArmMesh, 0x111111);
+    this.rightArm.add(rightArmMesh);
+
+    const rightHand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), skinMat);
+    rightHand.position.y = -0.4;
+    this.rightArm.add(rightHand);
+    this.mesh.add(this.rightArm);
+
+    // 6. Human Legs & Stylish Sneakers
+    const legGeo = new THREE.BoxGeometry(0.14, 0.46, 0.14);
+
+    this.leftLeg = new THREE.Group();
+    this.leftLeg.position.set(-0.13, 0.62, 0);
+    const lLegMesh = new THREE.Mesh(legGeo, pantsMat);
+    lLegMesh.position.y = -0.23;
+    lLegMesh.castShadow = true;
+    addSketchLines(lLegMesh, 0x111111);
+    this.leftLeg.add(lLegMesh);
+
+    const lShoe = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.22), shoeMat);
+    lShoe.position.set(0, -0.48, 0.03);
+    addSketchLines(lShoe, 0x111111);
+    this.leftLeg.add(lShoe);
     this.mesh.add(this.leftLeg);
 
-    this.rightLeg = new THREE.Mesh(legGeo, legMat);
-    this.rightLeg.position.set(0.14, 0.35, 0);
-    this.rightLeg.castShadow = true;
-    addSketchLines(this.rightLeg, 0x111111);
+    this.rightLeg = new THREE.Group();
+    this.rightLeg.position.set(0.13, 0.62, 0);
+    const rLegMesh = new THREE.Mesh(legGeo, pantsMat);
+    rLegMesh.position.y = -0.23;
+    rLegMesh.castShadow = true;
+    addSketchLines(rLegMesh, 0x111111);
+    this.rightLeg.add(rLegMesh);
+
+    const rShoe = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.22), shoeMat);
+    rShoe.position.set(0, -0.48, 0.03);
+    addSketchLines(rShoe, 0x111111);
+    this.rightLeg.add(rShoe);
     this.mesh.add(this.rightLeg);
 
+    // 7. Wicker Shopping Basket
     this.basketAnchor = new THREE.Group();
-    this.basketAnchor.position.set(0.42, 0.75, 0.15);
+    this.basketAnchor.position.set(0.38, 0.72, 0.16);
 
-    const basketMat = new THREE.MeshLambertMaterial({ color: 0xffb74d });
-    const basketMesh = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.25, 0.32), basketMat);
+    const basketMat = new THREE.MeshLambertMaterial({ color: 0xd97706 });
+    const basketMesh = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.22, 0.30), basketMat);
     basketMesh.castShadow = true;
     addSketchLines(basketMesh, 0x111111);
     this.basketAnchor.add(basketMesh);
+
+    // Basket Handle
+    const handleMat = new THREE.MeshLambertMaterial({ color: 0x92400e });
+    const handle = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.02, 4, 10), handleMat);
+    handle.position.set(0, 0.12, 0);
+    this.basketAnchor.add(handle);
 
     this.mesh.add(this.basketAnchor);
 
@@ -282,6 +437,8 @@ class CustomerManager {
         }
         cust.leftLeg.rotation.x = 0;
         cust.rightLeg.rotation.x = 0;
+        if (cust.leftArm) cust.leftArm.rotation.x = 0;
+        if (cust.rightArm) cust.rightArm.rotation.x = 0;
       } else {
         const dirX = dx / dist;
         const dirZ = dz / dist;
@@ -297,6 +454,8 @@ class CustomerManager {
         cust.walkCycle += dt * 6.0;
         cust.leftLeg.rotation.x = Math.sin(cust.walkCycle) * 0.45;
         cust.rightLeg.rotation.x = -Math.sin(cust.walkCycle) * 0.45;
+        if (cust.leftArm) cust.leftArm.rotation.x = -Math.sin(cust.walkCycle) * 0.4;
+        if (cust.rightArm) cust.rightArm.rotation.x = Math.sin(cust.walkCycle) * 0.2;
       }
 
       // Anti-Stuck Auto-Recovery Watchdog
