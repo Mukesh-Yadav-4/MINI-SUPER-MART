@@ -485,8 +485,8 @@ class CustomerManager {
         let moveX = dx / dist;
         let moveZ = dz / dist;
 
-        // Dynamic Predictive Sidestepping: Look for oncoming or blocking shoppers in forward path
-        if (cust.state !== 'PAY' && cust.state !== 'QUEUE') {
+        // Dynamic Predictive Sidestepping: Only shoppers actively browsing steer around each other
+        if (cust.state === 'SHOP') {
           for (let j = 0; j < this.customers.length; j++) {
             if (i === j) continue;
             const other = this.customers[j];
@@ -494,15 +494,14 @@ class CustomerManager {
             const toOtherZ = other.position.z - cust.position.z;
             const otherDistSq = toOtherX * toOtherX + toOtherZ * toOtherZ;
 
-            if (otherDistSq < 2.0 && otherDistSq > 0.01) {
+            if (otherDistSq < 1.8 && otherDistSq > 0.01) {
               const otherDist = Math.sqrt(otherDistSq);
               const dot = (toOtherX / otherDist) * moveX + (toOtherZ / otherDist) * moveZ;
-              // If other person is ahead in the forward cone (> 30°)
-              if (dot > 0.35) {
-                // Steer perpendicular (right-hand rule sidewalk passing)
+              // If other person is ahead in forward cone
+              if (dot > 0.4) {
                 const perpX = -moveZ;
                 const perpZ = moveX;
-                const steerWeight = (1.41 - otherDist) * 0.8;
+                const steerWeight = (1.35 - otherDist) * 0.7;
                 moveX += perpX * steerWeight;
                 moveZ += perpZ * steerWeight;
               }
@@ -534,24 +533,23 @@ class CustomerManager {
         cust.leftArm.rotation.x = 0;
         if (cust.waypoints.length > 0) {
           cust.targetPos.copy(cust.waypoints.shift());
+          cust.stuckTimer = 0;
         }
       }
 
-      // Responsive Anti-Stuck Watchdog: Nudge and dislodge if pinned
-      const moveDelta = cust.position.distanceTo(cust.lastPosition);
-      cust.lastPosition.copy(cust.position);
-      if (moveDelta < 0.06 * dt && (cust.state === 'SHOP' || cust.state === 'LEAVE')) {
-        cust.stuckTimer += dt;
-        if (cust.stuckTimer > 1.2) {
-          cust.position.x += (Math.random() - 0.5) * 0.45;
-          cust.position.z += (Math.random() - 0.5) * 0.45;
-          cust.stuckTimer = 0;
-          if (cust.waypoints.length > 0) {
-            cust.targetPos.copy(cust.waypoints.shift());
-          }
-        }
-      } else {
+      // Responsive Anti-Stuck Watchdog: Break circling and dislodge if delayed on same waypoint
+      cust.stuckTimer += dt;
+      if (cust.stuckTimer > 2.0 && (cust.state === 'SHOP' || cust.state === 'LEAVE')) {
         cust.stuckTimer = 0;
+        if (cust.waypoints.length > 0) {
+          cust.position.copy(cust.targetPos);
+          cust.targetPos.copy(cust.waypoints.shift());
+        } else if (cust.state === 'LEAVE') {
+          // Force despawn if stuck near exit threshold
+          cust.destroy();
+          this.customers.splice(i, 1);
+          continue;
+        }
       }
 
       cust.mesh.position.copy(cust.position);
@@ -563,6 +561,7 @@ class CustomerManager {
         if (cust.position.distanceTo(foyerTarget) < 0.8 || cust.waypoints.length === 0) {
           cust.state = 'SHOP';
           cust.waypoints = [];
+          cust.stuckTimer = 0;
         }
 
       } else if (cust.state === 'SHOP') {
@@ -583,6 +582,7 @@ class CustomerManager {
           if (cust.targetPos.distanceTo(shelfTargetPos) > 0.3 && cust.waypoints.length === 0) {
             cust.waypoints = getCorridorPath(cust.position, shelfTargetPos);
             cust.targetPos.copy(cust.waypoints.shift());
+            cust.stuckTimer = 0;
           }
 
           const distToFront = cust.position.distanceTo(shelfTargetPos);
@@ -619,6 +619,7 @@ class CustomerManager {
 
             cust.waypoints = [];
             cust.updateThoughtBadge();
+            cust.stuckTimer = 0;
           }
         }
 
@@ -663,26 +664,24 @@ class CustomerManager {
             cust.basketItems = [];
             cust.state = 'LEAVE';
             cust.updateThoughtBadge();
+            cust.stuckTimer = 0;
 
             if (isReg2) {
               // Exit via Right Wall Exit Gate (East Side Wall)
-              const exitRightOfCounter = new THREE.Vector3(21.0, 0, cust.assignedRegister.customerCheckoutPos.z);
               cust.waypoints = [
-                exitRightOfCounter,
-                GATES.EAST_EXIT.foyer.clone(),
-                GATES.EAST_EXIT.door.clone(),
-                GATES.EAST_EXIT.spawn.clone()
+                new THREE.Vector3(21.0, 0, cust.assignedRegister.customerCheckoutPos.z),
+                new THREE.Vector3(21.0, 0, GATES.EAST_EXIT.door.z),
+                new THREE.Vector3(24.5, 0, GATES.EAST_EXIT.door.z)
               ];
             } else {
-              // Exit via West Gate - wide route avoiding the cashier queue
-              const exitAvenueZ = GATES.WEST.foyer.z;
-              const exitClearX = -10.0;
+              // Exit via West Gate: clean linear trajectory without backtracks
+              const exitAisleX = -9.5;
+              const exitDoorZ = -4.5;
               cust.waypoints = [
-                new THREE.Vector3(exitClearX, 0, cust.assignedRegister.customerCheckoutPos.z),
-                new THREE.Vector3(exitClearX, 0, exitAvenueZ),
-                GATES.WEST.foyer.clone(),
-                GATES.WEST.door.clone(),
-                GATES.WEST.spawn.clone()
+                new THREE.Vector3(exitAisleX, 0, cust.assignedRegister.customerCheckoutPos.z),
+                new THREE.Vector3(exitAisleX, 0, exitDoorZ),
+                new THREE.Vector3(-12.5, 0, exitDoorZ),
+                new THREE.Vector3(-15.5, 0, exitDoorZ)
               ];
             }
             cust.targetPos.copy(cust.waypoints.shift());
@@ -692,25 +691,34 @@ class CustomerManager {
         }
 
       } else if (cust.state === 'LEAVE') {
-        if (cust.waypoints.length === 0 && (
-          cust.position.distanceTo(GATES.WEST.spawn) < 0.8 ||
-          cust.position.distanceTo(GATES.EAST_EXIT.spawn) < 0.8 ||
-          cust.position.distanceTo(GATES.EAST.spawn) < 0.8 ||
-          cust.position.distanceTo(GATES.NORTH.spawn) < 0.8
-        )) {
-          cust.destroy();
-          this.customers.splice(i, 1);
+        // Immediate clean despawn if outside the building boundary
+        const isOutsideWest = (cust.position.x <= -12.2);
+        const isOutsideEast = (cust.position.x >= 22.2);
+        const isOutsideNorth = (cust.position.z <= -14.2);
+
+        if (isOutsideWest || isOutsideEast || isOutsideNorth || cust.waypoints.length === 0) {
+          if (isOutsideWest || isOutsideEast || isOutsideNorth ||
+              cust.position.distanceTo(GATES.WEST.spawn) < 1.2 ||
+              cust.position.distanceTo(GATES.EAST_EXIT.spawn) < 1.2 ||
+              cust.position.distanceTo(GATES.EAST.spawn) < 1.2 ||
+              cust.position.distanceTo(GATES.NORTH.spawn) < 1.2) {
+            cust.destroy();
+            this.customers.splice(i, 1);
+            continue;
+          }
         }
       }
     }
 
-    // 3. Mutual Soft Contact Separation (Breaks 3+ person cluster deadlocks with tangential twist)
+    // 3. Mutual Soft Contact Separation (Disperses crowds without disrupting single-file doorway exits)
     for (let i = 0; i < this.customers.length; i++) {
       for (let j = i + 1; j < this.customers.length; j++) {
         const c1 = this.customers[i];
         const c2 = this.customers[j];
         if (c1.state === 'PAY' && c2.state === 'PAY') continue;
         if (c1.state === 'QUEUE' && c2.state === 'QUEUE') continue;
+        // Don't fight for space at doorways when both are leaving
+        if (c1.state === 'LEAVE' && c2.state === 'LEAVE') continue;
 
         const dx = c1.position.x - c2.position.x;
         const dz = c1.position.z - c2.position.z;
@@ -724,24 +732,31 @@ class CustomerManager {
           const nx = dx / dist;
           const nz = dz / dist;
 
-          // Tangential rotational component breaks symmetric head-on deadlock
-          const perpX = -nz * 0.4;
-          const perpZ = nx * 0.4;
-
           const isC1Static = (c1.state === 'QUEUE' || c1.state === 'PAY');
           const isC2Static = (c2.state === 'QUEUE' || c2.state === 'PAY');
+          const isC1Leaving = (c1.state === 'LEAVE');
+          const isC2Leaving = (c2.state === 'LEAVE');
 
           if (isC1Static && !isC2Static) {
-            c2.position.x -= (nx + perpX) * (overlap * 2.0);
-            c2.position.z -= (nz + perpZ) * (overlap * 2.0);
+            c2.position.x -= nx * (overlap * 2.0);
+            c2.position.z -= nz * (overlap * 2.0);
           } else if (!isC1Static && isC2Static) {
-            c1.position.x += (nx + perpX) * (overlap * 2.0);
-            c1.position.z += (nz + perpZ) * (overlap * 2.0);
+            c1.position.x += nx * (overlap * 2.0);
+            c1.position.z += nz * (overlap * 2.0);
+          } else if (isC1Leaving && !isC2Leaving) {
+            // Shopper yields to exiting customer
+            c2.position.x -= nx * (overlap * 2.0);
+            c2.position.z -= nz * (overlap * 2.0);
+          } else if (!isC1Leaving && isC2Leaving) {
+            // Shopper yields to exiting customer
+            c1.position.x += nx * (overlap * 2.0);
+            c1.position.z += nz * (overlap * 2.0);
           } else {
-            c1.position.x += (nx * 0.65 + perpX) * overlap;
-            c1.position.z += (nz * 0.65 + perpZ) * overlap;
-            c2.position.x -= (nx * 0.65 - perpX) * overlap;
-            c2.position.z -= (nz * 0.65 - perpZ) * overlap;
+            // Symmetric separation
+            c1.position.x += nx * overlap;
+            c1.position.z += nz * overlap;
+            c2.position.x -= nx * overlap;
+            c2.position.z -= nz * overlap;
           }
         }
       }
