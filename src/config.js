@@ -1,14 +1,14 @@
 // Master Configuration: Spacious Layout, Grounded Pricing & 40-50 Min Progression
 const CONFIG = {
   ITEMS: {
-    TOMATO: { id: 'TOMATO', name: 'Organic Tomato', icon: '🍅', color: 0xf44336, sellPrice: 2, growthTime: 3.0, type: 'crop' },
-    WHEAT: { id: 'WHEAT', name: 'Golden Wheat', icon: '🌾', color: 0xffca28, sellPrice: 3, growthTime: 4.5, type: 'material' },
-    EGG: { id: 'EGG', name: 'Farm Fresh Egg', icon: '🥚', color: 0xffffff, produceTime: 5.0, feedRequired: 'WHEAT', sellPrice: 4, type: 'animal' },
-    JUICE: { id: 'JUICE', name: 'Canned Sauce / Jam', icon: '🥫', color: 0xd32f2f, sellPrice: 8, pressTime: 6.0, recipe: { TOMATO: 2 }, type: 'processed' },
-    CARROT: { id: 'CARROT', name: 'Golden Sweetcorn', icon: '🌽', color: 0xff9800, sellPrice: 12, growthTime: 7.5, type: 'crop' },
-    MILK: { id: 'MILK', name: 'Whole Farm Milk', icon: '🥛', color: 0x29b6f6, sellPrice: 18, produceTime: 8.0, feedRequired: 'WHEAT', type: 'animal' },
+    TOMATO: { id: 'TOMATO', name: 'Organic Tomato', icon: '🍅', color: 0xf44336, sellPrice: 2, growthTime: 2.5, type: 'crop' },
+    WHEAT: { id: 'WHEAT', name: 'Golden Wheat', icon: '🌾', color: 0xffca28, sellPrice: 3, growthTime: 2.0, type: 'material' },
+    EGG: { id: 'EGG', name: 'Farm Fresh Egg', icon: '🥚', color: 0xffffff, produceTime: 3.0, feedRequired: 'WHEAT', sellPrice: 4, type: 'animal' },
+    JUICE: { id: 'JUICE', name: 'Canned Sauce / Jam', icon: '🥫', color: 0xd32f2f, sellPrice: 8, pressTime: 4.0, recipe: { TOMATO: 2 }, type: 'processed' },
+    CARROT: { id: 'CARROT', name: 'Golden Sweetcorn', icon: '🌽', color: 0xff9800, sellPrice: 12, growthTime: 3.5, type: 'crop' },
+    MILK: { id: 'MILK', name: 'Whole Farm Milk', icon: '🥛', color: 0x29b6f6, sellPrice: 18, produceTime: 4.5, feedRequired: 'WHEAT', type: 'animal' },
     BREAD: { id: 'BREAD', name: 'Artisan Bakery Bread', icon: '🍞', color: 0xd79a55, sellPrice: 28, bakeTime: 5.0, recipe: { WHEAT: 1, EGG: 1 }, type: 'processed' },
-    CAKE: { id: 'CAKE', name: 'Royal Strawberry Cake', icon: '🎂', color: 0xf06292, sellPrice: 80, bakeTime: 10.0, recipe: { MILK: 1, EGG: 2, BREAD: 2 }, type: 'processed' }
+    CAKE: { id: 'CAKE', name: 'Royal Strawberry Cake', icon: '🎂', color: 0xf06292, sellPrice: 80, bakeTime: 7.0, recipe: { MILK: 1, EGG: 2, BREAD: 2 }, type: 'processed' }
   },
 
   UNLOCKS: {
@@ -196,9 +196,9 @@ const CONFIG = {
       category: 'Farming',
       title: 'Crop Fertilizer',
       icon: '⚡',
-      levels: [1.0, 1.35, 1.8, 2.35, 3.0, 3.8, 4.8],
+      levels: [1.0, 1.4, 1.9, 2.5, 3.2, 4.0],
       unit: 'x speed',
-      costs: [20, 65, 220, 700, 2000, 4800],
+      costs: [20, 65, 220, 700, 2000],
       currentLevel: 0
     },
     egg_speed: {
@@ -208,9 +208,9 @@ const CONFIG = {
       category: 'Poultry',
       title: 'Egg Laying Rate',
       icon: '🥚',
-      levels: [1.0, 1.4, 1.9, 2.5, 3.3, 4.2],
+      levels: [1.0, 1.3, 1.7, 2.2, 3.0],
       unit: 'x speed',
-      costs: [25, 85, 300, 950, 2600],
+      costs: [25, 85, 300, 950],
       currentLevel: 0
     },
     chicken_count: {
@@ -232,7 +232,7 @@ const CONFIG = {
       category: 'Dairy',
       title: 'Milk Output Rate',
       icon: '🥛',
-      levels: [1.0, 1.4, 1.9, 2.5, 3.4],
+      levels: [1.0, 1.3, 1.7, 2.2, 3.0],
       unit: 'x speed',
       costs: [350, 1100, 2800, 6500],
       currentLevel: 0
@@ -356,9 +356,9 @@ const CONFIG = {
       category: 'Appliances',
       title: 'Machine Input Hopper',
       icon: '⚙️',
-      levels: [4, 5, 6, 7],
+      levels: [6, 8, 10, 12],
       unit: 'max ingredients',
-      costs: [60, 240, 950],
+      costs: [80, 320, 1200],
       currentLevel: 0
     },
     stand_capacity: {

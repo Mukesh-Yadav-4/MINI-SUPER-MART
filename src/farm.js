@@ -17,7 +17,7 @@ class CropPatch {
     this.config = config;
     this.unlocked = config.unlocked || false;
     this.crops = [];
-    this.growthInterval = config.growthInterval || 4.2;
+    this.growthInterval = config.growthInterval || (CONFIG.ITEMS[config.itemId] ? CONFIG.ITEMS[config.itemId].growthTime : 2.5);
     this.harvestCooldown = 0;
     this.animTimer = Math.random() * 10;
 
@@ -736,7 +736,7 @@ class AnimalPen {
       const effSpeed = (this.speedMult || 1.0) * growthMultiplier;
       this.productionTimer += dt * effSpeed;
 
-      const baseDuration = isChicken ? 5.0 : 8.0;
+      const baseDuration = isChicken ? 3.0 : 4.5;
       if (this.productionTimer >= baseDuration) {
         this.productionTimer = 0;
         this.feedStock--;
@@ -796,7 +796,7 @@ class ProcessingMachine {
 
   refreshStats() {
     const lvl = (CONFIG.UPGRADES.appliance_capacity && CONFIG.UPGRADES.appliance_capacity.currentLevel) || 0;
-    this.inputCapacity = (CONFIG.UPGRADES.appliance_capacity && CONFIG.UPGRADES.appliance_capacity.levels[lvl]) || 4;
+    this.inputCapacity = (CONFIG.UPGRADES.appliance_capacity && CONFIG.UPGRADES.appliance_capacity.levels[lvl]) || 6;
     if (this.inCtx) this.updateBadges();
   }
 
@@ -1018,7 +1018,7 @@ class ProcessingMachine {
     if (isJuicer) {
       if (this.ingredients.length >= 2) {
         this.processTimer += dt * growthMultiplier;
-        if (this.processTimer >= 6.0) {
+        if (this.processTimer >= 4.0) {
           this.processTimer = 0;
           this.ingredients.splice(0, 2);
           this.outputStock++;
@@ -1033,7 +1033,7 @@ class ProcessingMachine {
 
       if (milkCount >= 1 && eggCount >= 2 && breadCount >= 2) {
         this.processTimer += dt * growthMultiplier;
-        if (this.processTimer >= 10.0) {
+        if (this.processTimer >= 7.0) {
           this.processTimer = 0;
           this.ingredients.splice(this.ingredients.indexOf('MILK'), 1);
           this.ingredients.splice(this.ingredients.indexOf('EGG'), 1);
