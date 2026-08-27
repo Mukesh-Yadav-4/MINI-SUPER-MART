@@ -120,10 +120,10 @@ const CONFIG = {
     },
     door_east: {
       id: 'door_east',
-      name: 'East Wing Entrance Door',
+      name: 'Pastry Wing Grand Gate',
       cost: 750,
       unlocked: false,
-      pos: { x: 19.5, z: -4.5 },
+      pos: { x: 18.8, z: -11.0 },
       radius: 1.8,
       requires: 'stand_milk'
     },

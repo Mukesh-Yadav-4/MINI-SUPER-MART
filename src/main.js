@@ -168,7 +168,7 @@ class GameEngine {
 
     const treePositions = [
       [-16.5, 7.5], [-16.5, -3.5], [-16.5, -12.5],
-      [18.5, 8.5], [18.5, -2.5], [18.5, -11.5],
+      [18.5, 8.5], [18.5, -2.5],
       [-8.5, 14.5], [0.0, 15.0], [7.5, 14.5], [14.0, 15.0]
     ];
 
@@ -549,7 +549,6 @@ class GameEngine {
 
     createIndoorPlant(-11.5, -4.5);
     createIndoorPlant(-11.5, 0.5);
-    createIndoorPlant(18.0, -11.5);
     createIndoorPlant(18.0, 0.5);
 
     // Contextual Farm Accessories (Watering Can & Terra Cotta Pots)
@@ -723,26 +722,26 @@ class GameEngine {
     }
     this.scene.add(awningGroup);
 
-    // East Grand Entrance (Expansion)
+    // East Grand Entrance (Pastry Wing Expansion next to Cake Shelf)
     const eastPillar1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.8, 0.3), pillarMat);
-    eastPillar1.position.set(22.0, 1.4, -7.0);
+    eastPillar1.position.set(22.0, 1.4, -13.0);
     eastPillar1.castShadow = true;
     addSketch(eastPillar1, 0x111111);
     this.scene.add(eastPillar1);
 
     const eastPillar1Cap = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.15, 0.35), pillarHighlight);
-    eastPillar1Cap.position.set(22.0, 2.8, -7.0);
+    eastPillar1Cap.position.set(22.0, 2.8, -13.0);
     addSketch(eastPillar1Cap, 0x111111);
     this.scene.add(eastPillar1Cap);
 
     const eastPillar2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.8, 0.3), pillarMat);
-    eastPillar2.position.set(22.0, 1.4, -2.0);
+    eastPillar2.position.set(22.0, 1.4, -9.0);
     eastPillar2.castShadow = true;
     addSketch(eastPillar2, 0x111111);
     this.scene.add(eastPillar2);
 
     const eastPillar2Cap = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.15, 0.35), pillarHighlight);
-    eastPillar2Cap.position.set(22.0, 2.8, -2.0);
+    eastPillar2Cap.position.set(22.0, 2.8, -9.0);
     addSketch(eastPillar2Cap, 0x111111);
     this.scene.add(eastPillar2Cap);
 
@@ -750,13 +749,13 @@ class GameEngine {
     this.eastDoorGroup = new THREE.Group();
     const eastEntryMat = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.2), new THREE.MeshLambertMaterial({ color: 0xba8c59 }));
     eastEntryMat.rotation.x = -Math.PI / 2;
-    eastEntryMat.position.set(22.0, 0.018, -4.5);
+    eastEntryMat.position.set(22.0, 0.018, -11.0);
     eastEntryMat.receiveShadow = true;
     addSketch(eastEntryMat, 0x111111);
     this.eastDoorGroup.add(eastEntryMat);
 
     const eastAwningGroup = new THREE.Group();
-    eastAwningGroup.position.set(22.0, 2.4, -4.5);
+    eastAwningGroup.position.set(22.0, 2.4, -11.0);
     for (let i = 0; i < stripeCount; i++) {
       const isRed = i % 2 === 0;
       const stripeMat = new THREE.MeshLambertMaterial({ color: isRed ? CONFIG.COLORS.AWNING_RED : CONFIG.COLORS.AWNING_WHITE });
@@ -773,9 +772,9 @@ class GameEngine {
 
     // East Under-Renovation Barricade when locked
     this.eastBarricadeGroup = new THREE.Group();
-    this.eastBarricadeGroup.position.set(22.0, 0, -4.5);
+    this.eastBarricadeGroup.position.set(22.0, 0, -11.0);
     for (let p = 0; p < 3; p++) {
-      const plank = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.28, 4.4), new THREE.MeshLambertMaterial({ color: 0xa1887f }));
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.28, 4.0), new THREE.MeshLambertMaterial({ color: 0xa1887f }));
       plank.position.set(0, 0.5 + p * 0.6, 0);
       plank.castShadow = true;
       addSketch(plank, 0x111111);

@@ -22,10 +22,10 @@ const GATES = {
     entryAisle: new THREE.Vector3(-6.0, 0, -7.0)
   },
   EAST: {
-    spawn: new THREE.Vector3(22.0, 0, -4.5),
-    door: new THREE.Vector3(19.0, 0, -4.5),
-    foyer: new THREE.Vector3(17.0, 0, -4.5),
-    entryAisle: new THREE.Vector3(15.4, 0, -3.0)
+    spawn: new THREE.Vector3(22.0, 0, -11.0),
+    door: new THREE.Vector3(19.0, 0, -11.0),
+    foyer: new THREE.Vector3(17.0, 0, -11.0),
+    entryAisle: new THREE.Vector3(15.4, 0, -9.5)
   }
 };
 
