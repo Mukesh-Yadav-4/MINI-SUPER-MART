@@ -139,6 +139,8 @@ class MarketStand {
     } else {
       const woodMat = new THREE.MeshLambertMaterial({ color: 0xc8965a });
       const darkWoodMat = new THREE.MeshLambertMaterial({ color: 0x5a3818 });
+      const strawBedMat = new THREE.MeshLambertMaterial({ color: 0xfde047 });
+      const chalkMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
 
       const base = new THREE.Mesh(new THREE.BoxGeometry(width, 0.4, depth), darkWoodMat);
       base.position.y = 0.2;
@@ -151,6 +153,16 @@ class MarketStand {
       lowerTray.castShadow = true;
       addStructureOutline(lowerTray, 0x111111);
       this.group.add(lowerTray);
+
+      // Straw bedding inside lower produce tray
+      const strawBed = new THREE.Mesh(new THREE.BoxGeometry(width - 0.1, 0.05, depth - 0.1), strawBedMat);
+      strawBed.position.y = 0.72;
+      this.group.add(strawBed);
+
+      // Front Chalkboard Price Tag Strip
+      const priceStrip = new THREE.Mesh(new THREE.BoxGeometry(width * 0.9, 0.12, 0.04), chalkMat);
+      priceStrip.position.set(0, 0.55, depth / 2 + 0.02);
+      this.group.add(priceStrip);
 
       const upperTier = new THREE.Mesh(new THREE.BoxGeometry(width, 0.28, depth * 0.7), woodMat);
       upperTier.position.set(0, 1.1, -0.2);
@@ -336,33 +348,88 @@ class CashRegister {
     addStructureOutline(floorMat, 0x111111);
     this.group.add(floorMat);
 
-    const deskBase = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.85, 1.1), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+    // Counter Base
+    const deskBase = new THREE.Mesh(new THREE.BoxGeometry(2.8, 0.85, 1.1), new THREE.MeshLambertMaterial({ color: 0xf8fafc }));
     deskBase.position.y = 0.425;
     deskBase.castShadow = true;
     addStructureOutline(deskBase, 0x111111);
     this.group.add(deskBase);
 
+    // Turquoise Gloss Countertop
     const deskTop = new THREE.Mesh(new THREE.BoxGeometry(2.9, 0.12, 1.2), new THREE.MeshLambertMaterial({ color: CONFIG.COLORS.COUNTER_CYAN }));
     deskTop.position.y = 0.91;
     deskTop.castShadow = true;
     addStructureOutline(deskTop, 0x111111);
     this.group.add(deskTop);
 
+    // Black Rubber Grocery Conveyor Belt
+    const beltMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+    const railMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+
+    const conveyor = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.04, 0.55), beltMat);
+    conveyor.position.set(0.6, 0.99, 0);
+    this.group.add(conveyor);
+
+    const rail1 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.06, 0.03), railMat);
+    rail1.position.set(0.6, 1.02, 0.28);
+    this.group.add(rail1);
+    const rail2 = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.06, 0.03), railMat);
+    rail2.position.set(0.6, 1.02, -0.28);
+    this.group.add(rail2);
+
+    // POS Screen & Register System
     const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.4, 0.08), new THREE.MeshLambertMaterial({ color: 0x212121 }));
-    monitor.position.set(0.2, 1.3, 0);
+    monitor.position.set(-0.1, 1.3, 0);
     monitor.rotation.x = 0.2;
     addStructureOutline(monitor, 0x111111);
     this.group.add(monitor);
 
     const monitorScreen = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.34, 0.02), new THREE.MeshBasicMaterial({ color: 0x69f0ae }));
-    monitorScreen.position.set(0.2, 1.3, -0.05);
+    monitorScreen.position.set(-0.1, 1.3, -0.05);
     monitorScreen.rotation.x = 0.2;
     this.group.add(monitorScreen);
 
-    const scanner = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.12, 0.3), new THREE.MeshLambertMaterial({ color: 0x455a64 }));
-    scanner.position.set(0.7, 1.0, 0);
-    addStructureOutline(scanner, 0x111111);
+    // Credit Card Reader & Pin Pad
+    const pinPadMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    const pinPad = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.06, 0.24), pinPadMat);
+    pinPad.position.set(-0.1, 1.0, -0.42);
+    pinPad.rotation.x = -0.3;
+    this.group.add(pinPad);
+
+    // Handheld Barcode Laser Scanner
+    const scanner = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.12), new THREE.MeshLambertMaterial({ color: 0xef4444 }));
+    scanner.position.set(0.2, 1.02, -0.38);
     this.group.add(scanner);
+
+    // Countertop Impulse Snack Display Rack
+    const snackMat1 = new THREE.MeshLambertMaterial({ color: 0x3b82f6 });
+    const snackMat2 = new THREE.MeshLambertMaterial({ color: 0x10b981 });
+    const rack = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.2, 0.22), new THREE.MeshLambertMaterial({ color: 0x64748b }));
+    rack.position.set(1.2, 1.05, -0.35);
+    this.group.add(rack);
+
+    const pack1 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.06), snackMat1);
+    pack1.position.set(1.12, 1.16, -0.35);
+    this.group.add(pack1);
+    const pack2 = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.08, 0.06), snackMat2);
+    pack2.position.set(1.24, 1.16, -0.35);
+    this.group.add(pack2);
+
+    // Customer Queue Brass Stanchions & Velvet Guide Rope
+    const brassMat = new THREE.MeshLambertMaterial({ color: 0xf59e0b });
+    const ropeMat = new THREE.MeshLambertMaterial({ color: 0x991b1b });
+
+    const post1 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.85, 8), brassMat);
+    post1.position.set(-1.3, 0.425, -1.2);
+    this.group.add(post1);
+    const post2 = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.07, 0.85, 8), brassMat);
+    post2.position.set(1.3, 0.425, -1.2);
+    this.group.add(post2);
+
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.025, 0.025, 2.6, 6), ropeMat);
+    rope.rotation.z = Math.PI / 2;
+    rope.position.set(0, 0.72, -1.2);
+    this.group.add(rope);
 
     this.cashAnchor = new THREE.Group();
     this.cashAnchor.position.set(-0.85, 0.97, 0);

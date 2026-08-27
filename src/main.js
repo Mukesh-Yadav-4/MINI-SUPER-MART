@@ -223,13 +223,12 @@ class GameEngine {
       canvas.height = 512;
       const ctx = canvas.getContext('2d');
 
-      // Base warm dark walnut tone
-      ctx.fillStyle = '#5c4137';
+      // Base warm dark honey-walnut tone
+      ctx.fillStyle = '#4a3328';
       ctx.fillRect(0, 0, 512, 512);
 
       const plankHeight = 64;
-      // Closely harmonized, soft tonal variations
-      const plankColors = ['#63473d', '#5c4137', '#60443a', '#593e34', '#664a40', '#5e4339'];
+      const plankColors = ['#5e4235', '#533a2d', '#593e32', '#4e3529', '#63473a', '#573d31'];
 
       for (let y = 0; y < 512; y += plankHeight) {
         const rowIdx = Math.floor(y / plankHeight);
@@ -238,16 +237,31 @@ class GameEngine {
         for (let x = -256; x < 768; x += 256) {
           const plankX = x + colShift;
           const color = plankColors[(rowIdx * 3 + Math.floor((x + 256) / 256)) % plankColors.length];
+          
+          // Plank fill
           ctx.fillStyle = color;
           ctx.fillRect(plankX + 1, y + 1, 254, plankHeight - 2);
 
-          // Very faint soft wood grain line
-          ctx.fillStyle = 'rgba(25, 12, 8, 0.08)';
-          ctx.fillRect(plankX + 1, y + Math.floor(plankHeight * 0.45), 254, 1.5);
+          // Woodgrain fiber lines
+          ctx.fillStyle = 'rgba(20, 10, 6, 0.12)';
+          ctx.fillRect(plankX + 1, y + Math.floor(plankHeight * 0.3), 254, 1.5);
+          ctx.fillRect(plankX + 1, y + Math.floor(plankHeight * 0.7), 254, 1.2);
 
-          // Soft, subtle plank seam borders
-          ctx.strokeStyle = 'rgba(40, 22, 16, 0.4)';
-          ctx.lineWidth = 1.5;
+          // Subtle wood knot
+          if ((rowIdx + Math.floor(x / 256)) % 3 === 0) {
+            ctx.fillStyle = 'rgba(28, 14, 8, 0.22)';
+            ctx.beginPath();
+            ctx.arc(plankX + 60, y + plankHeight / 2, 5, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Top highlight bevel
+          ctx.fillStyle = 'rgba(255, 235, 215, 0.08)';
+          ctx.fillRect(plankX + 1, y + 1, 254, 2);
+
+          // Plank joint shadows
+          ctx.strokeStyle = 'rgba(25, 12, 8, 0.55)';
+          ctx.lineWidth = 2.0;
           ctx.strokeRect(plankX + 0.5, y + 0.5, 255, plankHeight - 1);
         }
       }
@@ -275,6 +289,77 @@ class GameEngine {
     floorBorder.receiveShadow = true;
     addSketch(floorBorder, 0x111111);
     this.scene.add(floorBorder);
+
+    // Customer Checkout Walkway Runner (Terracotta & Cream Tile Pattern)
+    const createTileRunnerTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 256;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#b45309'; // Warm terracotta
+      ctx.fillRect(0, 0, 256, 256);
+
+      const tileSize = 64;
+      for (let y = 0; y < 256; y += tileSize) {
+        for (let x = 0; x < 256; x += tileSize) {
+          if ((x / tileSize + y / tileSize) % 2 === 0) {
+            ctx.fillStyle = '#fef3c7'; // Cream mosaic accent
+            ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+          } else {
+            ctx.fillStyle = '#d97706';
+            ctx.fillRect(x + 2, y + 2, tileSize - 4, tileSize - 4);
+          }
+          ctx.strokeStyle = 'rgba(69, 26, 3, 0.4)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, y, tileSize, tileSize);
+        }
+      }
+
+      const texture = new THREE.CanvasTexture(canvas);
+      texture.wrapS = THREE.RepeatWrapping;
+      texture.wrapT = THREE.RepeatWrapping;
+      texture.repeat.set(8, 1);
+      return texture;
+    };
+
+    const runnerGeo = new THREE.PlaneGeometry(24.0, 1.8);
+    const runnerMat = new THREE.MeshLambertMaterial({ map: createTileRunnerTexture() });
+    const walkwayRunner = new THREE.Mesh(runnerGeo, runnerMat);
+    walkwayRunner.rotation.x = -Math.PI / 2;
+    walkwayRunner.position.set(4.0, 0.015, 2.0);
+    walkwayRunner.receiveShadow = true;
+    this.scene.add(walkwayRunner);
+
+    // Entrance Coir Welcome Mat
+    const createWelcomeMatTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#854d0e'; // Coconut coir brown
+      ctx.fillRect(0, 0, 512, 256);
+
+      ctx.strokeStyle = '#fef08a';
+      ctx.lineWidth = 10;
+      ctx.strokeRect(16, 16, 480, 224);
+
+      ctx.font = 'bold 36px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#fef08a';
+      ctx.fillText('🌿 ORGANIC FARM MART 🌿', 256, 128);
+
+      const texture = new THREE.CanvasTexture(canvas);
+      return texture;
+    };
+
+    const welcomeMat = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 1.8), new THREE.MeshLambertMaterial({ map: createWelcomeMatTexture() }));
+    welcomeMat.rotation.x = -Math.PI / 2;
+    welcomeMat.position.set(-6.0, 0.018, -13.5);
+    welcomeMat.receiveShadow = true;
+    this.scene.add(welcomeMat);
 
     // 6. Directional Wooden Tycoon Signposts
     const createSignpost = (x, z, signs = []) => {
@@ -372,6 +457,39 @@ class GameEngine {
       this.scene.add(lantern);
     });
 
+    // Hanging Overhead Industrial Copper Dome Pendant Lamps
+    const copperMat = new THREE.MeshLambertMaterial({ color: 0xb87333 });
+    const bulbMat = new THREE.MeshLambertMaterial({ color: 0xfff9c4, emissive: 0xffd54f, emissiveIntensity: 0.85 });
+    const wireMat = new THREE.MeshBasicMaterial({ color: 0x212121 });
+
+    const lampPositions = [
+      [-6.5, 0.0], [-0.5, -4.5], [4.8, -4.5], [10.1, -4.5], [15.4, -4.5],
+      [-0.5, -10.5], [4.8, -10.5], [10.1, -7.5], [15.4, -7.5], [14.4, 0.0]
+    ];
+
+    lampPositions.forEach(pos => {
+      const lampGroup = new THREE.Group();
+      lampGroup.position.set(pos[0], 2.8, pos[1]);
+
+      // Suspension wire
+      const wire = new THREE.Mesh(new THREE.CylinderGeometry(0.015, 0.015, 0.8, 4), wireMat);
+      wire.position.y = -0.4;
+      lampGroup.add(wire);
+
+      // Copper dome shade
+      const shade = new THREE.Mesh(new THREE.ConeGeometry(0.32, 0.22, 10, 1, true), copperMat);
+      shade.position.y = -0.8;
+      shade.rotation.x = Math.PI;
+      lampGroup.add(shade);
+
+      // Glowing warm bulb
+      const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), bulbMat);
+      bulb.position.y = -0.86;
+      lampGroup.add(bulb);
+
+      this.scene.add(lampGroup);
+    });
+
     // Hanging Wooden Department Signs under Wall Trim
     const deptSignMat = new THREE.MeshLambertMaterial({ color: 0x8d5b32 });
     const deptSigns = [
@@ -382,11 +500,57 @@ class GameEngine {
     ];
 
     deptSigns.forEach(s => {
-      const signBoard = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.32, 0.08), deptSignMat);
+      const signBoard = new THREE.Mesh(new THREE.BoxGeometry(1.8, 0.38, 0.08), deptSignMat);
       signBoard.position.set(s.x, 2.45, -13.32);
       addSketch(signBoard, 0x111111);
       this.scene.add(signBoard);
+
+      // Gold border trim on department sign
+      const signTrim = new THREE.Mesh(new THREE.BoxGeometry(1.86, 0.42, 0.04), new THREE.MeshLambertMaterial({ color: 0xffd54f }));
+      signTrim.position.set(s.x, 2.45, -13.34);
+      this.scene.add(signTrim);
     });
+
+    // Lush Indoor Potted Monstera & Ficus Plants
+    const ceramicMat = new THREE.MeshLambertMaterial({ color: 0xf8fafc });
+    const soilMat = new THREE.MeshLambertMaterial({ color: 0x3e2723 });
+    const plantFoliageMat = new THREE.MeshLambertMaterial({ color: 0x2e7d32 });
+
+    const createIndoorPlant = (x, z) => {
+      const potGroup = new THREE.Group();
+      potGroup.position.set(x, 0, z);
+
+      // White ceramic pot
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.22, 0.55, 12), ceramicMat);
+      pot.position.y = 0.275;
+      pot.castShadow = true;
+      potGroup.add(pot);
+
+      // Soil inside
+      const soil = new THREE.Mesh(new THREE.CircleGeometry(0.28, 12), soilMat);
+      soil.rotation.x = -Math.PI / 2;
+      soil.position.y = 0.54;
+      potGroup.add(soil);
+
+      // Lush tropical leaves
+      for (let l = 0; l < 6; l++) {
+        const leafAngle = (l / 6) * Math.PI * 2;
+        const leaf = new THREE.Mesh(new THREE.SphereGeometry(0.18, 6, 6), plantFoliageMat);
+        leaf.scale.set(1.4, 0.3, 0.9);
+        leaf.rotation.y = leafAngle;
+        leaf.rotation.z = 0.45;
+        leaf.position.set(Math.cos(leafAngle) * 0.22, 0.72 + (l % 2) * 0.1, Math.sin(leafAngle) * 0.22);
+        leaf.castShadow = true;
+        potGroup.add(leaf);
+      }
+
+      this.scene.add(potGroup);
+    };
+
+    createIndoorPlant(-11.5, -4.5);
+    createIndoorPlant(-11.5, 0.5);
+    createIndoorPlant(18.0, -11.5);
+    createIndoorPlant(18.0, 0.5);
 
     // Contextual Farm Accessories (Watering Can & Terra Cotta Pots)
     const potMat = new THREE.MeshLambertMaterial({ color: 0xbcaaa4 });

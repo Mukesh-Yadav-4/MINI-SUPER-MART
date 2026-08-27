@@ -7,6 +7,8 @@ global.window = {
 };
 global.document = {
   readyState: 'complete',
+  querySelectorAll: () => [],
+  querySelector: () => null,
   getElementById: (id) => ({
     appendChild: () => {},
     addEventListener: () => {},
@@ -23,8 +25,8 @@ global.document = {
     })
   }),
   createElement: (tag) => ({
-    width: 300,
-    height: 96,
+    width: 512,
+    height: 512,
     getContext: () => ({
       clearRect: () => {},
       beginPath: () => {},
@@ -32,6 +34,13 @@ global.document = {
       closePath: () => {},
       fill: () => {},
       stroke: () => {},
+      fillRect: () => {},
+      strokeRect: () => {},
+      moveTo: () => {},
+      lineTo: () => {},
+      quadraticCurveTo: () => {},
+      arcTo: () => {},
+      measureText: () => ({ width: 50 }),
       fillText: () => {}
     }),
     style: {}
@@ -117,6 +126,7 @@ global.THREE = {
   CircleGeometry: function() {},
   RingGeometry: function() {},
   ConeGeometry: function() {},
+  TorusGeometry: function() {},
   EdgesGeometry: function() {},
   LineSegments: function() { return new MockMesh(); },
   LineBasicMaterial: function() {},
@@ -124,7 +134,11 @@ global.THREE = {
   MeshBasicMaterial: function() {},
   SpriteMaterial: function() {},
   Sprite: MockMesh,
-  CanvasTexture: function() {},
+  CanvasTexture: function() {
+    this.repeat = { set: () => {} };
+    this.wrapS = 1000;
+    this.wrapT = 1000;
+  },
   Clock: function() { this.getDelta = () => 0.016; },
   PCFSoftShadowMap: 1,
   ACESFilmicToneMapping: 1,
