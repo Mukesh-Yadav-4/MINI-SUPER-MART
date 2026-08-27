@@ -395,9 +395,9 @@ const CONFIG = {
       category: 'Market',
       title: 'Shelf Space',
       icon: '📦',
-      levels: [6, 8, 12, 18, 26, 36, 50],
+      levels: [6, 10, 14, 18, 22, 26],
       unit: 'slots',
-      costs: [40, 140, 480, 1450, 3800, 8500],
+      costs: [50, 180, 550, 1400, 3200],
       currentLevel: 0
     },
 

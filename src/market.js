@@ -25,8 +25,9 @@ class MarketStand {
   }
 
   refreshStats() {
-    const capLvl = CONFIG.UPGRADES.stand_capacity.currentLevel;
-    this.capacity = CONFIG.UPGRADES.stand_capacity.levels[capLvl] || 6;
+    const upg = CONFIG.UPGRADES.stand_capacity;
+    const capLvl = Math.min(upg.currentLevel || 0, upg.levels.length - 1);
+    this.capacity = upg.levels[capLvl] || 6;
     if (this.badgeCtx) this.updateBadge();
   }
 
