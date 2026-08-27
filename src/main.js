@@ -11,6 +11,7 @@ class GameEngine {
     this.initEnvironment();
     this.initGameObjects();
     this.initParticles();
+    this.initDecorations();
 
     this.ui = new UIManager(this);
 
@@ -364,6 +365,130 @@ class GameEngine {
     welcomeMat.position.set(-6.0, 0.018, -13.5);
     welcomeMat.receiveShadow = true;
     this.scene.add(welcomeMat);
+
+    // 5b. Luxury Checkered Marble Floor Overlay (Decor)
+    const createMarbleTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+
+      const size = 64;
+      for (let y = 0; y < 512; y += size) {
+        for (let x = 0; x < 512; x += size) {
+          const isWhite = (x / size + y / size) % 2 === 0;
+          ctx.fillStyle = isWhite ? '#f8fafc' : '#0f172a';
+          ctx.fillRect(x, y, size, size);
+          ctx.strokeStyle = '#eab308';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(x, y, size, size);
+        }
+      }
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      tex.repeat.set(10, 5);
+      return tex;
+    };
+    this.marbleFloorMesh = new THREE.Mesh(floorGeo, new THREE.MeshLambertMaterial({ map: createMarbleTexture() }));
+    this.marbleFloorMesh.rotation.x = -Math.PI / 2;
+    this.marbleFloorMesh.position.set(5.0, 0.012, -4.5);
+    this.marbleFloorMesh.visible = false;
+    this.scene.add(this.marbleFloorMesh);
+
+    // 5c. Lush Flower Planters along Mart Entrance (Decor)
+    this.decorPlantersGroup = new THREE.Group();
+    const planterWoodMat = new THREE.MeshLambertMaterial({ color: 0x5d4037 });
+    const dirtMat = new THREE.MeshLambertMaterial({ color: 0x3e2723 });
+    const tulipRedMat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
+    const tulipYellowMat = new THREE.MeshLambertMaterial({ color: 0xffeb3b });
+    const tulipPinkMat = new THREE.MeshLambertMaterial({ color: 0xf472b6 });
+    const stemMat = new THREE.MeshLambertMaterial({ color: 0x22c55e });
+
+    const planterCoords = [
+      [-3.8, 2.3], [3.8, 2.3], [-9.8, 2.3], [9.8, 2.3]
+    ];
+    planterCoords.forEach((pPos, pIdx) => {
+      const box = new THREE.Group();
+      box.position.set(pPos[0], 0, pPos[1]);
+
+      const trough = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.35, 0.45), planterWoodMat);
+      trough.position.y = 0.175;
+      trough.castShadow = true;
+      addSketch(trough, 0x111111);
+      box.add(trough);
+
+      const dirt = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.05, 0.38), dirtMat);
+      dirt.position.y = 0.33;
+      box.add(dirt);
+
+      for (let t = 0; t < 5; t++) {
+        const flower = new THREE.Group();
+        flower.position.set(-0.6 + t * 0.3, 0.34, (t % 2 === 0 ? 0.05 : -0.05));
+
+        const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.018, 0.018, 0.28, 5), stemMat);
+        stem.position.y = 0.14;
+        flower.add(stem);
+
+        const flowerColor = (t + pIdx) % 3 === 0 ? tulipRedMat : ((t + pIdx) % 3 === 1 ? tulipYellowMat : tulipPinkMat);
+        const petal = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.18, 5), flowerColor);
+        petal.position.y = 0.28;
+        petal.rotation.x = Math.PI;
+        flower.add(petal);
+
+        box.add(flower);
+      }
+      this.decorPlantersGroup.add(box);
+    });
+    this.decorPlantersGroup.visible = false;
+    this.scene.add(this.decorPlantersGroup);
+
+    // 5d. Glowing Neon Marquee Sign (Decor)
+    this.decorNeonSignGroup = new THREE.Group();
+    this.decorNeonSignGroup.position.set(5.0, 4.2, 2.8);
+
+    const signBoardMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
+    const signBorderMat = new THREE.MeshLambertMaterial({ color: 0x22c55e });
+    const signBoard = new THREE.Mesh(new THREE.BoxGeometry(7.2, 1.2, 0.18), signBoardMat);
+    addSketch(signBoard, 0x111111);
+    this.decorNeonSignGroup.add(signBoard);
+
+    const signBorder = new THREE.Mesh(new THREE.BoxGeometry(7.35, 1.35, 0.08), signBorderMat);
+    signBorder.position.z = -0.04;
+    this.decorNeonSignGroup.add(signBorder);
+
+    // Neon Canvas Text Texture
+    const createNeonSignTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 128;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#0f172a';
+      ctx.fillRect(0, 0, 512, 128);
+
+      ctx.font = '900 48px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.shadowColor = '#4ade80';
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = '#4ade80';
+      ctx.fillText('✨ ORGANIC MART ✨', 256, 64);
+
+      return new THREE.CanvasTexture(canvas);
+    };
+    const neonTextMat = new THREE.MeshBasicMaterial({ map: createNeonSignTexture(), transparent: true });
+    const neonText = new THREE.Mesh(new THREE.PlaneGeometry(6.8, 1.0), neonTextMat);
+    neonText.position.set(0, 0, 0.1);
+    this.decorNeonSignGroup.add(neonText);
+
+    // Neon Warm Glow Light
+    const neonLight = new THREE.PointLight(0x4ade80, 1.2, 10);
+    neonLight.position.set(0, 0, 0.8);
+    this.decorNeonSignGroup.add(neonLight);
+
+    this.decorNeonSignGroup.visible = false;
+    this.scene.add(this.decorNeonSignGroup);
 
     // 6. Directional Wooden Tycoon Signposts
     const createSignpost = (x, z, signs = []) => {
@@ -1213,6 +1338,10 @@ class GameEngine {
 
     if (names[zoneId]) this.ui.showNotification(names[zoneId]);
 
+    if (typeof questManager !== 'undefined' && zoneId.startsWith('helper_')) {
+      questManager.recordEvent('staffUpgraded', 1);
+    }
+
     this.refreshUnlockZoneVisibility();
     sdk.showMidgameAd();
   }
@@ -1410,6 +1539,71 @@ class GameEngine {
     this.refreshUnlockZoneVisibility();
   }
 
+  initDecorations() {
+    this.unlockedDecorations = {};
+    this.activeDecorations = {};
+    try {
+      const savedUnlocked = localStorage.getItem('ofm_unlocked_decor');
+      if (savedUnlocked) this.unlockedDecorations = JSON.parse(savedUnlocked);
+      const savedActive = localStorage.getItem('ofm_active_decor');
+      if (savedActive) this.activeDecorations = JSON.parse(savedActive);
+    } catch (e) {}
+
+    this.applyDecorations();
+  }
+
+  isDecorationUnlocked(id) {
+    return !!this.unlockedDecorations[id];
+  }
+
+  isDecorationActive(id) {
+    return this.isDecorationUnlocked(id) && this.activeDecorations[id] !== false;
+  }
+
+  purchaseDecoration(id) {
+    const def = CONFIG.DECORATIONS ? CONFIG.DECORATIONS[id] : null;
+    if (!def) return false;
+    if (this.money < def.cost) return false;
+    if (this.isDecorationUnlocked(id)) return false;
+
+    this.money -= def.cost;
+    this.unlockedDecorations[id] = true;
+    this.activeDecorations[id] = true;
+    this.saveDecorations();
+    this.applyDecorations();
+
+    if (typeof sounds !== 'undefined') sounds.playUpgrade();
+    if (this.ui) this.ui.showNotification(`🌺 UNLOCKED DECORATION: ${def.name}!`);
+    return true;
+  }
+
+  toggleDecoration(id) {
+    if (!this.isDecorationUnlocked(id)) return;
+    this.activeDecorations[id] = !this.isDecorationActive(id);
+    this.saveDecorations();
+    this.applyDecorations();
+    if (typeof sounds !== 'undefined') sounds.playPlace();
+  }
+
+  saveDecorations() {
+    try {
+      localStorage.setItem('ofm_unlocked_decor', JSON.stringify(this.unlockedDecorations));
+      localStorage.setItem('ofm_active_decor', JSON.stringify(this.activeDecorations));
+    } catch (e) {}
+  }
+
+  applyDecorations() {
+    if (this.marbleFloorMesh) {
+      this.marbleFloorMesh.visible = this.isDecorationActive('decor_marble_floor');
+    }
+    if (this.decorPlantersGroup) {
+      this.decorPlantersGroup.visible = this.isDecorationActive('decor_planters');
+    }
+    if (this.decorNeonSignGroup) {
+      this.decorNeonSignGroup.visible = this.isDecorationActive('decor_neon_sign');
+    }
+  }
+
   loop(currentTime) {
     const dt = Math.min(0.1, (currentTime - this.lastTime) / 1000);
     this.lastTime = currentTime;
@@ -1486,6 +1680,9 @@ class GameEngine {
       if (cust.isVip) {
         sounds.playUnlock();
         this.ui.showNotification(`⭐ VIP GOLD SALE! Stashed $${total}!`);
+      }
+      if (typeof questManager !== 'undefined') {
+        questManager.recordEvent('customersServed', 1);
       }
     }, this.player, staffList);
 

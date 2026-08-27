@@ -162,29 +162,44 @@ class Customer {
     blushR.position.set(0.12, 1.40, 0.21);
     this.mesh.add(blushR);
 
-    // 3. Hair & Accessories (4 distinct hairstyles)
-    const hairStyle = this.isVip ? 'fedora' : ['crop', 'bob', 'ponytail', 'beanie'][Math.floor(Math.random() * 4)];
+    // 3. Hair & Accessories (4 distinct hairstyles + VIP Golden Top Hat)
+    const hairStyle = this.isVip ? 'tophat' : ['crop', 'bob', 'ponytail', 'beanie'][Math.floor(Math.random() * 4)];
 
     if (this.isVip) {
-      // Royal Golden Crown for VIP Shoppers
-      const crownMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
-      const rubyMat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
+      // Distinguished 3D Golden Top Hat for VIP Golden Billionaires
+      const hatMat = new THREE.MeshLambertMaterial({ color: 0xffd700, emissive: 0xffb300, emissiveIntensity: 0.25 });
+      const ribbonMat = new THREE.MeshLambertMaterial({ color: 0x111111 });
+      const goldBuckleMat = new THREE.MeshLambertMaterial({ color: 0xffea00 });
 
-      const crownBase = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.12, 16), crownMat);
-      crownBase.position.y = 1.66;
-      this.mesh.add(crownBase);
+      // Brim
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.04, 16), hatMat);
+      brim.position.y = 1.62;
+      brim.castShadow = true;
+      addSketchLines(brim, 0x111111);
+      this.mesh.add(brim);
 
-      // 4 Crown Spikes
-      for (let p = 0; p < 4; p++) {
-        const pAngle = (p / 4) * Math.PI * 2;
-        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.12, 4), crownMat);
-        spike.position.set(Math.cos(pAngle) * 0.18, 1.74, Math.sin(pAngle) * 0.18);
-        this.mesh.add(spike);
+      // Tall Top Hat Crown
+      const topHat = new THREE.Mesh(new THREE.CylinderGeometry(0.23, 0.21, 0.32, 16), hatMat);
+      topHat.position.y = 1.78;
+      topHat.castShadow = true;
+      addSketchLines(topHat, 0x111111);
+      this.mesh.add(topHat);
 
-        const gem = new THREE.Mesh(new THREE.SphereGeometry(0.025, 4, 4), rubyMat);
-        gem.position.set(Math.cos(pAngle) * 0.19, 1.66, Math.sin(pAngle) * 0.19);
-        this.mesh.add(gem);
-      }
+      // Black Silk Ribbon Band
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.235, 0.235, 0.06, 16), ribbonMat);
+      band.position.y = 1.66;
+      this.mesh.add(band);
+
+      // Gold Buckle on Hat
+      const buckle = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.07, 0.04), goldBuckleMat);
+      buckle.position.set(0, 1.66, 0.23);
+      this.mesh.add(buckle);
+
+      // Golden Bowtie on Collar
+      const bowtieMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+      const bowtie = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.06, 0.05), bowtieMat);
+      bowtie.position.set(0, 1.25, 0.16);
+      this.mesh.add(bowtie);
 
     } else if (hairStyle === 'fedora') {
       const hatMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
@@ -362,7 +377,7 @@ class Customer {
 
     if (available.length === 0) available.push('TOMATO');
 
-    const itemCount = this.isVip ? 2 : (1 + Math.floor(Math.random() * 2));
+    const itemCount = this.isVip ? (2 + Math.floor(Math.random() * 2)) : (1 + Math.floor(Math.random() * 2));
     this.totalNeeded = itemCount;
 
     for (let i = 0; i < itemCount; i++) {
@@ -391,26 +406,25 @@ class Customer {
 
     const ctx = this.thoughtCtx;
     ctx.clearRect(0, 0, 300, 96);
-
     ctx.fillStyle = this.isVip ? '#fff8e1' : (this.waitingForRestock ? '#ffebee' : '#ffffff');
     ctx.beginPath();
     ctx.arc(48, 48, 40, Math.PI / 2, Math.PI * 1.5);
     ctx.arc(252, 48, 40, -Math.PI / 2, Math.PI / 2);
     ctx.closePath();
     ctx.fill();
-
     ctx.lineWidth = 5;
-    ctx.strokeStyle = this.isVip ? '#ffb300' : (this.waitingForRestock ? '#e53935' : '#111111');
+    ctx.strokeStyle = this.isVip ? '#ffb300' : (this.waitingForRestock ? '#ef4444' : '#111111');
     ctx.stroke();
 
-    ctx.font = 'bold 44px -apple-system, sans-serif';
+    ctx.font = 'bold 36px -apple-system, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
     ctx.fillStyle = '#111111';
 
-    if (this.state === 'QUEUE' || this.state === 'PAY') {
-      const total = this.calculateBill();
-      ctx.fillText(`💵 $${total}`, 150, 50);
+    if (customText) {
+      ctx.fillText(customText, 150, 50);
+    } else if (this.state === 'QUEUE' || this.state === 'PAY') {
+      ctx.fillText(`💵 $`, 150, 50);
     } else if (this.waitingForRestock) {
       ctx.fillText(`${icon} ⏳`, 150, 50);
     } else {
@@ -425,7 +439,7 @@ class Customer {
     this.basketItems.forEach(id => {
       total += (CONFIG.getItemSellPrice ? CONFIG.getItemSellPrice(id) : (CONFIG.ITEMS[id] ? CONFIG.ITEMS[id].sellPrice : 1));
     });
-    if (this.isVip) total = Math.max(1, Math.round(total * 3.0));
+    if (this.isVip) total = Math.max(1, Math.round(total * 5.0));
     if (sdk && sdk.boostActive) total = Math.round(total * (sdk.boostMultiplier || 2));
     return Math.max(1, total);
   }

@@ -32,6 +32,11 @@
       </div>
 
       <div class="top-actions">
+        <button id="btn-quests" class="icon-btn action-btn quests-btn" title="Quests & Achievements">
+          <span>📜</span>
+          <span class="btn-label">Quests</span>
+          <span class="quest-notification-dot" id="quest-notification-dot" style="display: none;"></span>
+        </button>
         <button id="btn-leaderboard" class="icon-btn action-btn leaderboard-btn" title="Tycoon Leaderboard">
           <span>🏆</span>
           <span class="btn-label">Rank</span>
@@ -229,8 +234,25 @@
         <button class="tab-btn" data-tab="quality">✨ Value</button>
         <button class="tab-btn" data-tab="machinery">⚙️ Gear</button>
         <button class="tab-btn" data-tab="worker_player">👤 Player</button>
+        <button class="tab-btn" data-tab="decor">🌺 Decor</button>
       </div>
       <div class="modal-body" id="upgrade-list">
+        <!-- Injected dynamically by JS -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Quests & Achievements Modal -->
+  <div id="modal-quests" class="modal-overlay" style="display: none;">
+    <div class="modal-card quests-card">
+      <div class="modal-header quests-header">
+        <div class="modal-title-group">
+          <h2>📜 Quests & Goals</h2>
+          <span class="quests-subtitle">Complete farm milestones & claim cash rewards!</span>
+        </div>
+        <button id="btn-close-quests" class="close-btn">&times;</button>
+      </div>
+      <div class="modal-body quests-body" id="quests-list">
         <!-- Injected dynamically by JS -->
       </div>
     </div>
@@ -244,6 +266,7 @@
   <script src="src/audio.js"></script>
   <script src="src/sdk.js"></script>
   <script src="src/particles.js"></script>
+  <script src="src/quests.js"></script>
   <script src="src/player.js"></script>
   <script src="src/farm.js"></script>
   <script src="src/market.js"></script>

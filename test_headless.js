@@ -152,7 +152,7 @@ global.THREE = {
 };
 
 const fs = require('fs');
-const files = ['config.js', 'audio.js', 'sdk.js', 'particles.js', 'player.js', 'farm.js', 'market.js', 'customers.js', 'staff.js', 'ui.js', 'main.js'];
+const files = ['config.js', 'audio.js', 'sdk.js', 'particles.js', 'quests.js', 'player.js', 'farm.js', 'market.js', 'customers.js', 'staff.js', 'ui.js', 'main.js'];
 
 try {
   let combined = '';

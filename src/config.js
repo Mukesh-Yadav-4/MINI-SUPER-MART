@@ -466,6 +466,30 @@ const CONFIG = {
     return price;
   },
 
+  DECORATIONS: {
+    decor_planters: {
+      id: 'decor_planters',
+      name: '🌺 Lush Flower Planters',
+      cost: 450,
+      icon: '🌺',
+      desc: 'Blooming tulip planter boxes lining the mart entrance walkway'
+    },
+    decor_neon_sign: {
+      id: 'decor_neon_sign',
+      name: '💡 Neon Marquee Sign',
+      cost: 1800,
+      icon: '💡',
+      desc: 'Glowing neon "ORGANIC MART" sign above the supermarket canopy'
+    },
+    decor_marble_floor: {
+      id: 'decor_marble_floor',
+      name: '🏁 Luxury Marble Floor',
+      cost: 4500,
+      icon: '🏁',
+      desc: 'High-gloss black & white checkered marble flooring for the store'
+    }
+  },
+
   CUSTOMER: {
     spawnInterval: 3.0,
     maxCustomers: 8,

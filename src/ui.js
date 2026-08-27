@@ -290,6 +290,24 @@ class UIManager {
       });
     }
 
+    // Quests & Goals Modal
+    const modalQuests = document.getElementById('modal-quests');
+    const btnQuests = document.getElementById('btn-quests');
+    const btnCloseQuests = document.getElementById('btn-close-quests');
+
+    if (btnQuests && modalQuests) {
+      btnQuests.addEventListener('click', () => {
+        this.renderQuestsModal();
+        modalQuests.style.display = 'flex';
+      });
+    }
+
+    if (btnCloseQuests && modalQuests) {
+      btnCloseQuests.addEventListener('click', () => {
+        modalQuests.style.display = 'none';
+      });
+    }
+
     // Settings Modal
     const modalSettings = document.getElementById('modal-settings');
     const btnSettings = document.getElementById('btn-settings');
@@ -430,6 +448,59 @@ class UIManager {
 
     const currentTab = this.activeUpgradeTab || 'all';
 
+    // 1. Special Tab: Store Decorations & Ambience
+    if (currentTab === 'decor') {
+      const header = document.createElement('div');
+      header.className = 'upgrade-group-header';
+      header.textContent = '🌺 Store Decorations & Personalization';
+      list.appendChild(header);
+
+      const decors = Object.values(CONFIG.DECORATIONS || {});
+      decors.forEach(d => {
+        const isUnlocked = this.game ? this.game.isDecorationUnlocked(d.id) : false;
+        const isActive = this.game ? this.game.isDecorationActive(d.id) : false;
+        const canAfford = !isUnlocked && this.game && this.game.money >= d.cost;
+
+        const itemDiv = document.createElement('div');
+        itemDiv.className = `upgrade-item ${isUnlocked ? 'maxed-card' : (canAfford ? 'affordable-card' : '')}`;
+        itemDiv.innerHTML = `
+          <div class="upgrade-icon-box">
+            <span class="upgrade-emoji">${d.icon}</span>
+          </div>
+          <div class="upgrade-info-col">
+            <div class="upgrade-title-row">
+              <span class="upgrade-title-text">${d.name}</span>
+              <span class="upgrade-level-pill ${isUnlocked ? (isActive ? 'max-pill' : '') : ''}">${isUnlocked ? (isActive ? 'ACTIVE ✨' : 'HIDDEN 👁️') : 'LOCKED 🔒'}</span>
+            </div>
+            <div class="upgrade-benefit-row">
+              <span class="benefit-unit">${d.desc}</span>
+            </div>
+          </div>
+          <div class="upgrade-btn-col">
+            <button class="upgrade-buy-btn ${isUnlocked ? (isActive ? 'btn-can-buy' : 'btn-cant-buy') : (canAfford ? 'btn-can-buy' : 'btn-cant-buy')}" ${!isUnlocked && !canAfford ? 'disabled' : ''}>
+              ${isUnlocked ? (isActive ? 'Active 👁️' : 'Show ➕') : `💵 $${d.cost.toLocaleString()}`}
+            </button>
+          </div>
+        `;
+
+        const actionBtn = itemDiv.querySelector('.upgrade-buy-btn');
+        if (actionBtn) {
+          actionBtn.addEventListener('click', () => {
+            if (isUnlocked) {
+              if (this.game) this.game.toggleDecoration(d.id);
+              this.renderUpgradeModal();
+            } else if (canAfford) {
+              if (this.game) this.game.purchaseDecoration(d.id);
+              this.renderUpgradeModal();
+            }
+          });
+        }
+
+        list.appendChild(itemDiv);
+      });
+      return;
+    }
+
     groups.forEach(grp => {
       if (currentTab !== 'all' && currentTab !== grp.id) return;
 
@@ -497,6 +568,10 @@ class UIManager {
             this.game.money -= cost;
             upg.currentLevel++;
             sounds.playUpgrade();
+
+            if (typeof questManager !== 'undefined' && (upg.group === 'worker_player' || upg.id.includes('staff'))) {
+              questManager.recordEvent('staffUpgraded', 1);
+            }
 
             // Refresh all game subsystems
             this.game.refreshAllUpgrades();
@@ -643,6 +718,9 @@ class UIManager {
     if (this.game) {
       this.updateHighScore(this.game.money);
     }
+
+    // Refresh Quest notification badge
+    this.refreshQuestBadge();
   }
 
   // High-Score Leaderboard Management
@@ -830,5 +908,63 @@ class UIManager {
 
       list.appendChild(row);
     });
+  }
+
+  // Quests & Achievements Modal
+  renderQuestsModal() {
+    const list = document.getElementById('quests-list');
+    if (!list || typeof questManager === 'undefined') return;
+
+    list.innerHTML = '';
+    questManager.quests.forEach(q => {
+      const cur = Math.min(q.target, questManager.stats[q.statKey] || 0);
+      const percent = Math.min(100, Math.round((cur / q.target) * 100));
+      const isClaimed = questManager.isClaimed(q.id);
+      const isClaimable = questManager.isClaimable(q.id);
+
+      const card = document.createElement('div');
+      card.className = `quest-card ${isClaimable ? 'quest-claimable' : (isClaimed ? 'quest-claimed' : '')}`;
+
+      card.innerHTML = `
+        <div class="quest-icon-box">
+          <span>${q.icon}</span>
+        </div>
+        <div class="quest-info-col">
+          <div class="quest-title-row">
+            <span class="quest-title">${q.title}</span>
+            <span class="quest-reward-pill">💵 +$${q.reward.toLocaleString()}</span>
+          </div>
+          <div class="quest-desc">${q.desc}</div>
+          <div class="quest-progress-track">
+            <div class="quest-progress-fill" style="width: ${percent}%;"></div>
+            <span class="quest-progress-text">${cur.toLocaleString()} / ${q.target.toLocaleString()} (${percent}%)</span>
+          </div>
+        </div>
+        <div class="quest-action-col">
+          <button class="quest-claim-btn ${isClaimable ? 'btn-claim-active' : (isClaimed ? 'btn-claimed' : 'btn-in-progress')}" ${isClaimable ? '' : 'disabled'}>
+            ${isClaimed ? 'Claimed ✅' : (isClaimable ? 'CLAIM 💵' : 'In Progress')}
+          </button>
+        </div>
+      `;
+
+      const claimBtn = card.querySelector('.quest-claim-btn');
+      if (claimBtn && isClaimable) {
+        claimBtn.addEventListener('click', () => {
+          questManager.claimReward(q.id, this.game);
+          this.renderQuestsModal();
+          this.refreshQuestBadge();
+        });
+      }
+
+      list.appendChild(card);
+    });
+  }
+
+  refreshQuestBadge() {
+    const dot = document.getElementById('quest-notification-dot');
+    if (!dot || typeof questManager === 'undefined') return;
+
+    const hasUnclaimed = questManager.hasUnclaimedRewards();
+    dot.style.display = hasUnclaimed ? 'block' : 'none';
   }
 }

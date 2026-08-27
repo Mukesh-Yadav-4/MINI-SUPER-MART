@@ -292,6 +292,10 @@ class CropPatch {
         window.particleSystem.spawnHarvestSparkles(this.pos.x + readyCrop.posX, 0.4, this.pos.z + readyCrop.posZ, color, 8);
       }
 
+      if (typeof questManager !== 'undefined') {
+        questManager.recordEvent('cropsHarvested', 1);
+      }
+
       return this.config.itemId;
     }
     return null;
@@ -1093,6 +1097,10 @@ class ProcessingMachine {
           if (typeof window !== 'undefined' && window.particleSystem) {
             window.particleSystem.spawnFlourPuff(this.config.pos.x + 0.7, 0.5, this.config.pos.z + 0.9, 8, true);
           }
+
+          if (typeof questManager !== 'undefined') {
+            questManager.recordEvent('cakesBaked', 1);
+          }
         }
       }
     } else {
@@ -1116,6 +1124,10 @@ class ProcessingMachine {
 
           if (typeof window !== 'undefined' && window.particleSystem) {
             window.particleSystem.spawnFlourPuff(this.config.pos.x + 0.7, 0.5, this.config.pos.z + 0.9, 8, false);
+          }
+
+          if (typeof questManager !== 'undefined') {
+            questManager.recordEvent('breadBaked', 1);
           }
         }
       }
