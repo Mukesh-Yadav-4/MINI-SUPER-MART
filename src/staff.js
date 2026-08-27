@@ -1107,15 +1107,17 @@ class HelperWorker {
     }
 
     // Check Bakery Hopper Needs (Requires Eggs + Wheat)
+    const maxEgg = Math.max(2, Math.floor(bakery.inputCapacity * 0.5));
+    const maxWheat = Math.max(3, Math.floor(bakery.inputCapacity * 0.7));
     const eggCountInHopper = bakery.ingredients.filter(i => i === 'EGG').length;
     const wheatCountInHopper = bakery.ingredients.filter(i => i === 'WHEAT').length;
 
     // Step 1: Take Eggs in full batch from Chicken Coop
-    if (eggCountInHopper < 2 && !bakery.isInputFull() && chickenPen && chickenPen.produceStock > 0) {
+    if (eggCountInHopper < maxEgg && !bakery.isInputFull() && chickenPen && chickenPen.produceStock > 0) {
       const pickupPos = chickenPen.pickupPos || chickenPen.pos;
       this.setTarget(pickupPos.x, pickupPos.z);
       if (this.position.distanceTo(chickenPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
-        const needed = Math.min(2 - eggCountInHopper, this.capacity);
+        const needed = Math.min(maxEgg - eggCountInHopper, this.capacity);
         while (chickenPen.produceStock > 0 && this.stack.length < needed) {
           const egg = chickenPen.harvestProduce();
           if (!egg || !this.addItem(egg)) break;
@@ -1126,10 +1128,10 @@ class HelperWorker {
     }
 
     // Step 2: Take Wheat in full batch from Wheat Patch
-    if (wheatCountInHopper < 3 && !bakery.isInputFull() && wheatPatch) {
+    if (wheatCountInHopper < maxWheat && !bakery.isInputFull() && wheatPatch) {
       this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z);
       if (this.position.distanceTo(wheatPatch.pos) < 3.4) {
-        const needed = Math.min(3 - wheatCountInHopper, this.capacity);
+        const needed = Math.min(maxWheat - wheatCountInHopper, this.capacity);
         while (wheatPatch.hasReadyCrops() && this.stack.length < needed) {
           const w = wheatPatch.harvestOne();
           if (!w || !this.addItem(w)) break;
@@ -1145,7 +1147,7 @@ class HelperWorker {
     this.setTarget(this.idlePos.x, this.idlePos.z);
   }
 
-  // Master Patissier (Chef Jean AI): Automates Pastry Cake Mixer & Royal Cake Stand
+  // Master Patissier (Chef Jean AI): Automates Pastry Cake Mixer & Royal Cake Stand (Full Batch Cycle)
   updateChefAI(dt, patches, pens, machines, stands, dustbins) {
     const cakery = machines.find(m => m.config.type === 'CAKERY' && m.unlocked);
     const bakery = machines.find(m => m.config.type === 'BAKERY' && m.unlocked);
@@ -1238,33 +1240,40 @@ class HelperWorker {
     }
 
     // ============================================
-    // 2. GATHERING PHASE (Ordered: 1. Ready Cakes -> 2. Eggs -> 3. Milk -> 4. Bread)
+    // 2. GATHERING & BATCHING PHASE
     // ============================================
-
-    // Step 1: Collect Finished Royal Cakes from Cake Mixer Tray
-    if (cakery.outputStock > 0 && standCake && !standCake.isFull()) {
-      this.setTarget(cakery.config.pos.x + 0.7, cakery.config.pos.z + 0.9);
-      if (this.position.distanceTo(cakery.config.pos) < 3.4 || Math.hypot(this.position.x - (cakery.config.pos.x + 0.7), this.position.z - (cakery.config.pos.z + 0.9)) < 1.5) {
-        while (cakery.outputStock > 0 && this.stack.length < this.capacity) {
-          const cake = cakery.harvestOutput();
-          if (!cake || !this.addItem(cake)) break;
-        }
-        if (this.stack.length > 0) this.isDelivering = true;
-      }
-      return;
-    }
-
-    // Calculate exact ingredient needs for Cakery
+    const maxPerType = Math.max(2, Math.floor(cakery.inputCapacity / 3));
     const eggCountInHopper = cakery.ingredients.filter(i => i === 'EGG').length;
     const milkCountInHopper = cakery.ingredients.filter(i => i === 'MILK').length;
     const breadCountInHopper = cakery.ingredients.filter(i => i === 'BREAD').length;
+    const cakesPending = Math.min(eggCountInHopper, milkCountInHopper, breadCountInHopper);
+    const targetBatchSize = Math.min(cakery.outputCapacity, this.capacity, cakery.outputStock + cakesPending);
+
+    // Step 1: Harvest Full Batch of Finished Royal Cakes (or wait if cakes are actively baking towards batch)
+    if (cakery.outputStock > 0 && standCake && !standCake.isFull()) {
+      if (cakery.outputStock >= targetBatchSize || cakesPending === 0) {
+        this.setTarget(cakery.config.pos.x + 0.7, cakery.config.pos.z + 0.9);
+        if (this.position.distanceTo(cakery.config.pos) < 3.4 || Math.hypot(this.position.x - (cakery.config.pos.x + 0.7), this.position.z - (cakery.config.pos.z + 0.9)) < 1.5) {
+          while (cakery.outputStock > 0 && this.stack.length < this.capacity) {
+            const cake = cakery.harvestOutput();
+            if (!cake || !this.addItem(cake)) break;
+          }
+          if (this.stack.length > 0) this.isDelivering = true;
+        }
+        return;
+      } else {
+        // Wait at Cake Mixer while batch finishes baking
+        this.setTarget(cakery.config.pos.x + 0.7, cakery.config.pos.z + 0.9);
+        return;
+      }
+    }
 
     // Step 2 (Batch 1): Take Eggs FIRST from Chicken Coop
-    if (eggCountInHopper < 2 && !cakery.isInputFull() && chickenPen && chickenPen.produceStock > 0) {
+    if (eggCountInHopper < maxPerType && !cakery.isInputFull() && chickenPen && chickenPen.produceStock > 0) {
       const pickupPos = chickenPen.pickupPos || chickenPen.pos;
       this.setTarget(pickupPos.x, pickupPos.z);
       if (this.position.distanceTo(chickenPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
-        const needed = Math.min(2 - eggCountInHopper, this.capacity);
+        const needed = Math.min(maxPerType - eggCountInHopper, this.capacity);
         while (chickenPen.produceStock > 0 && this.stack.length < needed) {
           const egg = chickenPen.harvestProduce();
           if (!egg || !this.addItem(egg)) break;
@@ -1275,11 +1284,11 @@ class HelperWorker {
     }
 
     // Step 3 (Batch 2): Take Milk SECOND from Cow Pen
-    if (milkCountInHopper < 2 && !cakery.isInputFull() && cowPen && cowPen.produceStock > 0) {
+    if (milkCountInHopper < maxPerType && !cakery.isInputFull() && cowPen && cowPen.produceStock > 0) {
       const pickupPos = cowPen.pickupPos || cowPen.pos;
       this.setTarget(pickupPos.x, pickupPos.z);
       if (this.position.distanceTo(cowPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
-        const needed = Math.min(2 - milkCountInHopper, this.capacity);
+        const needed = Math.min(maxPerType - milkCountInHopper, this.capacity);
         while (cowPen.produceStock > 0 && this.stack.length < needed) {
           const milk = cowPen.harvestProduce();
           if (!milk || !this.addItem(milk)) break;
@@ -1290,11 +1299,11 @@ class HelperWorker {
     }
 
     // Step 4 (Batch 3): Take Bread THIRD from Bakery Machine (or Bread Showcase)
-    if (breadCountInHopper < 2 && !cakery.isInputFull()) {
+    if (breadCountInHopper < maxPerType && !cakery.isInputFull()) {
       if (bakery && bakery.outputStock > 0) {
         this.setTarget(bakery.config.pos.x + 0.7, bakery.config.pos.z + 0.9);
         if (this.position.distanceTo(bakery.config.pos) < 3.4 || Math.hypot(this.position.x - (bakery.config.pos.x + 0.7), this.position.z - (bakery.config.pos.z + 0.9)) < 1.5) {
-          const needed = Math.min(2 - breadCountInHopper, this.capacity);
+          const needed = Math.min(maxPerType - breadCountInHopper, this.capacity);
           while (bakery.outputStock > 0 && this.stack.length < needed) {
             const bread = bakery.harvestOutput();
             if (!bread || !this.addItem(bread)) break;
@@ -1305,7 +1314,7 @@ class HelperWorker {
       } else if (standBread && standBread.stock.length > 0) {
         this.setTarget(standBread.pos.x, standBread.pos.z + 0.9);
         if (this.position.distanceTo(standBread.pos) < 3.4 || Math.hypot(this.position.x - standBread.pos.x, this.position.z - (standBread.pos.z + 0.9)) < 1.5) {
-          const needed = Math.min(2 - breadCountInHopper, this.capacity);
+          const needed = Math.min(maxPerType - breadCountInHopper, this.capacity);
           while (standBread.stock.length > 0 && this.stack.length < needed) {
             const b = standBread.takeItem();
             if (!b || !this.addItem(b)) break;
@@ -1314,6 +1323,12 @@ class HelperWorker {
         }
         return;
       }
+    }
+
+    // Step 5: Wait at Cake Mixer if ingredients are loaded and baking is in progress
+    if (cakesPending > 0) {
+      this.setTarget(cakery.config.pos.x + 0.7, cakery.config.pos.z + 0.9);
+      return;
     }
 
     // Standby in front of Cake Mixer
