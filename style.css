@@ -199,37 +199,39 @@ html, body {
   opacity: 0.9;
 }
 
-/* Virtual Joystick Zone */
+/* Dynamic Floating Virtual Joystick (Appears wherever touched, hidden when idle) */
 #joystick-zone {
-  position: absolute;
-  bottom: 40px;
-  left: 40px;
-  width: 140px;
-  height: 140px;
-  pointer-events: auto;
+  position: fixed;
+  width: 120px;
+  height: 120px;
+  pointer-events: none;
+  display: none;
+  transform: translate(-50%, -50%);
+  z-index: 50;
+  transition: opacity 0.12s ease;
 }
 
 #joystick-base {
   width: 100%;
   height: 100%;
-  background: rgba(255, 255, 255, 0.2);
-  border: 3px solid rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.22);
+  border: 3px solid rgba(255, 255, 255, 0.55);
   border-radius: 50%;
   position: relative;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
-  backdrop-filter: blur(4px);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  backdrop-filter: blur(6px);
 }
 
 #joystick-knob {
-  width: 50px;
-  height: 50px;
-  background: radial-gradient(circle, #ffffff 30%, #e0e0e0 100%);
+  width: 48px;
+  height: 48px;
+  background: radial-gradient(circle, #ffffff 40%, #e0e0e0 100%);
   border-radius: 50%;
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
   pointer-events: none;
 }
 

@@ -30,21 +30,25 @@ class UIManager {
 
     const joystickZone = document.getElementById('joystick-zone');
     const joystickKnob = document.getElementById('joystick-knob');
-    const maxRadius = 45;
+    const maxRadius = 50;
 
     const handleStart = (clientX, clientY) => {
-      if (!joystickZone) return;
       this.isTouchActive = true;
-      const rect = joystickZone.getBoundingClientRect();
-      this.joystickCenter = {
-        x: rect.left + rect.width / 2,
-        y: rect.top + rect.height / 2
-      };
+      this.joystickCenter = { x: clientX, y: clientY };
+
+      if (joystickZone) {
+        joystickZone.style.left = `${clientX}px`;
+        joystickZone.style.top = `${clientY}px`;
+        joystickZone.style.display = 'block';
+      }
+      if (joystickKnob) {
+        joystickKnob.style.transform = `translate(-50%, -50%)`;
+      }
       handleMove(clientX, clientY);
     };
 
     const handleMove = (clientX, clientY) => {
-      if (!this.isTouchActive || !joystickKnob) return;
+      if (!this.isTouchActive) return;
 
       const dx = clientX - this.joystickCenter.x;
       const dy = clientY - this.joystickCenter.y;
@@ -52,7 +56,7 @@ class UIManager {
 
       if (dist === 0) {
         this.inputVector = { x: 0, z: 0 };
-        joystickKnob.style.transform = `translate(-50%, -50%)`;
+        if (joystickKnob) joystickKnob.style.transform = `translate(-50%, -50%)`;
         return;
       }
 
@@ -60,7 +64,9 @@ class UIManager {
       const normX = dx / dist;
       const normY = dy / dist;
 
-      joystickKnob.style.transform = `translate(calc(-50% + ${normX * clampedDist}px), calc(-50% + ${normY * clampedDist}px))`;
+      if (joystickKnob) {
+        joystickKnob.style.transform = `translate(calc(-50% + ${normX * clampedDist}px), calc(-50% + ${normY * clampedDist}px))`;
+      }
 
       this.inputVector = {
         x: normX * (clampedDist / maxRadius),
@@ -71,42 +77,57 @@ class UIManager {
     const handleEnd = () => {
       this.isTouchActive = false;
       this.inputVector = { x: 0, z: 0 };
-      if (joystickKnob) joystickKnob.style.transform = `translate(-50%, -50%)`;
+      if (joystickZone) {
+        joystickZone.style.display = 'none';
+      }
+      if (joystickKnob) {
+        joystickKnob.style.transform = `translate(-50%, -50%)`;
+      }
     };
 
-    if (joystickZone) {
-      joystickZone.addEventListener('touchstart', (e) => {
-        e.preventDefault();
+    // Fullscreen Dynamic Touch Listeners (Move finger anywhere on screen to steer)
+    window.addEventListener('touchstart', (e) => {
+      // Don't intercept taps on buttons, modals, or interactive UI elements
+      if (e.target.closest('button, .modal-card, .modal-overlay, .top-bar, .side-actions')) {
+        return;
+      }
+      if (e.touches && e.touches.length > 0) {
         const touch = e.touches[0];
         handleStart(touch.clientX, touch.clientY);
-      }, { passive: false });
+      }
+    }, { passive: true });
 
-      window.addEventListener('touchmove', (e) => {
-        if (!this.isTouchActive) return;
+    window.addEventListener('touchmove', (e) => {
+      if (!this.isTouchActive) return;
+      if (e.touches && e.touches.length > 0) {
         const touch = e.touches[0];
         handleMove(touch.clientX, touch.clientY);
-      }, { passive: false });
+      }
+    }, { passive: true });
 
-      window.addEventListener('touchend', handleEnd);
-      window.addEventListener('touchcancel', handleEnd);
+    window.addEventListener('touchend', handleEnd);
+    window.addEventListener('touchcancel', handleEnd);
 
-      let isMouseDown = false;
-      joystickZone.addEventListener('mousedown', (e) => {
-        isMouseDown = true;
-        handleStart(e.clientX, e.clientY);
-      });
+    // Fullscreen Mouse Drag for Desktop Testing
+    let isMouseDown = false;
+    window.addEventListener('mousedown', (e) => {
+      if (e.target.closest('button, .modal-card, .modal-overlay, .top-bar, .side-actions, #ui-layer')) {
+        return;
+      }
+      isMouseDown = true;
+      handleStart(e.clientX, e.clientY);
+    });
 
-      window.addEventListener('mousemove', (e) => {
-        if (isMouseDown) handleMove(e.clientX, e.clientY);
-      });
+    window.addEventListener('mousemove', (e) => {
+      if (isMouseDown) handleMove(e.clientX, e.clientY);
+    });
 
-      window.addEventListener('mouseup', () => {
-        if (isMouseDown) {
-          isMouseDown = false;
-          handleEnd();
-        }
-      });
-    }
+    window.addEventListener('mouseup', () => {
+      if (isMouseDown) {
+        isMouseDown = false;
+        handleEnd();
+      }
+    });
   }
 
   getInputVector() {

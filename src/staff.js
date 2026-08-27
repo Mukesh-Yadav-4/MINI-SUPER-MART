@@ -29,6 +29,7 @@ class HelperWorker {
     this.w2_task = null;
     this.farmer_task = null;
     this.wheatRefillActive = false;
+    this.chickenFeedRefillActive = false;
 
     this.createMesh();
   }
@@ -378,7 +379,7 @@ class HelperWorker {
     this.setTarget(this.idlePos.x, this.idlePos.z);
   }
 
-  // Farmer (Farm Hand AI): Smooth Active Priority Pipeline (Chicken Feed Full Priority -> Wheat Shelf with Empty-Trigger Hysteresis -> Cow Feed -> Milk Shelf -> Corn -> Bakery)
+  // Farmer (Farm Hand AI): Smooth Active Priority Pipeline (Chicken Feed Hysteresis [0->Max] -> Wheat Shelf Hysteresis [0->Max] -> Cow Feed -> Milk Shelf -> Corn -> Bakery)
   updateFarmerAI(dt, patches, pens, machines, stands, dustbins) {
     const standWheat = stands.find(s => s.config.itemId === 'WHEAT');
     const chickenPen = pens.find(p => p.config.type === 'CHICKEN');
@@ -394,14 +395,20 @@ class HelperWorker {
       this.isDelivering = false;
     }
 
-    // 1. CHICKEN COOP FULL PRIORITY:
-    // When Chicken Coop needs feed, fill it until 100% full before moving to other tasks
-    if (chickenPen && chickenPen.unlocked && chickenPen.feedStock < chickenPen.feedCapacity) {
-      this.farmer_task = 'CHICKEN_FEED';
+    // 1. CHICKEN COOP HYSTERESIS (Refill only when reaches 0, fill until max):
+    if (chickenPen && chickenPen.unlocked) {
+      if (chickenPen.feedStock === 0) {
+        this.chickenFeedRefillActive = true;
+      }
+      if (chickenPen.feedStock >= chickenPen.feedCapacity) {
+        this.chickenFeedRefillActive = false;
+        if (this.farmer_task === 'CHICKEN_FEED') {
+          this.farmer_task = null;
+        }
+      }
     }
 
-    // 2. WHEAT SHELF EMPTY-TRIGGER HYSTERESIS:
-    // Only trigger wheat shelf restocking when completely empty (0), and once full, wait until it empties again
+    // 2. WHEAT SHELF HYSTERESIS (Refill only when reaches 0, fill until max):
     if (standWheat && standWheat.unlocked) {
       if (standWheat.stock.length === 0) {
         this.wheatRefillActive = true;
@@ -414,18 +421,25 @@ class HelperWorker {
       }
     }
 
-    // Emergency Interrupt for Empty Milk Shelf
-    if (!this.farmer_task) {
-      if (standMilk && standMilk.unlocked && standMilk.stock.length === 0 && cowPen && (cowPen.produceStock > 0 || this.stack.some(i => i.type === 'MILK'))) {
-        this.farmer_task = 'MILK_SHELF';
-      }
+    // Priority Task Selection:
+    // A. Chicken Coop refilling takes top priority when chickenFeedRefillActive is true (until 100% full)
+    if (this.chickenFeedRefillActive && chickenPen && chickenPen.unlocked && chickenPen.feedStock < chickenPen.feedCapacity) {
+      this.farmer_task = 'CHICKEN_FEED';
     }
 
-    // Standard Priority Queue when idle
+    // B. Wheat Shelf refilling when wheatRefillActive is true (until 100% full)
+    if (!this.farmer_task && this.wheatRefillActive && standWheat && standWheat.unlocked && !standWheat.isFull()) {
+      this.farmer_task = 'WHEAT_SHELF';
+    }
+
+    // C. Emergency Interrupt for Empty Milk Shelf
+    if (!this.farmer_task && standMilk && standMilk.unlocked && standMilk.stock.length === 0 && cowPen && (cowPen.produceStock > 0 || this.stack.some(i => i.type === 'MILK'))) {
+      this.farmer_task = 'MILK_SHELF';
+    }
+
+    // D. Standard Priority Queue when idle
     if (!this.farmer_task) {
-      if (this.wheatRefillActive && standWheat && !standWheat.isFull()) {
-        this.farmer_task = 'WHEAT_SHELF';
-      } else if (cowPen && cowPen.unlocked && cowPen.feedStock < cowPen.feedCapacity) {
+      if (cowPen && cowPen.unlocked && cowPen.feedStock < cowPen.feedCapacity) {
         this.farmer_task = 'COW_FEED';
       } else if (standMilk && standMilk.unlocked && !standMilk.isFull() && cowPen && (cowPen.produceStock > 0 || this.stack.some(i => i.type === 'MILK'))) {
         this.farmer_task = 'MILK_SHELF';
