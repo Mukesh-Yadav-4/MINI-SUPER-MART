@@ -416,11 +416,17 @@ class CustomerManager {
             cust.state = 'LEAVE';
             cust.updateThoughtBadge();
 
-            // Exit strictly through the Left Gate (West Striped Awning)
-            const exitGate = 'WEST';
-            cust.waypoints = getCorridorPath(cust.position, GATES[exitGate].foyer);
-            cust.waypoints.push(GATES[exitGate].door.clone());
-            cust.waypoints.push(GATES[exitGate].spawn.clone());
+            // One-way Exit Flow: Move to the LEFT (-X) of the counter first, then north to the West exit gate
+            const exitLeftOfCounter = new THREE.Vector3(cust.assignedRegister.pos.x - 3.2, 0, cust.assignedRegister.customerCheckoutPos.z);
+            const exitAisleAvenue = new THREE.Vector3(cust.assignedRegister.pos.x - 3.2, 0, GATES.WEST.foyer.z);
+
+            cust.waypoints = [
+              exitLeftOfCounter,
+              exitAisleAvenue,
+              GATES.WEST.foyer.clone(),
+              GATES.WEST.door.clone(),
+              GATES.WEST.spawn.clone()
+            ];
             cust.targetPos.copy(cust.waypoints.shift());
           }
         } else {

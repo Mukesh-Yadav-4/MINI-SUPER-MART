@@ -28,6 +28,7 @@ class HelperWorker {
     this.w1_task = null;
     this.w2_task = null;
     this.farmer_task = null;
+    this.wheatRefillActive = false;
 
     this.createMesh();
   }
@@ -377,7 +378,7 @@ class HelperWorker {
     this.setTarget(this.idlePos.x, this.idlePos.z);
   }
 
-  // Farmer (Farm Hand AI): Smooth Active Priority Pipeline (Emergency Feed -> Milk Restock -> Cow Feed -> Chicken Feed -> Wheat Shelf -> Corn Shelf -> Bakery Feeder)
+  // Farmer (Farm Hand AI): Smooth Active Priority Pipeline (Chicken Feed Full Priority -> Wheat Shelf with Empty-Trigger Hysteresis -> Cow Feed -> Milk Shelf -> Corn -> Bakery)
   updateFarmerAI(dt, patches, pens, machines, stands, dustbins) {
     const standWheat = stands.find(s => s.config.itemId === 'WHEAT');
     const chickenPen = pens.find(p => p.config.type === 'CHICKEN');
@@ -393,27 +394,41 @@ class HelperWorker {
       this.isDelivering = false;
     }
 
-    // Emergency Interrupts: Critical feed shortages or empty stands
-    if (cowPen && cowPen.unlocked && cowPen.feedStock === 0) {
-      this.farmer_task = 'COW_FEED';
-    } else if (chickenPen && chickenPen.unlocked && chickenPen.feedStock === 0) {
+    // 1. CHICKEN COOP FULL PRIORITY:
+    // When Chicken Coop needs feed, fill it until 100% full before moving to other tasks
+    if (chickenPen && chickenPen.unlocked && chickenPen.feedStock < chickenPen.feedCapacity) {
       this.farmer_task = 'CHICKEN_FEED';
-    } else if (standWheat && standWheat.unlocked && standWheat.stock.length === 0) {
-      this.farmer_task = 'WHEAT_SHELF';
-    } else if (standMilk && standMilk.unlocked && standMilk.stock.length === 0 && cowPen && (cowPen.produceStock > 0 || this.stack.some(i => i.type === 'MILK'))) {
-      this.farmer_task = 'MILK_SHELF';
+    }
+
+    // 2. WHEAT SHELF EMPTY-TRIGGER HYSTERESIS:
+    // Only trigger wheat shelf restocking when completely empty (0), and once full, wait until it empties again
+    if (standWheat && standWheat.unlocked) {
+      if (standWheat.stock.length === 0) {
+        this.wheatRefillActive = true;
+      }
+      if (standWheat.isFull()) {
+        this.wheatRefillActive = false;
+        if (this.farmer_task === 'WHEAT_SHELF') {
+          this.farmer_task = null;
+        }
+      }
+    }
+
+    // Emergency Interrupt for Empty Milk Shelf
+    if (!this.farmer_task) {
+      if (standMilk && standMilk.unlocked && standMilk.stock.length === 0 && cowPen && (cowPen.produceStock > 0 || this.stack.some(i => i.type === 'MILK'))) {
+        this.farmer_task = 'MILK_SHELF';
+      }
     }
 
     // Standard Priority Queue when idle
     if (!this.farmer_task) {
-      if (cowPen && cowPen.unlocked && cowPen.feedStock < cowPen.feedCapacity) {
+      if (this.wheatRefillActive && standWheat && !standWheat.isFull()) {
+        this.farmer_task = 'WHEAT_SHELF';
+      } else if (cowPen && cowPen.unlocked && cowPen.feedStock < cowPen.feedCapacity) {
         this.farmer_task = 'COW_FEED';
-      } else if (chickenPen && chickenPen.unlocked && chickenPen.feedStock < chickenPen.feedCapacity) {
-        this.farmer_task = 'CHICKEN_FEED';
       } else if (standMilk && standMilk.unlocked && !standMilk.isFull() && cowPen && (cowPen.produceStock > 0 || this.stack.some(i => i.type === 'MILK'))) {
         this.farmer_task = 'MILK_SHELF';
-      } else if (standWheat && standWheat.unlocked && !standWheat.isFull()) {
-        this.farmer_task = 'WHEAT_SHELF';
       } else if (standCorn && standCorn.unlocked && !standCorn.isFull()) {
         this.farmer_task = 'CORN_SHELF';
       } else if (bakery && bakery.unlocked && !bakery.isInputFull()) {
