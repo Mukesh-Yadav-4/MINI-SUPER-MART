@@ -429,5 +429,57 @@ class UIManager {
         boostBadge.style.display = 'none';
       }
     }
+
+    // Upgrade Availability & Recommendation Watchdog
+    this.upgradeTipTimer = (this.upgradeTipTimer || 0) + dt;
+    const btnUpgrade = document.getElementById('btn-upgrade');
+    
+    // Check which impactful upgrades can be afforded
+    const affordableUpgrades = [];
+    const playerMoney = this.game.money;
+    const priorityKeys = ['capacity', 'speed', 'growth', 'stand_capacity', 'quality_tomato', 'quality_wheat', 'egg_speed'];
+    for (let k of priorityKeys) {
+      const u = CONFIG.UPGRADES[k];
+      if (u && u.currentLevel < u.costs.length && playerMoney >= u.costs[u.currentLevel]) {
+        affordableUpgrades.push(u);
+      }
+    }
+
+    if (btnUpgrade) {
+      if (affordableUpgrades.length > 0) {
+        btnUpgrade.classList.add('pulse-upgrade');
+      } else {
+        btnUpgrade.classList.remove('pulse-upgrade');
+      }
+    }
+
+    // 1. Backpack Full trigger: if backpack hits capacity and player can afford capacity upgrade
+    if (this.game.player && this.game.player.isFull() && this.upgradeTipTimer > 15) {
+      const capUpg = CONFIG.UPGRADES.capacity;
+      if (capUpg && capUpg.currentLevel < capUpg.costs.length && playerMoney >= capUpg.costs[capUpg.currentLevel]) {
+        const nextCap = capUpg.levels[capUpg.currentLevel + 1] || (capUpg.levels[capUpg.currentLevel] + 2);
+        const cost = capUpg.costs[capUpg.currentLevel];
+        this.showNotification(`🎒 Backpack Full! Tap ⭐ Upgrades to carry ${nextCap} items ($${cost})!`);
+        this.upgradeTipTimer = 0;
+      }
+    }
+
+    // 2. Periodic recommendation tip (every 40s) for the most impactful affordable upgrade
+    if (this.upgradeTipTimer > 40 && affordableUpgrades.length > 0) {
+      this.upgradeTipTimer = 0;
+      const topUpg = affordableUpgrades[0];
+      const nextVal = `${topUpg.levels[topUpg.currentLevel + 1]} ${topUpg.unit || ''}`;
+      const cost = topUpg.costs[topUpg.currentLevel];
+      
+      let tipMsg = `⭐ ${topUpg.title} available ($${cost})! Tap ⭐ Upgrades to boost to ${nextVal}!`;
+      if (topUpg.id === 'speed') {
+        tipMsg = `👟 Speed Upgrade available ($${cost})! Tap ⭐ Upgrades to run faster! ⚡`;
+      } else if (topUpg.id === 'growth') {
+        tipMsg = `🌾 Crop Fertilizer available ($${cost})! Tap ⭐ Upgrades to grow crops faster! ⚡`;
+      } else if (topUpg.id === 'stand_capacity') {
+        tipMsg = `📦 Shelf Space available ($${cost})! Tap ⭐ Upgrades to hold more stock! 🏬`;
+      }
+      this.showNotification(tipMsg);
+    }
   }
 }
