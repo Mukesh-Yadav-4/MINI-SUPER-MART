@@ -947,9 +947,20 @@ class ProcessingMachine {
     if (this.config.type === 'JUICER') {
       return itemType === 'TOMATO';
     } else if (this.config.type === 'BAKERY') {
-      return itemType === 'WHEAT' || itemType === 'EGG';
+      const wheatCount = this.ingredients.filter(i => i === 'WHEAT').length;
+      const eggCount = this.ingredients.filter(i => i === 'EGG').length;
+      if (itemType === 'WHEAT') return wheatCount < Math.max(3, Math.floor(this.inputCapacity * 0.7));
+      if (itemType === 'EGG') return eggCount < Math.max(2, Math.floor(this.inputCapacity * 0.5));
+      return false;
     } else if (this.config.type === 'CAKERY') {
-      return itemType === 'MILK' || itemType === 'EGG' || itemType === 'BREAD';
+      const milkCount = this.ingredients.filter(i => i === 'MILK').length;
+      const eggCount = this.ingredients.filter(i => i === 'EGG').length;
+      const breadCount = this.ingredients.filter(i => i === 'BREAD').length;
+      const maxPerType = Math.max(2, Math.floor(this.inputCapacity / 3));
+      if (itemType === 'MILK') return milkCount < maxPerType;
+      if (itemType === 'EGG') return eggCount < maxPerType;
+      if (itemType === 'BREAD') return breadCount < maxPerType;
+      return false;
     }
     return false;
   }
@@ -985,7 +996,15 @@ class ProcessingMachine {
     inCtx.textAlign = 'center';
     inCtx.textBaseline = 'middle';
     inCtx.fillStyle = '#111111';
-    inCtx.fillText(`${inIcon} ${this.ingredients.length}/${this.inputCapacity}`, 140, 50);
+
+    let inText = `${inIcon} ${this.ingredients.length}/${this.inputCapacity}`;
+    if (isCakery) {
+      const m = this.ingredients.filter(i => i === 'MILK').length;
+      const e = this.ingredients.filter(i => i === 'EGG').length;
+      const b = this.ingredients.filter(i => i === 'BREAD').length;
+      inText = `🥛${m} 🥚${e} 🍞${b}`;
+    }
+    inCtx.fillText(inText, 140, 50);
     this.inTexture.needsUpdate = true;
 
     const outCtx = this.outCtx;
@@ -1026,20 +1045,29 @@ class ProcessingMachine {
         }
       }
     } else if (isCakery) {
-      // Cake Recipe: 1 MILK + 2 EGGS + 2 BREAD
-      const milkCount = this.ingredients.filter(i => i === 'MILK').length;
-      const eggCount = this.ingredients.filter(i => i === 'EGG').length;
-      const breadCount = this.ingredients.filter(i => i === 'BREAD').length;
+      // Cake Recipe: 1 MILK + 1 EGG + 1 BREAD (or fallback: 1 Milk + 2 Eggs)
+      const hasMilk = this.ingredients.includes('MILK');
+      const hasEgg = this.ingredients.includes('EGG');
+      const hasBread = this.ingredients.includes('BREAD');
 
-      if (milkCount >= 1 && eggCount >= 2 && breadCount >= 2) {
+      const eggCount = this.ingredients.filter(i => i === 'EGG').length;
+
+      const hasStandardRecipe = (hasMilk && hasEgg && hasBread);
+      const hasFallbackRecipe = (!hasBread && hasMilk && eggCount >= 2);
+
+      if (hasStandardRecipe || hasFallbackRecipe) {
         this.processTimer += dt * growthMultiplier;
-        if (this.processTimer >= 7.0) {
+        if (this.processTimer >= 4.5) {
           this.processTimer = 0;
-          this.ingredients.splice(this.ingredients.indexOf('MILK'), 1);
-          this.ingredients.splice(this.ingredients.indexOf('EGG'), 1);
-          this.ingredients.splice(this.ingredients.indexOf('EGG'), 1);
-          this.ingredients.splice(this.ingredients.indexOf('BREAD'), 1);
-          this.ingredients.splice(this.ingredients.indexOf('BREAD'), 1);
+          if (hasStandardRecipe) {
+            this.ingredients.splice(this.ingredients.indexOf('MILK'), 1);
+            this.ingredients.splice(this.ingredients.indexOf('EGG'), 1);
+            this.ingredients.splice(this.ingredients.indexOf('BREAD'), 1);
+          } else {
+            this.ingredients.splice(this.ingredients.indexOf('MILK'), 1);
+            this.ingredients.splice(this.ingredients.indexOf('EGG'), 1);
+            this.ingredients.splice(this.ingredients.indexOf('EGG'), 1);
+          }
           this.outputStock++;
           this.updateBadges();
         }

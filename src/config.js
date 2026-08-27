@@ -8,7 +8,7 @@ const CONFIG = {
     CARROT: { id: 'CARROT', name: 'Golden Sweetcorn', icon: '🌽', color: 0xff9800, sellPrice: 12, growthTime: 3.5, type: 'crop' },
     MILK: { id: 'MILK', name: 'Whole Farm Milk', icon: '🥛', color: 0x29b6f6, sellPrice: 18, produceTime: 4.5, feedRequired: 'WHEAT', type: 'animal' },
     BREAD: { id: 'BREAD', name: 'Artisan Bakery Bread', icon: '🍞', color: 0xd79a55, sellPrice: 28, bakeTime: 5.0, recipe: { WHEAT: 1, EGG: 1 }, type: 'processed' },
-    CAKE: { id: 'CAKE', name: 'Royal Strawberry Cake', icon: '🎂', color: 0xf06292, sellPrice: 80, bakeTime: 7.0, recipe: { MILK: 1, EGG: 2, BREAD: 2 }, type: 'processed' }
+    CAKE: { id: 'CAKE', name: 'Royal Strawberry Cake', icon: '🎂', color: 0xf06292, sellPrice: 80, bakeTime: 4.5, recipe: { MILK: 1, EGG: 1, BREAD: 1 }, type: 'processed' }
   },
 
   UNLOCKS: {
