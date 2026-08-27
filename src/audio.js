@@ -34,8 +34,8 @@ class SoundSystem {
   ensureContext() {
     try {
       if (!this.ctx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) this.ctx = new AudioContext();
+        const AudioContextClass = (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)) || (typeof AudioContext !== 'undefined' ? AudioContext : null);
+        if (AudioContextClass) this.ctx = new AudioContextClass();
       }
       if (this.ctx && this.ctx.state === 'suspended') {
         this.ctx.resume();
@@ -361,12 +361,24 @@ class SoundSystem {
     if (this.bgmInitialized) return;
     this.bgmInitialized = true;
     this.bgmMuted = false;
+    this.bgmVolumeFactor = 0.75; // Default 75% volume
+
     try {
-      const saved = localStorage.getItem('ofm_bgm_muted');
-      if (saved !== null) this.bgmMuted = (saved === 'true');
+      const savedMute = localStorage.getItem('ofm_bgm_muted');
+      if (savedMute !== null) this.bgmMuted = (savedMute === 'true');
+      const savedVol = localStorage.getItem('ofm_bgm_volume');
+      if (savedVol !== null) this.bgmVolumeFactor = Math.max(0, Math.min(1, parseInt(savedVol, 10) / 100));
     } catch (e) {}
 
-    this.bgmVolume = 0.07;
+    this.ensureContext();
+    if (this.ctx) {
+      this.bgmMasterGain = this.ctx.createGain();
+      this.bgmMasterGain.gain.setValueAtTime(this.bgmMuted ? 0 : this.bgmVolumeFactor, this.ctx.currentTime);
+      this.bgmMasterGain.connect(this.ctx.destination);
+    }
+
+    // Rich, significantly boosted base volume level (up from 0.07 -> 0.28)
+    this.bgmVolume = 0.28;
     this.bgmStep = 0;
     this.bgmTimer = null;
     this.bgmTempo = 112; // BPM
@@ -415,12 +427,53 @@ class SoundSystem {
     }
   }
 
+  setBGMVolume(val) {
+    this.initBGM();
+    this.ensureContext();
+    this.bgmVolumeFactor = Math.max(0, Math.min(1, val));
+    try {
+      localStorage.setItem('ofm_bgm_volume', Math.round(this.bgmVolumeFactor * 100).toString());
+    } catch (e) {}
+
+    if (this.bgmVolumeFactor === 0) {
+      this.bgmMuted = true;
+    } else {
+      this.bgmMuted = false;
+    }
+    try {
+      localStorage.setItem('ofm_bgm_muted', this.bgmMuted.toString());
+    } catch (e) {}
+
+    if (this.ctx && !this.bgmMasterGain) {
+      this.bgmMasterGain = this.ctx.createGain();
+      this.bgmMasterGain.connect(this.ctx.destination);
+    }
+
+    if (this.bgmMasterGain && this.ctx) {
+      this.bgmMasterGain.gain.setValueAtTime(this.bgmMuted ? 0 : this.bgmVolumeFactor, this.ctx.currentTime);
+    }
+
+    if (!this.bgmMuted && !this.bgmTimer) {
+      this.startBGM();
+    }
+  }
+
   toggleBGM() {
     this.initBGM();
+    this.ensureContext();
     this.bgmMuted = !this.bgmMuted;
     try {
       localStorage.setItem('ofm_bgm_muted', this.bgmMuted.toString());
     } catch (e) {}
+
+    if (this.ctx && !this.bgmMasterGain) {
+      this.bgmMasterGain = this.ctx.createGain();
+      this.bgmMasterGain.connect(this.ctx.destination);
+    }
+
+    if (this.bgmMasterGain && this.ctx) {
+      this.bgmMasterGain.gain.setValueAtTime(this.bgmMuted ? 0 : this.bgmVolumeFactor, this.ctx.currentTime);
+    }
 
     if (!this.bgmMuted && !this.bgmTimer) {
       this.startBGM();
@@ -432,6 +485,12 @@ class SoundSystem {
     if (this.bgmMuted || this.muted) return;
     this.ensureContext();
     if (!this.ctx || this.ctx.state === 'suspended') return;
+
+    if (!this.bgmMasterGain) {
+      this.bgmMasterGain = this.ctx.createGain();
+      this.bgmMasterGain.gain.setValueAtTime(this.bgmMuted ? 0 : this.bgmVolumeFactor, this.ctx.currentTime);
+      this.bgmMasterGain.connect(this.ctx.destination);
+    }
 
     try {
       const now = this.ctx.currentTime;
@@ -448,17 +507,17 @@ class SoundSystem {
         bOsc.type = 'triangle';
         bOsc.frequency.setValueAtTime(bassFreq, now);
 
-        const bVol = this.bgmVolume * 1.2;
+        const bVol = this.bgmVolume * 1.35;
         bGain.gain.setValueAtTime(bVol, now);
         bGain.gain.exponentialRampToValueAtTime(0.001, now + this.bgmStepDuration * 1.8);
 
         bOsc.connect(bGain);
-        bGain.connect(this.ctx.destination);
+        bGain.connect(this.bgmMasterGain);
         bOsc.start(now);
         bOsc.stop(now + this.bgmStepDuration * 1.8);
       }
 
-      // 2. Soft Marimba / Kalimba Melody Note
+      // 2. Rich Marimba / Kalimba Melody Note
       const melodyFreq = this.bgmMelody[step % this.bgmMelody.length];
       if (melodyFreq > 0) {
         const mOsc = this.ctx.createOscillator();
@@ -466,12 +525,12 @@ class SoundSystem {
         mOsc.type = 'sine';
         mOsc.frequency.setValueAtTime(melodyFreq, now);
 
-        const mVol = this.bgmVolume * 0.95;
+        const mVol = this.bgmVolume * 1.1;
         mGain.gain.setValueAtTime(mVol, now);
         mGain.gain.exponentialRampToValueAtTime(0.001, now + this.bgmStepDuration * 1.4);
 
         mOsc.connect(mGain);
-        mGain.connect(this.ctx.destination);
+        mGain.connect(this.bgmMasterGain);
         mOsc.start(now);
         mOsc.stop(now + this.bgmStepDuration * 1.4);
       }
@@ -485,12 +544,12 @@ class SoundSystem {
         hOsc.type = 'triangle';
         hOsc.frequency.setValueAtTime(harmFreq, now);
 
-        const hVol = this.bgmVolume * 0.45;
+        const hVol = this.bgmVolume * 0.55;
         hGain.gain.setValueAtTime(hVol, now);
         hGain.gain.exponentialRampToValueAtTime(0.001, now + this.bgmStepDuration * 0.9);
 
         hOsc.connect(hGain);
-        hGain.connect(this.ctx.destination);
+        hGain.connect(this.bgmMasterGain);
         hOsc.start(now);
         hOsc.stop(now + this.bgmStepDuration * 0.9);
       }
@@ -507,11 +566,11 @@ class SoundSystem {
         sFilter.type = 'highpass';
         sFilter.frequency.setValueAtTime(6000, now);
         const sGain = this.ctx.createGain();
-        sGain.gain.setValueAtTime(this.bgmVolume * 0.4, now);
+        sGain.gain.setValueAtTime(this.bgmVolume * 0.45, now);
         sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
         sSource.connect(sFilter);
         sFilter.connect(sGain);
-        sGain.connect(this.ctx.destination);
+        sGain.connect(this.bgmMasterGain);
         sSource.start(now);
         sSource.stop(now + 0.025);
       }

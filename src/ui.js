@@ -160,6 +160,8 @@ class UIManager {
     const btnSettingsSound = document.getElementById('btn-settings-sound');
     const btnBgm = document.getElementById('btn-bgm');
     const btnSettingsBgm = document.getElementById('btn-settings-bgm');
+    const sliderBgmVol = document.getElementById('slider-bgm-volume');
+    const labelBgmVol = document.getElementById('label-bgm-volume');
 
     const updateSoundUI = () => {
       const sfxOn = !sounds.muted;
@@ -169,6 +171,11 @@ class UIManager {
       const bgmOn = !sounds.bgmMuted;
       if (btnBgm) btnBgm.textContent = bgmOn ? '🎵' : '🔇';
       if (btnSettingsBgm) btnSettingsBgm.textContent = bgmOn ? 'Music: ON 🎵' : 'Music: OFF 🔇';
+
+      if (sliderBgmVol) {
+        sliderBgmVol.value = bgmOn ? Math.round((sounds.bgmVolumeFactor || 0.75) * 100) : 0;
+        if (labelBgmVol) labelBgmVol.textContent = `${sliderBgmVol.value}%`;
+      }
     };
 
     if (btnSound) {
@@ -196,6 +203,21 @@ class UIManager {
       btnSettingsBgm.addEventListener('click', () => {
         sounds.toggleBGM();
         updateSoundUI();
+      });
+    }
+
+    if (sliderBgmVol) {
+      const curPct = Math.round((sounds.bgmVolumeFactor || 0.75) * 100);
+      sliderBgmVol.value = sounds.bgmMuted ? 0 : curPct;
+      if (labelBgmVol) labelBgmVol.textContent = `${sliderBgmVol.value}%`;
+
+      sliderBgmVol.addEventListener('input', (e) => {
+        const val = parseInt(e.target.value, 10);
+        if (labelBgmVol) labelBgmVol.textContent = `${val}%`;
+        sounds.setBGMVolume(val / 100);
+        const bgmOn = !sounds.bgmMuted;
+        if (btnBgm) btnBgm.textContent = bgmOn ? '🎵' : '🔇';
+        if (btnSettingsBgm) btnSettingsBgm.textContent = bgmOn ? 'Music: ON 🎵' : 'Music: OFF 🔇';
       });
     }
 

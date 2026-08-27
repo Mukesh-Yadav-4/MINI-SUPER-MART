@@ -802,6 +802,61 @@ html, body {
   filter: brightness(1.1);
 }
 
+/* Volume Slider Controls */
+.volume-slider-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 145px;
+}
+
+.volume-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 105px;
+  height: 8px;
+  border-radius: 6px;
+  background: #334155;
+  outline: none;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.volume-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4ade80;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  border: 2px solid #ffffff;
+  transition: transform 0.1s;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.volume-slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #4ade80;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  border: 2px solid #ffffff;
+}
+
+.volume-percentage {
+  font-size: 13px;
+  font-weight: 800;
+  color: #4ade80;
+  min-width: 38px;
+  text-align: right;
+}
+
 .settings-divider {
   height: 1px;
   background: #e0e0e0;

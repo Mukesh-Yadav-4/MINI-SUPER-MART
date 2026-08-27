@@ -32,8 +32,6 @@
       </div>
 
       <div class="top-actions">
-        <button id="btn-bgm" class="icon-btn" title="Toggle Background Music">🎵</button>
-        <button id="btn-sound" class="icon-btn" title="Toggle Sound">🔊</button>
         <button id="btn-leaderboard" class="icon-btn action-btn leaderboard-btn" title="Tycoon Leaderboard">
           <span>🏆</span>
           <span class="btn-label">Rank</span>
@@ -105,6 +103,17 @@
             <span class="settings-desc">Relaxing farm melody</span>
           </div>
           <button id="btn-settings-bgm" class="settings-action-btn">Music: ON 🎵</button>
+        </div>
+
+        <div class="settings-row volume-row">
+          <div class="settings-info">
+            <span class="settings-title">🎚️ Music Volume</span>
+            <span class="settings-desc">Adjust background music loudness</span>
+          </div>
+          <div class="volume-slider-container">
+            <input type="range" id="slider-bgm-volume" min="0" max="100" value="75" class="volume-slider">
+            <span id="label-bgm-volume" class="volume-percentage">75%</span>
+          </div>
         </div>
 
         <div class="settings-divider"></div>
