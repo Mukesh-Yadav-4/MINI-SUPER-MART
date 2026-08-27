@@ -355,16 +355,14 @@ class HelperWorker {
     }
 
     // ============================================
-    // 1. DELIVERY PHASE (Deliver items in backpack)
+    // 1. DELIVERY PHASE (Direct Walkthrough Navigation)
     // ============================================
     if (this.isDelivering && this.stack.length > 0) {
       // 1A. Deliver Tomatoes to Juicer Hopper or Tomato Shelf
       if (this.stack.some(i => i.type === 'TOMATO')) {
         if (this.juicerRefillActive && juicer && !juicer.isInputFull()) {
-          const inputX = juicer.config.pos.x - 0.9;
-          const inputZ = juicer.config.pos.z + 0.9;
-          this.setTarget(inputX, inputZ);
-          if (this.position.distanceTo(new THREE.Vector3(inputX, 0, inputZ)) < 3.2 || this.position.distanceTo(juicer.config.pos) < 3.2) {
+          this.setTarget(juicer.config.pos.x, juicer.config.pos.z);
+          if (this.position.distanceTo(juicer.config.pos) < 3.2) {
             const item = this.popItem('TOMATO');
             if (item) juicer.addIngredient(item);
             if (juicer.isInputFull() || !this.stack.some(i => i.type === 'TOMATO')) {
@@ -375,7 +373,7 @@ class HelperWorker {
         }
 
         if (this.tomatoShelfRefillActive && standTomato && !standTomato.isFull()) {
-          this.setTarget(standTomato.pos.x, standTomato.pos.z + 1.2);
+          this.setTarget(standTomato.pos.x, standTomato.pos.z);
           if (this.position.distanceTo(standTomato.pos) < 3.2) {
             const item = this.popItem('TOMATO');
             if (item) standTomato.addItem();
@@ -388,10 +386,8 @@ class HelperWorker {
 
         // Fallbacks
         if (juicer && !juicer.isInputFull()) {
-          const inputX = juicer.config.pos.x - 0.9;
-          const inputZ = juicer.config.pos.z + 0.9;
-          this.setTarget(inputX, inputZ);
-          if (this.position.distanceTo(new THREE.Vector3(inputX, 0, inputZ)) < 3.2) {
+          this.setTarget(juicer.config.pos.x, juicer.config.pos.z);
+          if (this.position.distanceTo(juicer.config.pos) < 3.2) {
             const item = this.popItem('TOMATO');
             if (item) juicer.addIngredient(item);
             if (juicer.isInputFull() || !this.stack.some(i => i.type === 'TOMATO')) {
@@ -401,7 +397,7 @@ class HelperWorker {
           return;
         }
         if (standTomato && !standTomato.isFull()) {
-          this.setTarget(standTomato.pos.x, standTomato.pos.z + 1.2);
+          this.setTarget(standTomato.pos.x, standTomato.pos.z);
           if (this.position.distanceTo(standTomato.pos) < 3.2) {
             const item = this.popItem('TOMATO');
             if (item) standTomato.addItem();
@@ -413,10 +409,10 @@ class HelperWorker {
         }
       }
 
-      // 1B. Deliver Canned Jam to Jam Shelf (Last Priority)
+      // 1B. Deliver Canned Jam to Jam Shelf
       if (this.stack.some(i => i.type === 'JUICE') && standJuice && !standJuice.isFull()) {
-        this.setTarget(standJuice.pos.x, standJuice.pos.z + 1.2);
-        if (this.position.distanceTo(standJuice.pos) < 3.4 || Math.hypot(this.position.x - standJuice.pos.x, this.position.z - (standJuice.pos.z + 1.2)) < 2.0) {
+        this.setTarget(standJuice.pos.x, standJuice.pos.z);
+        if (this.position.distanceTo(standJuice.pos) < 3.4) {
           const item = this.popItem('JUICE');
           if (item) standJuice.addItem();
           if (standJuice.isFull() || !this.stack.some(i => i.type === 'JUICE')) {
@@ -430,7 +426,7 @@ class HelperWorker {
       if (dustbins && dustbins.length > 0) {
         const bin = dustbins[0];
         this.setTarget(bin.pos.x, bin.pos.z);
-        if (this.position.distanceTo(bin.pos) < 2.5) {
+        if (this.position.distanceTo(bin.pos) < 2.8) {
           this.popItem();
         }
         return;
@@ -445,7 +441,7 @@ class HelperWorker {
     if (this.juicerRefillActive && juicer && !juicer.isInputFull() && tomatoPatch) {
       if (this.stack.length < this.capacity && tomatoPatch.hasReadyCrops()) {
         this.setTarget(tomatoPatch.config.pos.x, tomatoPatch.config.pos.z);
-        if (this.position.distanceTo(new THREE.Vector3(tomatoPatch.config.pos.x, 0, tomatoPatch.config.pos.z)) < 3.0) {
+        if (this.position.distanceTo(new THREE.Vector3(tomatoPatch.config.pos.x, 0, tomatoPatch.config.pos.z)) < 3.2) {
           const t = tomatoPatch.harvestOne();
           if (t) this.addItem(t);
         }
@@ -461,7 +457,7 @@ class HelperWorker {
     if (this.tomatoShelfRefillActive && standTomato && !standTomato.isFull() && tomatoPatch) {
       if (this.stack.length < this.capacity && tomatoPatch.hasReadyCrops()) {
         this.setTarget(tomatoPatch.config.pos.x, tomatoPatch.config.pos.z);
-        if (this.position.distanceTo(new THREE.Vector3(tomatoPatch.config.pos.x, 0, tomatoPatch.config.pos.z)) < 3.0) {
+        if (this.position.distanceTo(new THREE.Vector3(tomatoPatch.config.pos.x, 0, tomatoPatch.config.pos.z)) < 3.2) {
           const t = tomatoPatch.harvestOne();
           if (t) this.addItem(t);
         }
@@ -473,12 +469,10 @@ class HelperWorker {
       }
     }
 
-    // Priority 3 (LAST PRIORITY): Harvest finished Canned Jam from Juicer output tray
+    // Priority 3: Harvest finished Canned Jam from Juicer output tray
     if (juicer && juicer.outputStock > 0 && standJuice && !standJuice.isFull() && this.stack.length < this.capacity) {
-      const outX = juicer.config.pos.x + 0.9;
-      const outZ = juicer.config.pos.z + 0.9;
-      this.setTarget(outX, outZ);
-      if (this.position.distanceTo(new THREE.Vector3(outX, 0, outZ)) < 3.2 || this.position.distanceTo(juicer.config.pos) < 3.2) {
+      this.setTarget(juicer.config.pos.x, juicer.config.pos.z);
+      if (this.position.distanceTo(juicer.config.pos) < 3.2) {
         const out = juicer.harvestOutput();
         if (out) this.addItem(out);
       }
@@ -549,12 +543,12 @@ class HelperWorker {
       }
     }
 
-    // 1. DELIVERY PHASE
+    // 1. DELIVERY PHASE (Direct Walkthrough)
     if (this.isDelivering && this.stack.length > 0) {
       if (this.stack.some(i => i.type === 'WHEAT')) {
         if (this.farmer_task === 'CHICKEN_FEED' && chickenPen) {
-          this.setTarget(chickenPen.feederPos.x, chickenPen.feederPos.z);
-          if (this.position.distanceTo(chickenPen.feederPos) < 3.0) {
+          this.setTarget(chickenPen.pos.x, chickenPen.pos.z);
+          if (this.position.distanceTo(chickenPen.pos) < 3.4 || (chickenPen.feederPos && this.position.distanceTo(chickenPen.feederPos) < 3.4)) {
             const wheat = this.popItem('WHEAT');
             if (wheat) chickenPen.addFeed(1);
             if (chickenPen.feedStock >= chickenPen.feedCapacity || !this.stack.some(i => i.type === 'WHEAT')) {
@@ -566,8 +560,8 @@ class HelperWorker {
         }
 
         if (this.farmer_task === 'COW_FEED' && cowPen) {
-          this.setTarget(cowPen.feederPos.x, cowPen.feederPos.z);
-          if (this.position.distanceTo(cowPen.feederPos) < 3.0) {
+          this.setTarget(cowPen.pos.x, cowPen.pos.z);
+          if (this.position.distanceTo(cowPen.pos) < 3.4 || (cowPen.feederPos && this.position.distanceTo(cowPen.feederPos) < 3.4)) {
             const wheat = this.popItem('WHEAT');
             if (wheat) cowPen.addFeed(1);
             if (cowPen.feedStock >= cowPen.feedCapacity || !this.stack.some(i => i.type === 'WHEAT')) {
@@ -579,7 +573,7 @@ class HelperWorker {
         }
 
         if (this.farmer_task === 'WHEAT_SHELF' && standWheat) {
-          this.setTarget(standWheat.pos.x, standWheat.pos.z + 1.2);
+          this.setTarget(standWheat.pos.x, standWheat.pos.z);
           if (this.position.distanceTo(standWheat.pos) < 3.2) {
             const wheat = this.popItem('WHEAT');
             if (wheat) standWheat.addItem();
@@ -593,23 +587,23 @@ class HelperWorker {
 
         // Fallbacks
         if (chickenPen && chickenPen.feedStock < chickenPen.feedCapacity) {
-          this.setTarget(chickenPen.feederPos.x, chickenPen.feederPos.z);
-          if (this.position.distanceTo(chickenPen.feederPos) < 3.0) {
+          this.setTarget(chickenPen.pos.x, chickenPen.pos.z);
+          if (this.position.distanceTo(chickenPen.pos) < 3.4) {
             const wheat = this.popItem('WHEAT');
             if (wheat) chickenPen.addFeed(1);
           }
           return;
         }
         if (cowPen && cowPen.feedStock < cowPen.feedCapacity) {
-          this.setTarget(cowPen.feederPos.x, cowPen.feederPos.z);
-          if (this.position.distanceTo(cowPen.feederPos) < 3.0) {
+          this.setTarget(cowPen.pos.x, cowPen.pos.z);
+          if (this.position.distanceTo(cowPen.pos) < 3.4) {
             const wheat = this.popItem('WHEAT');
             if (wheat) cowPen.addFeed(1);
           }
           return;
         }
         if (standWheat && !standWheat.isFull()) {
-          this.setTarget(standWheat.pos.x, standWheat.pos.z + 1.2);
+          this.setTarget(standWheat.pos.x, standWheat.pos.z);
           if (this.position.distanceTo(standWheat.pos) < 3.2) {
             const wheat = this.popItem('WHEAT');
             if (wheat) standWheat.addItem();
@@ -619,7 +613,7 @@ class HelperWorker {
       }
 
       if (this.stack.some(i => i.type === 'EGG') && standEgg) {
-        this.setTarget(standEgg.pos.x, standEgg.pos.z + 1.2);
+        this.setTarget(standEgg.pos.x, standEgg.pos.z);
         if (this.position.distanceTo(standEgg.pos) < 3.2) {
           const egg = this.popItem('EGG');
           if (egg) standEgg.addItem();
@@ -635,15 +629,15 @@ class HelperWorker {
       if (dustbins && dustbins.length > 0) {
         const bin = dustbins[0];
         this.setTarget(bin.pos.x, bin.pos.z);
-        if (this.position.distanceTo(bin.pos) < 2.5) this.popItem();
+        if (this.position.distanceTo(bin.pos) < 2.8) this.popItem();
         return;
       }
     }
 
     // 2. GATHERING PHASE
     if (this.farmer_task === 'EGG_SHELF' && chickenPen && chickenPen.produceStock > 0) {
-      this.setTarget(chickenPen.pickupPos.x, chickenPen.pickupPos.z);
-      if (this.position.distanceTo(chickenPen.pickupPos) < 3.0) {
+      this.setTarget(chickenPen.pos.x, chickenPen.pos.z);
+      if (this.position.distanceTo(chickenPen.pos) < 3.4 || (chickenPen.pickupPos && this.position.distanceTo(chickenPen.pickupPos) < 3.4)) {
         const egg = chickenPen.harvestProduce();
         if (egg) this.addItem(egg);
         if (this.stack.length >= this.capacity || chickenPen.produceStock === 0) {
@@ -656,7 +650,7 @@ class HelperWorker {
     if (wheatPatch && wheatPatch.hasReadyCrops() && this.stack.length < this.capacity) {
       if (this.farmer_task === 'CHICKEN_FEED' || this.farmer_task === 'COW_FEED' || this.farmer_task === 'WHEAT_SHELF') {
         this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z);
-        if (this.position.distanceTo(new THREE.Vector3(wheatPatch.config.pos.x, 0, wheatPatch.config.pos.z)) < 3.0) {
+        if (this.position.distanceTo(new THREE.Vector3(wheatPatch.config.pos.x, 0, wheatPatch.config.pos.z)) < 3.2) {
           const w = wheatPatch.harvestOne();
           if (w) this.addItem(w);
         }
@@ -733,11 +727,11 @@ class HelperWorker {
       }
     }
 
-    // 1. DELIVERY PHASE
+    // 1. DELIVERY PHASE (Direct Walkthrough)
     if (this.isDelivering && this.stack.length > 0) {
       // 1A. Deliver Sweetcorn to Corn Stand
       if (this.stack.some(i => i.type === 'CARROT') && standCorn) {
-        this.setTarget(standCorn.pos.x, standCorn.pos.z + 1.2);
+        this.setTarget(standCorn.pos.x, standCorn.pos.z);
         if (this.position.distanceTo(standCorn.pos) < 3.2) {
           const corn = this.popItem('CARROT');
           if (corn) standCorn.addItem();
@@ -751,8 +745,8 @@ class HelperWorker {
 
       // 1B. Deliver Milk to Milk Fridge
       if (this.stack.some(i => i.type === 'MILK') && standMilk) {
-        this.setTarget(standMilk.pos.x, standMilk.pos.z + 1.2);
-        if (this.position.distanceTo(standMilk.pos) < 3.5 || Math.hypot(this.position.x - standMilk.pos.x, this.position.z - (standMilk.pos.z + 1.2)) < 2.0) {
+        this.setTarget(standMilk.pos.x, standMilk.pos.z);
+        if (this.position.distanceTo(standMilk.pos) < 3.5) {
           const milk = this.popItem('MILK');
           if (milk) standMilk.addItem();
           if (standMilk.isFull() || !this.stack.some(i => i.type === 'MILK')) {
@@ -766,10 +760,8 @@ class HelperWorker {
       // 1C. Deliver Wheat/Eggs to Bakery Oven
       const wheatOrEgg = this.stack.find(i => i.type === 'WHEAT' || i.type === 'EGG');
       if (wheatOrEgg && bakery && !bakery.isInputFull()) {
-        const inputX = bakery.config.pos.x - 0.7;
-        const inputZ = bakery.config.pos.z + 0.9;
-        this.setTarget(inputX, inputZ);
-        if (this.position.distanceTo(new THREE.Vector3(inputX, 0, inputZ)) < 3.2 || this.position.distanceTo(bakery.config.pos) < 3.2) {
+        this.setTarget(bakery.config.pos.x, bakery.config.pos.z);
+        if (this.position.distanceTo(bakery.config.pos) < 3.2) {
           const item = this.popItem(wheatOrEgg.type);
           if (item) bakery.addIngredient(item);
           if (bakery.isInputFull() || !this.stack.some(i => i.type === 'WHEAT' || i.type === 'EGG')) {
@@ -782,8 +774,8 @@ class HelperWorker {
 
       // 1D. Deliver Bread to Bread Showcase
       if (this.stack.some(i => i.type === 'BREAD') && standBread) {
-        this.setTarget(standBread.pos.x, standBread.pos.z + 1.2);
-        if (this.position.distanceTo(standBread.pos) < 3.4 || Math.hypot(this.position.x - standBread.pos.x, this.position.z - (standBread.pos.z + 1.2)) < 2.0) {
+        this.setTarget(standBread.pos.x, standBread.pos.z);
+        if (this.position.distanceTo(standBread.pos) < 3.4) {
           const bread = this.popItem('BREAD');
           if (bread) standBread.addItem();
           if (standBread.isFull() || !this.stack.some(i => i.type === 'BREAD')) {
@@ -798,7 +790,7 @@ class HelperWorker {
       if (dustbins && dustbins.length > 0) {
         const bin = dustbins[0];
         this.setTarget(bin.pos.x, bin.pos.z);
-        if (this.position.distanceTo(bin.pos) < 2.5) this.popItem();
+        if (this.position.distanceTo(bin.pos) < 2.8) this.popItem();
         return;
       }
     }
@@ -807,7 +799,7 @@ class HelperWorker {
     if (this.w3_task === 'CORN_SHELF' && cornPatch) {
       if (this.stack.length < this.capacity && cornPatch.hasReadyCrops()) {
         this.setTarget(cornPatch.config.pos.x, cornPatch.config.pos.z);
-        if (this.position.distanceTo(new THREE.Vector3(cornPatch.config.pos.x, 0, cornPatch.config.pos.z)) < 3.0) {
+        if (this.position.distanceTo(new THREE.Vector3(cornPatch.config.pos.x, 0, cornPatch.config.pos.z)) < 3.2) {
           const c = cornPatch.harvestOne();
           if (c) this.addItem(c);
         }
@@ -820,8 +812,8 @@ class HelperWorker {
     }
 
     if (this.w3_task === 'MILK_SHELF' && cowPen && cowPen.produceStock > 0) {
-      this.setTarget(cowPen.pickupPos.x, cowPen.pickupPos.z);
-      if (this.position.distanceTo(cowPen.pickupPos) < 3.0) {
+      this.setTarget(cowPen.pos.x, cowPen.pos.z);
+      if (this.position.distanceTo(cowPen.pos) < 3.4 || (cowPen.pickupPos && this.position.distanceTo(cowPen.pickupPos) < 3.4)) {
         const milk = cowPen.harvestProduce();
         if (milk) this.addItem(milk);
         if (this.stack.length >= this.capacity || cowPen.produceStock === 0) {
@@ -834,8 +826,8 @@ class HelperWorker {
     if (this.w3_task === 'BAKERY_MACHINE' && bakery && !bakery.isInputFull()) {
       const eggCount = bakery.ingredients.filter(i => i === 'EGG').length;
       if (eggCount === 0 && chickenPen && chickenPen.produceStock > 0) {
-        this.setTarget(chickenPen.pickupPos.x, chickenPen.pickupPos.z);
-        if (this.position.distanceTo(chickenPen.pickupPos) < 3.0) {
+        this.setTarget(chickenPen.pos.x, chickenPen.pos.z);
+        if (this.position.distanceTo(chickenPen.pos) < 3.4 || (chickenPen.pickupPos && this.position.distanceTo(chickenPen.pickupPos) < 3.4)) {
           const e = chickenPen.harvestProduce();
           if (e) this.addItem(e);
         }
@@ -843,7 +835,7 @@ class HelperWorker {
       }
       if (wheatPatch && wheatPatch.hasReadyCrops()) {
         this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z);
-        if (this.position.distanceTo(new THREE.Vector3(wheatPatch.config.pos.x, 0, wheatPatch.config.pos.z)) < 3.0) {
+        if (this.position.distanceTo(new THREE.Vector3(wheatPatch.config.pos.x, 0, wheatPatch.config.pos.z)) < 3.2) {
           const w = wheatPatch.harvestOne();
           if (w) this.addItem(w);
         }
@@ -856,8 +848,8 @@ class HelperWorker {
     }
 
     if (this.w3_task === 'BREAD_SHELF' && bakery && bakery.outputStock > 0) {
-      this.setTarget(bakery.group.position.x, bakery.group.position.z + 0.8);
-      if (this.position.distanceTo(bakery.group.position) < 3.2) {
+      this.setTarget(bakery.config.pos.x, bakery.config.pos.z);
+      if (this.position.distanceTo(bakery.config.pos) < 3.2) {
         const out = bakery.harvestOutput();
         if (out) this.addItem(out);
       }
@@ -878,35 +870,42 @@ class HelperWorker {
     const cakery = machines.find(m => m.config.type === 'CAKERY' && m.unlocked);
     const bakery = machines.find(m => m.config.type === 'BAKERY' && m.unlocked);
     const standCake = stands.find(s => s.config.itemId === 'CAKE' && s.unlocked);
-    const standBread = stands.find(s => s.config.itemId === 'BREAD' && s.unlocked);
     const standMilk = stands.find(s => s.config.itemId === 'MILK' && s.unlocked);
-    const cowPen = pens.find(p => p.config.type === 'COW' && p.unlocked);
+    const standBread = stands.find(s => s.config.itemId === 'BREAD' && s.unlocked);
     const chickenPen = pens.find(p => p.config.type === 'CHICKEN' && p.unlocked);
+    const cowPen = pens.find(p => p.config.type === 'COW' && p.unlocked);
 
-    // Calculate exact ingredient needs for Cake Mixer accounting for hopper + current carried backpack items
-    const currentMilkInHopper = cakery ? cakery.ingredients.filter(i => i === 'MILK').length : 0;
+    if (!cakery) {
+      this.setTarget(this.idlePos.x, this.idlePos.z);
+      return;
+    }
+
+    // Exact quota calculation to prevent over-harvesting
+    const maxCapacityHopper = 3;
+    const currentMilkInHopper = cakery.ingredients.filter(i => i === 'MILK').length;
+    const currentEggsInHopper = cakery.ingredients.filter(i => i === 'EGG').length;
+    const currentBreadInHopper = cakery.ingredients.filter(i => i === 'BREAD').length;
+
     const currentMilkInStack = this.stack.filter(i => i.type === 'MILK').length;
-    const maxMilkAllowed = cakery ? Math.max(2, Math.floor(cakery.inputCapacity / 3)) : 2;
-    const neededMilk = Math.max(0, maxMilkAllowed - currentMilkInHopper - currentMilkInStack);
-
-    const currentEggsInHopper = cakery ? cakery.ingredients.filter(i => i === 'EGG').length : 0;
     const currentEggsInStack = this.stack.filter(i => i.type === 'EGG').length;
-    const maxEggsAllowed = cakery ? Math.max(2, Math.floor(cakery.inputCapacity / 3)) : 2;
-    const neededEggs = Math.max(0, maxEggsAllowed - currentEggsInHopper - currentEggsInStack);
-
-    const currentBreadInHopper = cakery ? cakery.ingredients.filter(i => i === 'BREAD').length : 0;
     const currentBreadInStack = this.stack.filter(i => i.type === 'BREAD').length;
-    const maxBreadAllowed = cakery ? Math.max(2, Math.floor(cakery.inputCapacity / 3)) : 2;
+
+    const maxMilkAllowed = (cakery.isBaking ? 0 : 1) + (cakery.ingredients.length === 0 ? 1 : 0);
+    const maxEggsAllowed = (cakery.isBaking ? 0 : 1) + (cakery.ingredients.length === 0 ? 1 : 0);
+    const maxBreadAllowed = (cakery.isBaking ? 0 : 1) + (cakery.ingredients.length === 0 ? 1 : 0);
+
+    const neededMilk = Math.max(0, maxMilkAllowed - currentMilkInHopper - currentMilkInStack);
+    const neededEggs = Math.max(0, maxEggsAllowed - currentEggsInHopper - currentEggsInStack);
     const neededBread = Math.max(0, maxBreadAllowed - currentBreadInHopper - currentBreadInStack);
 
     // ============================================
-    // 1. DELIVERY PHASE
+    // 1. DELIVERY PHASE (Direct Walkthrough)
     // ============================================
     if (this.stack.length > 0) {
       // 1A. Deliver Royal Cakes to Cake Stand
       if (this.stack.some(i => i.type === 'CAKE') && standCake) {
-        this.setTarget(standCake.pos.x, standCake.pos.z + 1.2);
-        if (this.position.distanceTo(standCake.pos) < 3.2 || Math.hypot(this.position.x - standCake.pos.x, this.position.z - (standCake.pos.z + 1.2)) < 2.0) {
+        this.setTarget(standCake.pos.x, standCake.pos.z);
+        if (this.position.distanceTo(standCake.pos) < 3.4) {
           const cake = this.popItem('CAKE');
           if (cake) standCake.addItem();
         }
@@ -916,56 +915,50 @@ class HelperWorker {
       // 1B. Deliver Ingredients (Milk, Egg, Bread) into Cake Mixer Hopper
       const ingredient = this.stack.find(i => ['MILK', 'EGG', 'BREAD'].includes(i.type));
       if (ingredient && cakery && !cakery.isInputFull() && cakery.canAcceptIngredient(ingredient.type)) {
-        const inX = cakery.config.pos.x - 0.7;
-        const inZ = cakery.config.pos.z + 0.9;
-        this.setTarget(inX, inZ);
-        if (this.position.distanceTo(new THREE.Vector3(inX, 0, inZ)) < 3.2 || this.position.distanceTo(cakery.config.pos) < 3.2) {
+        this.setTarget(cakery.config.pos.x, cakery.config.pos.z);
+        if (this.position.distanceTo(cakery.config.pos) < 3.4) {
           const item = this.popItem(ingredient.type);
           if (item) cakery.addIngredient(item);
         }
         return;
       }
 
-      // 1C. If carrying Milk and Cake Mixer is temporarily full -> Stock excess in Milk Refrigerator instead of wasting!
+      // 1C. If carrying Milk and Cake Mixer is temporarily full -> Stock excess in Milk Refrigerator
       const carriedMilk = this.stack.find(i => i.type === 'MILK');
       if (carriedMilk && standMilk && !standMilk.isFull()) {
-        this.setTarget(standMilk.pos.x, standMilk.pos.z + 1.2);
-        if (this.position.distanceTo(standMilk.pos) < 3.2) {
+        this.setTarget(standMilk.pos.x, standMilk.pos.z);
+        if (this.position.distanceTo(standMilk.pos) < 3.4) {
           const m = this.popItem('MILK');
           if (m) standMilk.addItem();
         }
         return;
       }
 
-      // 1D. If carrying Bread and Cake Mixer is temporarily full -> Stock excess in Bread Showcase instead of wasting!
+      // 1D. If carrying Bread and Cake Mixer is temporarily full -> Stock excess in Bread Showcase
       const carriedBread = this.stack.find(i => i.type === 'BREAD');
       if (carriedBread && standBread && !standBread.isFull()) {
-        this.setTarget(standBread.pos.x, standBread.pos.z + 1.2);
-        if (this.position.distanceTo(standBread.pos) < 3.2) {
+        this.setTarget(standBread.pos.x, standBread.pos.z);
+        if (this.position.distanceTo(standBread.pos) < 3.4) {
           const b = this.popItem('BREAD');
           if (b) standBread.addItem();
         }
         return;
       }
 
-      // 1E. If Cake Mixer is actively baking -> Wait near mixer with ingredients ready for the next batch!
+      // 1E. If Cake Mixer is actively baking -> Wait near mixer with ingredients ready
       if (cakery) {
-        const inX = cakery.config.pos.x - 0.7;
-        const inZ = cakery.config.pos.z + 0.9;
-        this.setTarget(inX, inZ);
+        this.setTarget(cakery.config.pos.x, cakery.config.pos.z);
         return;
       }
     }
 
     // ============================================
-    // 2. GATHERING / FETCHING PHASE (Only fetch what is needed!)
+    // 2. GATHERING / FETCHING PHASE (Direct Walkthrough)
     // ============================================
     // 2A. Collect Ready Baked Cakes from Cake Mixer Tray
     if (cakery && cakery.outputStock > 0 && standCake && !standCake.isFull()) {
-      const outX = cakery.config.pos.x + 0.7;
-      const outZ = cakery.config.pos.z + 0.9;
-      this.setTarget(outX, outZ);
-      if (this.position.distanceTo(new THREE.Vector3(outX, 0, outZ)) < 3.0 || this.position.distanceTo(cakery.config.pos) < 3.0) {
+      this.setTarget(cakery.config.pos.x, cakery.config.pos.z);
+      if (this.position.distanceTo(cakery.config.pos) < 3.4) {
         while (cakery.outputStock > 0 && this.stack.length < this.capacity) {
           const cake = cakery.harvestOutput();
           if (cake) this.addItem(cake);
@@ -976,8 +969,8 @@ class HelperWorker {
 
     // 2B. Fetch Milk ONLY IF neededMilk > 0
     if (neededMilk > 0 && cowPen && cowPen.produceStock > 0 && this.stack.length < this.capacity) {
-      this.setTarget(cowPen.pickupPos.x, cowPen.pickupPos.z);
-      if (this.position.distanceTo(cowPen.pickupPos) < 3.2) {
+      this.setTarget(cowPen.pos.x, cowPen.pos.z);
+      if (this.position.distanceTo(cowPen.pos) < 3.4 || (cowPen.pickupPos && this.position.distanceTo(cowPen.pickupPos) < 3.4)) {
         const toTake = Math.min(neededMilk, cowPen.produceStock, this.capacity - this.stack.length);
         for (let k = 0; k < toTake; k++) {
           const milk = cowPen.harvestProduce();
@@ -989,8 +982,8 @@ class HelperWorker {
 
     // 2C. Fetch Eggs ONLY IF neededEggs > 0
     if (neededEggs > 0 && chickenPen && chickenPen.produceStock > 0 && this.stack.length < this.capacity) {
-      this.setTarget(chickenPen.pickupPos.x, chickenPen.pickupPos.z);
-      if (this.position.distanceTo(chickenPen.pickupPos) < 3.2) {
+      this.setTarget(chickenPen.pos.x, chickenPen.pos.z);
+      if (this.position.distanceTo(chickenPen.pos) < 3.4 || (chickenPen.pickupPos && this.position.distanceTo(chickenPen.pickupPos) < 3.4)) {
         const toTake = Math.min(neededEggs, chickenPen.produceStock, this.capacity - this.stack.length);
         for (let k = 0; k < toTake; k++) {
           const egg = chickenPen.harvestProduce();
@@ -1003,10 +996,8 @@ class HelperWorker {
     // 2D. Fetch Bread ONLY IF neededBread > 0
     if (neededBread > 0 && this.stack.length < this.capacity) {
       if (bakery && bakery.outputStock > 0) {
-        const bOutX = bakery.config.pos.x + 0.7;
-        const bOutZ = bakery.config.pos.z + 0.9;
-        this.setTarget(bOutX, bOutZ);
-        if (this.position.distanceTo(new THREE.Vector3(bOutX, 0, bOutZ)) < 3.0 || this.position.distanceTo(bakery.config.pos) < 3.0) {
+        this.setTarget(bakery.config.pos.x, bakery.config.pos.z);
+        if (this.position.distanceTo(bakery.config.pos) < 3.4) {
           const toTake = Math.min(neededBread, bakery.outputStock, this.capacity - this.stack.length);
           for (let k = 0; k < toTake; k++) {
             const bread = bakery.harvestOutput();
@@ -1015,8 +1006,8 @@ class HelperWorker {
         }
         return;
       } else if (standBread && standBread.stock.length > 0) {
-        this.setTarget(standBread.pos.x, standBread.pos.z + 1.2);
-        if (this.position.distanceTo(standBread.pos) < 3.2) {
+        this.setTarget(standBread.pos.x, standBread.pos.z);
+        if (this.position.distanceTo(standBread.pos) < 3.4) {
           const bread = standBread.takeItem();
           if (bread) this.addItem(bread);
         }

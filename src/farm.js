@@ -15,6 +15,7 @@ class CropPatch {
   constructor(scene, config) {
     this.scene = scene;
     this.config = config;
+    this.pos = new THREE.Vector3(config.pos.x, 0, config.pos.z);
     this.unlocked = config.unlocked || false;
     this.crops = [];
     this.growthInterval = config.growthInterval || (CONFIG.ITEMS[config.itemId] ? CONFIG.ITEMS[config.itemId].growthTime : 2.5);
@@ -307,6 +308,7 @@ class AnimalPen {
   constructor(scene, config) {
     this.scene = scene;
     this.config = config;
+    this.pos = new THREE.Vector3(config.pos.x, 0, config.pos.z);
     this.unlocked = config.unlocked || false;
     this.produceStock = 0;
     this.feedStock = 0;
