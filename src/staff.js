@@ -871,11 +871,22 @@ class HelperWorker {
     const cowPen = pens.find(p => p.config.type === 'COW' && p.unlocked);
     const cornPatch = patches.find(p => p.unlocked && p.config.itemId === 'CARROT');
 
-    // 1. Demand Selection
-    if (standCorn && !standCorn.isFull()) {
-      this.w3_task = 'CORN_SHELF';
-    } else if (standMilk && !standMilk.isFull()) {
+    // 1. Demand Selection & Zero-Stock Hysteresis
+    // Refill Milk Refrigerator ONLY when it becomes completely empty (0 items), then fill it full once.
+    if (standMilk) {
+      if (standMilk.stock.length === 0) {
+        this.milkRefillActive = true;
+      } else if (standMilk.isFull()) {
+        this.milkRefillActive = false;
+      }
+    } else {
+      this.milkRefillActive = false;
+    }
+
+    if (this.milkRefillActive && standMilk && !standMilk.isFull()) {
       this.w3_task = 'MILK_SHELF';
+    } else if (standCorn && !standCorn.isFull()) {
+      this.w3_task = 'CORN_SHELF';
     } else {
       this.w3_task = null;
     }
@@ -912,6 +923,9 @@ class HelperWorker {
           while (this.stack.some(i => i.type === 'MILK') && !standMilk.isFull()) {
             const milk = this.popItem('MILK');
             if (milk) standMilk.addItem();
+          }
+          if (standMilk.isFull()) {
+            this.milkRefillActive = false;
           }
           if (this.stack.length === 0) this.isDelivering = false;
         }
@@ -961,7 +975,7 @@ class HelperWorker {
           this.batchWaitTimer = 0;
           return;
         }
-        this.setTarget(cornPatch.config.pos.x, cornPatch.config.pos.z - 1.2);
+        this.setTarget(cornPatch.config.pos.x, cornPatch.config.pos.z);
         return;
       }
       return;
