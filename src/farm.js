@@ -296,6 +296,10 @@ class CropPatch {
         questManager.recordEvent('cropsHarvested', 1);
       }
 
+      if (typeof sounds !== 'undefined' && sounds.triggerHaptic) {
+        sounds.triggerHaptic('light');
+      }
+
       return this.config.itemId;
     }
     return null;
@@ -755,6 +759,11 @@ class AnimalPen {
         this.feedStock--;
         this.produceStock++;
         this.updateBadges();
+
+        if (typeof sounds !== 'undefined') {
+          if (isChicken) sounds.playCluck();
+          else sounds.playMoo();
+        }
       }
     }
   }
@@ -764,7 +773,11 @@ class AnimalPen {
     const added = Math.min(amount, this.feedCapacity - this.feedStock);
     this.feedStock += added;
     this.updateBadges();
-    sounds.playPlace();
+    if (typeof sounds !== 'undefined') {
+      sounds.playPlace();
+      if (this.config.type === 'CHICKEN') sounds.playCluck();
+      else sounds.playMoo();
+    }
     return added;
   }
 
@@ -1101,6 +1114,10 @@ class ProcessingMachine {
           if (typeof questManager !== 'undefined') {
             questManager.recordEvent('cakesBaked', 1);
           }
+
+          if (typeof sounds !== 'undefined' && sounds.playOvenDing) {
+            sounds.playOvenDing();
+          }
         }
       }
     } else {
@@ -1128,6 +1145,10 @@ class ProcessingMachine {
 
           if (typeof questManager !== 'undefined') {
             questManager.recordEvent('breadBaked', 1);
+          }
+
+          if (typeof sounds !== 'undefined' && sounds.playOvenDing) {
+            sounds.playOvenDing();
           }
         }
       }

@@ -7,6 +7,14 @@ class GameEngine {
     this.saveTimer = 0;
     this.isCashierPresent = false;
 
+    // Screen Shake & Photo Mode
+    this.screenShakeIntensity = 0;
+    this.screenShakeTimer = 0;
+    this.isPhotoMode = false;
+    this.photoZoom = 36;
+    this.photoAngle = 0;
+    this.photoTarget = new THREE.Vector3(5.0, 0.8, -2.0);
+
     this.initThree();
     this.initEnvironment();
     this.initGameObjects();
@@ -1604,6 +1612,117 @@ class GameEngine {
     }
   }
 
+  triggerScreenShake(intensity = 0.25, duration = 0.35) {
+    if (typeof sounds !== 'undefined' && sounds.screenShakeEnabled === false) return;
+    this.screenShakeIntensity = intensity;
+    this.screenShakeTimer = duration;
+  }
+
+  enterPhotoMode() {
+    this.isPhotoMode = true;
+    const uiLayer = document.getElementById('ui-layer');
+    if (uiLayer) uiLayer.style.display = 'none';
+
+    const photoOverlay = document.getElementById('photo-mode-overlay');
+    if (photoOverlay) photoOverlay.style.display = 'flex';
+
+    if (this.camera) {
+      this.camera.fov = this.photoZoom || 36;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  exitPhotoMode() {
+    this.isPhotoMode = false;
+    const uiLayer = document.getElementById('ui-layer');
+    if (uiLayer) uiLayer.style.display = 'block';
+
+    const photoOverlay = document.getElementById('photo-mode-overlay');
+    if (photoOverlay) photoOverlay.style.display = 'none';
+
+    if (this.camera) {
+      this.camera.fov = 36;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  setPhotoZoom(fov) {
+    this.photoZoom = Math.max(20, Math.min(60, fov));
+    if (this.camera && this.isPhotoMode) {
+      this.camera.fov = this.photoZoom;
+      this.camera.updateProjectionMatrix();
+    }
+  }
+
+  setPhotoAngle(deg) {
+    this.photoAngle = (deg * Math.PI) / 180;
+  }
+
+  takePhotoScreenshot() {
+    if (!this.renderer || !this.renderer.domElement) return;
+
+    try {
+      // Force clean render frame
+      this.renderer.render(this.scene, this.camera);
+      const glCanvas = this.renderer.domElement;
+
+      // Create export canvas with watermark badge
+      const outCanvas = document.createElement('canvas');
+      outCanvas.width = glCanvas.width;
+      outCanvas.height = glCanvas.height;
+      const ctx = outCanvas.getContext('2d');
+
+      // Draw WebGL frame
+      ctx.drawImage(glCanvas, 0, 0);
+
+      // Draw watermark badge in bottom right
+      const w = outCanvas.width;
+      const h = outCanvas.height;
+      const fontSize = Math.max(16, Math.round(w * 0.024));
+
+      ctx.save();
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+      ctx.strokeStyle = '#22c55e';
+      ctx.lineWidth = 3;
+
+      const tagText = '🌿 ORGANIC FARM MART 🌿';
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      const textWidth = ctx.measureText(tagText).width;
+      const boxW = textWidth + 36;
+      const boxH = fontSize * 1.8;
+      const boxX = w - boxW - 24;
+      const boxY = h - boxH - 24;
+
+      ctx.beginPath();
+      if (ctx.roundRect) ctx.roundRect(boxX, boxY, boxW, boxH, 12);
+      else ctx.rect(boxX, boxY, boxW, boxH);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(tagText, boxX + boxW / 2, boxY + boxH / 2);
+      ctx.restore();
+
+      // Download file
+      const dataUrl = outCanvas.toDataURL('image/png');
+      const link = document.createElement('a');
+      link.download = `organic-farm-mart-${Date.now()}.png`;
+      link.href = dataUrl;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      if (typeof sounds !== 'undefined') {
+        sounds.playUnlock();
+        sounds.triggerHaptic('success');
+      }
+    } catch (e) {
+      console.warn('Screenshot export fallback:', e);
+    }
+  }
+
   loop(currentTime) {
     const dt = Math.min(0.1, (currentTime - this.lastTime) / 1000);
     this.lastTime = currentTime;
@@ -1718,14 +1837,38 @@ class GameEngine {
     sdk.update(dt);
     this.ui.update(dt);
 
-    const targetCamX = this.player.position.x + this.cameraOffset.x;
-    const targetCamY = this.cameraOffset.y;
-    const targetCamZ = this.player.position.z + this.cameraOffset.z;
+    if (this.isPhotoMode) {
+      // Smooth orbit around farm center
+      const camDist = 24.0;
+      const camHeight = 16.0;
+      const targetCamX = this.photoTarget.x + Math.sin(this.photoAngle) * camDist;
+      const targetCamY = camHeight;
+      const targetCamZ = this.photoTarget.z + Math.cos(this.photoAngle) * camDist;
 
-    this.camera.position.x += (targetCamX - this.camera.position.x) * 6 * dt;
-    this.camera.position.y += (targetCamY - this.camera.position.y) * 6 * dt;
-    this.camera.position.z += (targetCamZ - this.camera.position.z) * 6 * dt;
-    this.camera.lookAt(this.player.position.x, 0.8, this.player.position.z);
+      this.camera.position.x += (targetCamX - this.camera.position.x) * 8 * dt;
+      this.camera.position.y += (targetCamY - this.camera.position.y) * 8 * dt;
+      this.camera.position.z += (targetCamZ - this.camera.position.z) * 8 * dt;
+      this.camera.lookAt(this.photoTarget.x, this.photoTarget.y, this.photoTarget.z);
+    } else {
+      const targetCamX = this.player.position.x + this.cameraOffset.x;
+      const targetCamY = this.cameraOffset.y;
+      const targetCamZ = this.player.position.z + this.cameraOffset.z;
+
+      this.camera.position.x += (targetCamX - this.camera.position.x) * 6 * dt;
+      this.camera.position.y += (targetCamY - this.camera.position.y) * 6 * dt;
+      this.camera.position.z += (targetCamZ - this.camera.position.z) * 6 * dt;
+
+      // Apply Screen Shake if active
+      if (this.screenShakeTimer > 0) {
+        this.screenShakeTimer -= dt;
+        const factor = (this.screenShakeTimer / 0.35) * this.screenShakeIntensity;
+        this.camera.position.x += (Math.random() * 2 - 1) * factor;
+        this.camera.position.y += (Math.random() * 2 - 1) * factor * 0.6;
+        this.camera.position.z += (Math.random() * 2 - 1) * factor;
+      }
+
+      this.camera.lookAt(this.player.position.x, 0.8, this.player.position.z);
+    }
 
     this.saveTimer += dt;
     if (this.saveTimer >= 10) {

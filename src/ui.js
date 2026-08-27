@@ -160,6 +160,9 @@ class UIManager {
     const btnSettingsSound = document.getElementById('btn-settings-sound');
     const btnBgm = document.getElementById('btn-bgm');
     const btnSettingsBgm = document.getElementById('btn-settings-bgm');
+    const btnSettingsAmbience = document.getElementById('btn-settings-ambience');
+    const btnSettingsHaptics = document.getElementById('btn-settings-haptics');
+    const btnSettingsShake = document.getElementById('btn-settings-shake');
     const sliderBgmVol = document.getElementById('slider-bgm-volume');
     const labelBgmVol = document.getElementById('label-bgm-volume');
 
@@ -171,6 +174,15 @@ class UIManager {
       const bgmOn = !sounds.bgmMuted;
       if (btnBgm) btnBgm.textContent = bgmOn ? '🎵' : '🔇';
       if (btnSettingsBgm) btnSettingsBgm.textContent = bgmOn ? 'Music: ON 🎵' : 'Music: OFF 🔇';
+
+      const ambOn = !sounds.ambientMuted;
+      if (btnSettingsAmbience) btnSettingsAmbience.textContent = ambOn ? 'Ambience: ON 🌾' : 'Ambience: OFF 🔇';
+
+      const hapOn = !!sounds.hapticsEnabled;
+      if (btnSettingsHaptics) btnSettingsHaptics.textContent = hapOn ? 'Haptics: ON 📳' : 'Haptics: OFF 🔇';
+
+      const shakeOn = !!sounds.screenShakeEnabled;
+      if (btnSettingsShake) btnSettingsShake.textContent = shakeOn ? 'Shake: ON ✨' : 'Shake: OFF 🔇';
 
       if (sliderBgmVol) {
         sliderBgmVol.value = bgmOn ? Math.round((sounds.bgmVolumeFactor || 0.75) * 100) : 0;
@@ -206,6 +218,29 @@ class UIManager {
       });
     }
 
+    if (btnSettingsAmbience) {
+      btnSettingsAmbience.addEventListener('click', () => {
+        sounds.toggleAmbience();
+        updateSoundUI();
+      });
+    }
+
+    if (btnSettingsHaptics) {
+      btnSettingsHaptics.addEventListener('click', () => {
+        sounds.setHapticsEnabled(!sounds.hapticsEnabled);
+        sounds.triggerHaptic('medium');
+        updateSoundUI();
+      });
+    }
+
+    if (btnSettingsShake) {
+      btnSettingsShake.addEventListener('click', () => {
+        sounds.setScreenShakeEnabled(!sounds.screenShakeEnabled);
+        if (this.game) this.game.triggerScreenShake(0.3, 0.35);
+        updateSoundUI();
+      });
+    }
+
     if (sliderBgmVol) {
       const curPct = Math.round((sounds.bgmVolumeFactor || 0.75) * 100);
       sliderBgmVol.value = sounds.bgmMuted ? 0 : curPct;
@@ -218,6 +253,43 @@ class UIManager {
         const bgmOn = !sounds.bgmMuted;
         if (btnBgm) btnBgm.textContent = bgmOn ? '🎵' : '🔇';
         if (btnSettingsBgm) btnSettingsBgm.textContent = bgmOn ? 'Music: ON 🎵' : 'Music: OFF 🔇';
+      });
+    }
+
+    // Photo & Camera Mode Handlers
+    const btnPhotoMode = document.getElementById('btn-photo-mode');
+    const btnExitPhoto = document.getElementById('btn-exit-photo');
+    const btnTakeScreenshot = document.getElementById('btn-take-screenshot');
+    const sliderPhotoZoom = document.getElementById('slider-photo-zoom');
+    const sliderPhotoAngle = document.getElementById('slider-photo-angle');
+
+    if (btnPhotoMode) {
+      btnPhotoMode.addEventListener('click', () => {
+        if (this.game) this.game.enterPhotoMode();
+      });
+    }
+
+    if (btnExitPhoto) {
+      btnExitPhoto.addEventListener('click', () => {
+        if (this.game) this.game.exitPhotoMode();
+      });
+    }
+
+    if (btnTakeScreenshot) {
+      btnTakeScreenshot.addEventListener('click', () => {
+        if (this.game) this.game.takePhotoScreenshot();
+      });
+    }
+
+    if (sliderPhotoZoom) {
+      sliderPhotoZoom.addEventListener('input', (e) => {
+        if (this.game) this.game.setPhotoZoom(parseFloat(e.target.value));
+      });
+    }
+
+    if (sliderPhotoAngle) {
+      sliderPhotoAngle.addEventListener('input', (e) => {
+        if (this.game) this.game.setPhotoAngle(parseFloat(e.target.value));
       });
     }
 

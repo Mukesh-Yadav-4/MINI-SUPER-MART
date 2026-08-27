@@ -1,8 +1,29 @@
-// High-Quality Procedural Web Audio API Sound Synthesizer with Cluck, Moo, and Cash Riffle SFX
 class SoundSystem {
   constructor() {
     this.ctx = null;
     this.muted = false;
+
+    // Ambience settings
+    this.ambientMuted = false;
+    this.ambientVolume = 0.5;
+    this.ambientTimer = null;
+    try {
+      const savedAmb = localStorage.getItem('ofm_ambience_muted');
+      if (savedAmb !== null) this.ambientMuted = (savedAmb === 'true');
+      const savedAmbVol = localStorage.getItem('ofm_ambience_volume');
+      if (savedAmbVol !== null) this.ambientVolume = parseInt(savedAmbVol, 10) / 100;
+    } catch (e) {}
+
+    // Mobile Haptics & Screen Shake settings
+    this.hapticsEnabled = true;
+    this.screenShakeEnabled = true;
+    try {
+      const savedHap = localStorage.getItem('ofm_haptics_enabled');
+      if (savedHap !== null) this.hapticsEnabled = (savedHap === 'true');
+      const savedShake = localStorage.getItem('ofm_screen_shake');
+      if (savedShake !== null) this.screenShakeEnabled = (savedShake === 'true');
+    } catch (e) {}
+
     this.initAudio();
   }
 
@@ -21,6 +42,9 @@ class SoundSystem {
         this.initBGM();
         if (!this.bgmMuted && !this.bgmTimer) {
           this.startBGM();
+        }
+        if (!this.ambientMuted && !this.ambientTimer) {
+          this.startAmbience();
         }
       } catch (e) {}
     };
@@ -263,6 +287,222 @@ class SoundSystem {
       gain.connect(this.ctx.destination);
       osc.start(t);
       osc.stop(t + 0.06);
+    } catch (e) {}
+  }
+
+  // Delightful Oven Bell "Ding!" ("Ding-g-g! 🍞🎂")
+  playOvenDing() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    try {
+      const t = this.ctx.currentTime;
+
+      // Primary Crystal Bell Ding (1760 Hz - A6)
+      const osc1 = this.ctx.createOscillator();
+      const gain1 = this.ctx.createGain();
+      osc1.type = 'sine';
+      osc1.frequency.setValueAtTime(1760, t);
+
+      gain1.gain.setValueAtTime(0.42, t);
+      gain1.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
+
+      osc1.connect(gain1);
+      gain1.connect(this.ctx.destination);
+      osc1.start(t);
+      osc1.stop(t + 1.2);
+
+      // Shimmering High Harmonic (3520 Hz - A7)
+      const osc2 = this.ctx.createOscillator();
+      const gain2 = this.ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(3520, t);
+
+      gain2.gain.setValueAtTime(0.22, t);
+      gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
+
+      osc2.connect(gain2);
+      gain2.connect(this.ctx.destination);
+      osc2.start(t);
+      osc2.stop(t + 0.8);
+
+      // Soft Warm Undertone (880 Hz - A5)
+      const osc3 = this.ctx.createOscillator();
+      const gain3 = this.ctx.createGain();
+      osc3.type = 'triangle';
+      osc3.frequency.setValueAtTime(880, t);
+
+      gain3.gain.setValueAtTime(0.25, t);
+      gain3.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
+
+      osc3.connect(gain3);
+      gain3.connect(this.ctx.destination);
+      osc3.start(t);
+      osc3.stop(t + 0.9);
+    } catch (e) {}
+  }
+
+  // Natural Bird Chirp ("Cheep-cheep-tweet! 🐦")
+  playBirdChirp() {
+    if (this.muted || this.ambientMuted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const notes = [
+        { freq: 2800 + Math.random() * 400, delay: 0.00, dur: 0.08 },
+        { freq: 3300 + Math.random() * 400, delay: 0.09, dur: 0.10 },
+        { freq: 3000 + Math.random() * 300, delay: 0.21, dur: 0.07 }
+      ];
+
+      notes.forEach(n => {
+        const pt = t + n.delay;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(n.freq, pt);
+        osc.frequency.exponentialRampToValueAtTime(n.freq * 1.25, pt + n.dur * 0.5);
+        osc.frequency.exponentialRampToValueAtTime(n.freq * 0.9, pt + n.dur);
+
+        const vol = (this.ambientVolume || 0.35) * 0.28;
+        gain.gain.setValueAtTime(vol, pt);
+        gain.gain.exponentialRampToValueAtTime(0.001, pt + n.dur);
+
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(pt);
+        osc.stop(pt + n.dur);
+      });
+    } catch (e) {}
+  }
+
+  // Gentle Rustling Farm Breeze ("Swoosh-sh-sh 🌾")
+  playBreeze() {
+    if (this.muted || this.ambientMuted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const dur = 2.5;
+      const bufferSize = Math.floor(this.ctx.sampleRate * dur);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * Math.sin((i / bufferSize) * Math.PI);
+      }
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(450, t);
+      filter.frequency.linearRampToValueAtTime(750, t + dur * 0.5);
+      filter.frequency.linearRampToValueAtTime(400, t + dur);
+
+      const gain = this.ctx.createGain();
+      const vol = (this.ambientVolume || 0.35) * 0.18;
+      gain.gain.setValueAtTime(0.001, t);
+      gain.gain.linearRampToValueAtTime(vol, t + dur * 0.4);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      noise.start(t);
+      noise.stop(t + dur);
+    } catch (e) {}
+  }
+
+  startAmbience() {
+    if (this.ambientTimer) return;
+    this.ensureContext();
+
+    const scheduleNext = () => {
+      const delay = 6000 + Math.random() * 8000; // Every 6 - 14 seconds
+      this.ambientTimer = setTimeout(() => {
+        if (!this.ambientMuted && !this.muted) {
+          if (Math.random() < 0.65) {
+            this.playBirdChirp();
+          } else {
+            this.playBreeze();
+          }
+        }
+        scheduleNext();
+      }, delay);
+    };
+    scheduleNext();
+  }
+
+  stopAmbience() {
+    if (this.ambientTimer) {
+      clearTimeout(this.ambientTimer);
+      this.ambientTimer = null;
+    }
+  }
+
+  setAmbienceVolume(val) {
+    this.ambientVolume = Math.max(0, Math.min(1, val));
+    try {
+      localStorage.setItem('ofm_ambience_volume', Math.round(this.ambientVolume * 100).toString());
+    } catch (e) {}
+
+    if (this.ambientVolume === 0) {
+      this.ambientMuted = true;
+    } else {
+      this.ambientMuted = false;
+    }
+    try {
+      localStorage.setItem('ofm_ambience_muted', this.ambientMuted.toString());
+    } catch (e) {}
+
+    if (!this.ambientMuted && !this.ambientTimer) {
+      this.startAmbience();
+    }
+  }
+
+  toggleAmbience() {
+    this.ambientMuted = !this.ambientMuted;
+    try {
+      localStorage.setItem('ofm_ambience_muted', this.ambientMuted.toString());
+    } catch (e) {}
+
+    if (!this.ambientMuted && !this.ambientTimer) {
+      this.startAmbience();
+    }
+    return !this.ambientMuted;
+  }
+
+  // Mobile Haptic Feedback Engine
+  triggerHaptic(type = 'light') {
+    if (!this.hapticsEnabled) return;
+    if (typeof navigator === 'undefined' || !navigator.vibrate) return;
+
+    try {
+      if (type === 'light') navigator.vibrate(15);
+      else if (type === 'medium') navigator.vibrate(30);
+      else if (type === 'heavy') navigator.vibrate(50);
+      else if (type === 'success') navigator.vibrate([25, 30, 45]);
+      else if (type === 'celebration') navigator.vibrate([40, 50, 70, 40, 90]);
+    } catch (e) {}
+  }
+
+  setHapticsEnabled(val) {
+    this.hapticsEnabled = !!val;
+    try {
+      localStorage.setItem('ofm_haptics_enabled', this.hapticsEnabled.toString());
+    } catch (e) {}
+  }
+
+  setScreenShakeEnabled(val) {
+    this.screenShakeEnabled = !!val;
+    try {
+      localStorage.setItem('ofm_screen_shake', this.screenShakeEnabled.toString());
     } catch (e) {}
   }
 
