@@ -1,3 +1,13 @@
 {
-  "outputDirectory": "."
+  "version": 2,
+  "public": true,
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
