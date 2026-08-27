@@ -533,26 +533,30 @@ html, body {
 }
 
 /* Notification Banner */
-.notification-banner {
-  position: absolute;
-  top: 90px;
+#notification-banner, .notification-banner {
+  position: fixed;
+  top: 75px;
   left: 50%;
   transform: translateX(-50%) translateY(-30px);
-  background: rgba(30, 70, 32, 0.95);
+  background: linear-gradient(180deg, rgba(38, 50, 56, 0.96) 0%, rgba(20, 28, 32, 0.98) 100%);
   color: #ffffff;
-  padding: 12px 24px;
+  padding: 12px 26px;
   border-radius: 30px;
-  font-size: 16px;
-  font-weight: 700;
-  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
-  border: 2px solid #81c784;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45), 0 0 16px rgba(255, 215, 0, 0.35);
+  border: 2.5px solid #ffd54f;
   opacity: 0;
   pointer-events: none;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  z-index: 50;
+  transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  z-index: 1000;
+  max-width: 90vw;
+  text-align: center;
+  backdrop-filter: blur(8px);
 }
 
-.notification-banner.show {
+#notification-banner.show, .notification-banner.show {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
