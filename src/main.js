@@ -420,28 +420,50 @@ class GameEngine {
     createBarrel(17.5, -6.0);
 
     // 8. Walls, Windows, Trim & Glass Door
+    // A. Left North Wall (to the left of Left North Gate)
     const wallLeft = new THREE.Mesh(new THREE.BoxGeometry(4.0, 2.8, 0.2), new THREE.MeshLambertMaterial({ color: CONFIG.COLORS.BACK_WALL }));
     wallLeft.position.set(-10.0, 1.4, -13.5);
     wallLeft.castShadow = true;
     addSketch(wallLeft, 0x111111);
     this.scene.add(wallLeft);
 
-    const wallRight = new THREE.Mesh(new THREE.BoxGeometry(26.2, 2.8, 0.2), new THREE.MeshLambertMaterial({ color: CONFIG.COLORS.BACK_WALL }));
-    wallRight.position.set(8.9, 1.4, -13.5);
-    wallRight.castShadow = true;
-    addSketch(wallRight, 0x111111);
-    this.scene.add(wallRight);
+    // B. Center North Wall (between Left North Gate and Right North Gate, behind market shelves)
+    const wallCenter = new THREE.Mesh(new THREE.BoxGeometry(21.5, 2.8, 0.2), new THREE.MeshLambertMaterial({ color: CONFIG.COLORS.BACK_WALL }));
+    wallCenter.position.set(6.75, 1.4, -13.5);
+    wallCenter.castShadow = true;
+    addSketch(wallCenter, 0x111111);
+    this.scene.add(wallCenter);
 
-    const trimGeo = new THREE.BoxGeometry(34.5, 0.24, 0.24);
+    // C. Right North Corner Wall (to the right of Right North Gate)
+    const wallRightEnd = new THREE.Mesh(new THREE.BoxGeometry(0.6, 2.8, 0.2), new THREE.MeshLambertMaterial({ color: CONFIG.COLORS.BACK_WALL }));
+    wallRightEnd.position.set(21.8, 1.4, -13.5);
+    wallRightEnd.castShadow = true;
+    addSketch(wallRightEnd, 0x111111);
+    this.scene.add(wallRightEnd);
+
+    // D. Continuous Top Wall Trim running along the entire North Wall
+    const trimGeo = new THREE.BoxGeometry(34.2, 0.24, 0.24);
     const wallTrim = new THREE.Mesh(trimGeo, new THREE.MeshLambertMaterial({ color: 0x795548 }));
     wallTrim.position.set(5.0, 2.7, -13.5);
     addSketch(wallTrim, 0x111111);
     this.scene.add(wallTrim);
 
-    // Architectural Timber Pillars & Cozy Wall Sconces
+    // E. Solid East Side Wall
+    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.8, 16.5), new THREE.MeshLambertMaterial({ color: CONFIG.COLORS.BACK_WALL }));
+    rightWall.position.set(22.0, 1.4, -5.25);
+    rightWall.castShadow = true;
+    addSketch(rightWall, 0x111111);
+    this.scene.add(rightWall);
+
+    const rightTrim = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 16.5), new THREE.MeshLambertMaterial({ color: 0x795548 }));
+    rightTrim.position.set(22.0, 2.7, -5.25);
+    addSketch(rightTrim, 0x111111);
+    this.scene.add(rightTrim);
+
+    // Architectural Timber Pillars & Cozy Wall Sconces framing gates & departments
     const timberMat = new THREE.MeshLambertMaterial({ color: 0x5d4037 });
     const lanternMat = new THREE.MeshLambertMaterial({ color: 0xffecb3, emissive: 0xffb300, emissiveIntensity: 0.65 });
-    const columnXCoords = [-11.8, -4.0, 4.8, 10.1, 15.4, 20.0];
+    const columnXCoords = [-11.8, -8.0, -4.0, 1.0, 7.45, 12.75, 17.5, 21.8];
 
     columnXCoords.forEach(x => {
       const col = new THREE.Mesh(new THREE.BoxGeometry(0.28, 2.8, 0.26), timberMat);
@@ -722,59 +744,29 @@ class GameEngine {
     }
     this.scene.add(awningGroup);
 
-    // East Grand Entrance (Pastry Wing Expansion next to Cake Shelf)
-    const eastPillar1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.8, 0.3), pillarMat);
-    eastPillar1.position.set(22.0, 1.4, -13.0);
-    eastPillar1.castShadow = true;
-    addSketch(eastPillar1, 0x111111);
-    this.scene.add(eastPillar1);
-
-    const eastPillar1Cap = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.15, 0.35), pillarHighlight);
-    eastPillar1Cap.position.set(22.0, 2.8, -13.0);
-    addSketch(eastPillar1Cap, 0x111111);
-    this.scene.add(eastPillar1Cap);
-
-    const eastPillar2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.8, 0.3), pillarMat);
-    eastPillar2.position.set(22.0, 1.4, -9.0);
-    eastPillar2.castShadow = true;
-    addSketch(eastPillar2, 0x111111);
-    this.scene.add(eastPillar2);
-
-    const eastPillar2Cap = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.15, 0.35), pillarHighlight);
-    eastPillar2Cap.position.set(22.0, 2.8, -9.0);
-    addSketch(eastPillar2Cap, 0x111111);
-    this.scene.add(eastPillar2Cap);
-
-    // East Entrance Mat & Awning Group (Visible when unlocked)
+    // North-East Pastry Gate (Next to Royal Pastry Shelf on North Wall - just like Left North Gate)
     this.eastDoorGroup = new THREE.Group();
-    const eastEntryMat = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.2), new THREE.MeshLambertMaterial({ color: 0xba8c59 }));
-    eastEntryMat.rotation.x = -Math.PI / 2;
-    eastEntryMat.position.set(22.0, 0.018, -11.0);
-    eastEntryMat.receiveShadow = true;
-    addSketch(eastEntryMat, 0x111111);
-    this.eastDoorGroup.add(eastEntryMat);
 
-    const eastAwningGroup = new THREE.Group();
-    eastAwningGroup.position.set(22.0, 2.4, -11.0);
-    for (let i = 0; i < stripeCount; i++) {
-      const isRed = i % 2 === 0;
-      const stripeMat = new THREE.MeshLambertMaterial({ color: isRed ? CONFIG.COLORS.AWNING_RED : CONFIG.COLORS.AWNING_WHITE });
-      const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, stripeW), stripeMat);
-      stripe.position.set(-0.6, 0, (i - stripeCount/2 + 0.5) * stripeW);
-      stripe.rotation.z = 0.35;
-      stripe.castShadow = true;
-      addSketch(stripe, 0x111111);
-      eastAwningGroup.add(stripe);
-    }
-    this.eastDoorGroup.add(eastAwningGroup);
+    const eastDoorMat = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 2.4), new THREE.MeshLambertMaterial({ color: 0xa07148 }));
+    eastDoorMat.rotation.x = -Math.PI / 2;
+    eastDoorMat.position.set(19.5, 0.015, -13.5);
+    eastDoorMat.receiveShadow = true;
+    addSketch(eastDoorMat, 0x111111);
+    this.eastDoorGroup.add(eastDoorMat);
+
+    const eastGlassDoor = new THREE.Mesh(new THREE.BoxGeometry(3.6, 2.2, 0.08), new THREE.MeshLambertMaterial({ color: CONFIG.COLORS.GLASS_DOOR, transparent: true, opacity: 0.65 }));
+    eastGlassDoor.position.set(19.5, 1.6, -13.5);
+    addSketch(eastGlassDoor, 0x111111);
+    this.eastDoorGroup.add(eastGlassDoor);
+
     this.eastDoorGroup.visible = false;
     this.scene.add(this.eastDoorGroup);
 
-    // East Under-Renovation Barricade when locked
+    // North-East Under-Renovation Barricade when locked
     this.eastBarricadeGroup = new THREE.Group();
-    this.eastBarricadeGroup.position.set(22.0, 0, -11.0);
+    this.eastBarricadeGroup.position.set(19.5, 0, -13.5);
     for (let p = 0; p < 3; p++) {
-      const plank = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.28, 4.0), new THREE.MeshLambertMaterial({ color: 0xa1887f }));
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(3.8, 0.28, 0.2), new THREE.MeshLambertMaterial({ color: 0xa1887f }));
       plank.position.set(0, 0.5 + p * 0.6, 0);
       plank.castShadow = true;
       addSketch(plank, 0x111111);
@@ -960,8 +952,16 @@ class GameEngine {
     this.resolveBoxCollision(entityPos, { x: -12.0, z: -8.6 }, 0.2, 1.6, radius);
     this.resolveBoxCollision(entityPos, { x: -12.0, z: -1.0 }, 0.2, 1.0, radius);
 
-    this.resolveBoxCollision(entityPos, { x: -10.0, z: -12.0 }, 2.0, 0.2, radius);
-    this.resolveBoxCollision(entityPos, { x: 6.0, z: -12.0 }, 10.2, 0.2, radius);
+    // North Wall Segments (Left, Center between gates, Right Corner)
+    this.resolveBoxCollision(entityPos, { x: -10.0, z: -13.5 }, 2.0, 0.2, radius);
+    this.resolveBoxCollision(entityPos, { x: 6.75, z: -13.5 }, 10.75, 0.2, radius);
+    this.resolveBoxCollision(entityPos, { x: 21.8, z: -13.5 }, 0.3, 0.2, radius);
+    this.resolveBoxCollision(entityPos, { x: 22.0, z: -5.25 }, 0.2, 8.25, radius);
+
+    // North-East Pastry Gate Barricade collision when locked
+    if (CONFIG.UNLOCKS.door_east && !CONFIG.UNLOCKS.door_east.unlocked) {
+      this.resolveBoxCollision(entityPos, { x: 19.5, z: -13.5 }, 1.9, 0.2, radius);
+    }
   }
 
   resolveBoxCollision(entityPos, boxCenter, halfW, halfD, radius) {

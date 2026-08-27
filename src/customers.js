@@ -22,10 +22,10 @@ const GATES = {
     entryAisle: new THREE.Vector3(-6.0, 0, -7.0)
   },
   EAST: {
-    spawn: new THREE.Vector3(22.0, 0, -11.0),
-    door: new THREE.Vector3(19.0, 0, -11.0),
-    foyer: new THREE.Vector3(17.0, 0, -11.0),
-    entryAisle: new THREE.Vector3(15.4, 0, -9.5)
+    spawn: new THREE.Vector3(19.5, 0, -15.5),
+    door: new THREE.Vector3(19.5, 0, -13.5),
+    foyer: new THREE.Vector3(19.5, 0, -11.0),
+    entryAisle: new THREE.Vector3(19.5, 0, -7.0)
   }
 };
 
@@ -611,9 +611,9 @@ class CustomerManager {
             cust.updateThoughtBadge();
 
             if (isReg2) {
-              // Exit via East Gate
+              // Exit via North-East Pastry Gate
               const exitRightOfCounter = new THREE.Vector3(cust.assignedRegister.pos.x + 3.2, 0, cust.assignedRegister.customerCheckoutPos.z);
-              const exitAisleEast = new THREE.Vector3(18.0, 0, GATES.EAST.foyer.z);
+              const exitAisleEast = new THREE.Vector3(19.5, 0, -7.0);
               cust.waypoints = [
                 exitRightOfCounter,
                 exitAisleEast,
