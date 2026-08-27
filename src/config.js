@@ -134,7 +134,7 @@ const CONFIG = {
       name: 'Warm Bakery Showcase',
       cost: 1400,
       unlocked: false,
-      pos: { x: 10.1, z: -9.5 },
+      pos: { x: 10.1, z: -12.5 },
       radius: 1.6,
       requires: 'machine_bakery'
     },
@@ -152,7 +152,7 @@ const CONFIG = {
       name: 'Sweetcorn Field',
       cost: 1800,
       unlocked: false,
-      pos: { x: -2.0, z: 8.5 },
+      pos: { x: 0.0, z: 9.5 },
       radius: 1.8,
       requires: 'stand_bread'
     },

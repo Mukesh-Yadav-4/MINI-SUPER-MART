@@ -730,7 +730,7 @@ class GameEngine {
     this.cropPatches = [
       new CropPatch(this.scene, { id: 'plot_tomato', itemId: 'TOMATO', growthInterval: 3.0, pos: { x: -5.0, z: 7.0 }, unlocked: true }),
       new CropPatch(this.scene, { id: 'plot_wheat', itemId: 'WHEAT', growthInterval: 4.5, pos: { x: 3.5, z: 7.0 }, unlocked: false }),
-      new CropPatch(this.scene, { id: 'plot_carrot', itemId: 'CARROT', growthInterval: 7.5, pos: { x: -2.0, z: 8.5 }, unlocked: false })
+      new CropPatch(this.scene, { id: 'plot_carrot', itemId: 'CARROT', growthInterval: 7.5, pos: { x: 0.0, z: 9.5 }, unlocked: false })
     ];
 
     this.animalPens = [
@@ -751,7 +751,7 @@ class GameEngine {
       new MarketStand(this.scene, { id: 'stand_carrot', itemId: 'CARROT', pos: { x: 15.4, z: -6.65 }, unlocked: false }),
       new MarketStand(this.scene, { id: 'stand_juice', itemId: 'JUICE', pos: { x: -0.5, z: -12.5 }, unlocked: false }),
       new MarketStand(this.scene, { id: 'stand_milk', itemId: 'MILK', pos: { x: 4.8, z: -12.5 }, unlocked: false }),
-      new MarketStand(this.scene, { id: 'stand_bread', itemId: 'BREAD', pos: { x: 10.1, z: -9.5 }, unlocked: false }),
+      new MarketStand(this.scene, { id: 'stand_bread', itemId: 'BREAD', pos: { x: 10.1, z: -12.5 }, unlocked: false }),
       new MarketStand(this.scene, { id: 'stand_cake', itemId: 'CAKE', pos: { x: 15.4, z: -12.5 }, unlocked: false })
     ];
 
