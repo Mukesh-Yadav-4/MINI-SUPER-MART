@@ -119,10 +119,13 @@ global.THREE = {
     this.position = new MockVector3();
     this.shadow = { mapSize: {}, camera: {} };
   },
+  PointLight: function() { this.position = new MockVector3(); },
   PlaneGeometry: function() {},
   BoxGeometry: function() {},
-  CylinderGeometry: function() {},
+  CylinderGeometry: function() { this.rotateX = () => {}; },
   SphereGeometry: function() {},
+  OctahedronGeometry: function() {},
+  DodecahedronGeometry: function() {},
   CircleGeometry: function() {},
   RingGeometry: function() {},
   ConeGeometry: function() {},
@@ -130,8 +133,8 @@ global.THREE = {
   EdgesGeometry: function() {},
   LineSegments: function() { return new MockMesh(); },
   LineBasicMaterial: function() {},
-  MeshLambertMaterial: function() {},
-  MeshBasicMaterial: function() {},
+  MeshLambertMaterial: function() { this.clone = function() { return new THREE.MeshLambertMaterial(); }; this.color = { setHex: () => {} }; this.emissive = { setHex: () => {} }; },
+  MeshBasicMaterial: function() { this.clone = function() { return new THREE.MeshBasicMaterial(); }; this.color = { setHex: () => {} }; },
   SpriteMaterial: function() {},
   Sprite: MockMesh,
   CanvasTexture: function() {
@@ -142,11 +145,14 @@ global.THREE = {
   Clock: function() { this.getDelta = () => 0.016; },
   PCFSoftShadowMap: 1,
   ACESFilmicToneMapping: 1,
-  LinearFilter: 1
+  LinearFilter: 1,
+  DoubleSide: 2,
+  NoToneMapping: 0,
+  sRGBEncoding: 3001
 };
 
 const fs = require('fs');
-const files = ['config.js', 'audio.js', 'sdk.js', 'player.js', 'farm.js', 'market.js', 'customers.js', 'staff.js', 'ui.js', 'main.js'];
+const files = ['config.js', 'audio.js', 'sdk.js', 'particles.js', 'player.js', 'farm.js', 'market.js', 'customers.js', 'staff.js', 'ui.js', 'main.js'];
 
 try {
   let combined = '';

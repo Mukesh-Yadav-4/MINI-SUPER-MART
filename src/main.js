@@ -928,6 +928,13 @@ class GameEngine {
     this.particleGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
     this.puffGeo = new THREE.SphereGeometry(0.1, 4, 4);
 
+    if (typeof ParticleSystem !== 'undefined') {
+      this.particleSystem = new ParticleSystem(this.scene);
+      if (typeof window !== 'undefined') {
+        window.particleSystem = this.particleSystem;
+      }
+    }
+
     const colors = [0xffea00, 0x00e676, 0x00e5ff, 0xff1744, 0xff9100];
     this.confettiMaterials = colors.map(c => new THREE.MeshBasicMaterial({ color: c }));
     this.puffMaterial = new THREE.MeshBasicMaterial({ color: 0x78909c });
@@ -1007,6 +1014,10 @@ class GameEngine {
   }
 
   updateParticles(dt) {
+    if (this.particleSystem) {
+      this.particleSystem.update(dt);
+    }
+
     for (let i = this.activeParticles.length - 1; i >= 0; i--) {
       const p = this.activeParticles[i];
       p.life -= dt;

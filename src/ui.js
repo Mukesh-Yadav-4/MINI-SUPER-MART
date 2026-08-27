@@ -735,6 +735,56 @@ class UIManager {
         : `$${this.playerHighScore.toLocaleString()}`;
     }
 
+    // Render Milestone Wardrobe Cosmetics
+    const cosmeticsGrid = document.getElementById('cosmetics-grid');
+    if (cosmeticsGrid) {
+      cosmeticsGrid.innerHTML = '';
+      const currentEquipped = (this.game && this.game.player) 
+        ? (this.game.player.currentHat || 'STRAW_HAT')
+        : (localStorage.getItem('ofm_equipped_hat') || 'STRAW_HAT');
+
+      const cosmeticList = [
+        { id: 'STRAW_HAT', name: 'Straw Hat', icon: '👒', reqScore: 0, reqDesc: 'Default' },
+        { id: 'CHEF_TOQUE', name: "Chef's Toque", icon: '👨‍🍳', reqScore: 50000, reqDesc: '$50K Peak' },
+        { id: 'GOLDEN_CROWN', name: 'Royal Crown', icon: '👑', reqScore: 500000, reqDesc: '$500K Peak' }
+      ];
+
+      cosmeticList.forEach(c => {
+        const isUnlocked = this.playerHighScore >= c.reqScore;
+        const isEquipped = currentEquipped === c.id;
+
+        const card = document.createElement('div');
+        card.className = `cosmetic-card ${isEquipped ? 'equipped' : (isUnlocked ? 'unlocked' : 'locked')}`;
+
+        let statusText = '🔒 Locked';
+        if (isEquipped) statusText = 'Equipped ✨';
+        else if (isUnlocked) statusText = 'Equip 👆';
+        else statusText = c.reqDesc;
+
+        card.innerHTML = `
+          <div class="cosmetic-icon">${c.icon}</div>
+          <div class="cosmetic-name">${c.name}</div>
+          <div class="cosmetic-status">${statusText}</div>
+        `;
+
+        card.addEventListener('click', () => {
+          if (isUnlocked) {
+            if (this.game && this.game.player) {
+              this.game.player.setCosmeticHat(c.id);
+            }
+            try { localStorage.setItem('ofm_equipped_hat', c.id); } catch (e) {}
+            sounds.playUpgrade();
+            this.showNotification(`✨ Equipped ${c.name}!`);
+            this.renderLeaderboard();
+          } else {
+            this.showNotification(`🔒 Reach ${c.reqDesc} on Leaderboard to unlock ${c.name}!`);
+          }
+        });
+
+        cosmeticsGrid.appendChild(card);
+      });
+    }
+
     const list = document.getElementById('leaderboard-list');
     if (!list) return;
     list.innerHTML = '';

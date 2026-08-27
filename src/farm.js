@@ -285,6 +285,13 @@ class CropPatch {
       readyCrop.mesh.scale.set(0.01, 0.01, 0.01);
       this.harvestCooldown = 0.08;
       sounds.playHarvest();
+
+      if (typeof window !== 'undefined' && window.particleSystem) {
+        const isTomato = this.config.itemId === 'TOMATO';
+        const color = isTomato ? 0xef5350 : (this.config.itemId === 'CARROT' ? 0xffb74d : 0xffea00);
+        window.particleSystem.spawnHarvestSparkles(this.pos.x + readyCrop.posX, 0.4, this.pos.z + readyCrop.posZ, color, 8);
+      }
+
       return this.config.itemId;
     }
     return null;
@@ -768,6 +775,11 @@ class AnimalPen {
       sounds.playMoo();
     }
 
+    if (typeof window !== 'undefined' && window.particleSystem) {
+      const color = (this.config.type === 'CHICKEN') ? 0xfff9c4 : 0x81d4fa;
+      window.particleSystem.spawnHarvestSparkles(this.pickupPos.x, 0.5, this.pickupPos.z, color, 8);
+    }
+
     return this.config.produceId;
   }
 
@@ -1045,6 +1057,10 @@ class ProcessingMachine {
           this.ingredients.splice(0, 2);
           this.outputStock++;
           this.updateBadges();
+
+          if (typeof window !== 'undefined' && window.particleSystem) {
+            window.particleSystem.spawnFlourPuff(this.config.pos.x + 0.7, 0.5, this.config.pos.z + 0.9, 6, false);
+          }
         }
       }
     } else if (isCakery) {
@@ -1073,6 +1089,10 @@ class ProcessingMachine {
           }
           this.outputStock++;
           this.updateBadges();
+
+          if (typeof window !== 'undefined' && window.particleSystem) {
+            window.particleSystem.spawnFlourPuff(this.config.pos.x + 0.7, 0.5, this.config.pos.z + 0.9, 8, true);
+          }
         }
       }
     } else {
@@ -1093,6 +1113,10 @@ class ProcessingMachine {
           }
           this.outputStock++;
           this.updateBadges();
+
+          if (typeof window !== 'undefined' && window.particleSystem) {
+            window.particleSystem.spawnFlourPuff(this.config.pos.x + 0.7, 0.5, this.config.pos.z + 0.9, 8, false);
+          }
         }
       }
     }

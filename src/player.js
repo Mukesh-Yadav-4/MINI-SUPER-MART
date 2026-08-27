@@ -90,20 +90,15 @@ class Player {
     bangs.position.set(0, 1.62, 0.16);
     this.mesh.add(bangs);
 
-    // Smaller, stylish farmer straw hat
-    const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.04, 16), strawMat);
-    brim.position.y = 1.70;
-    brim.castShadow = true;
-    this.mesh.add(brim);
+    // Dynamic Cosmetic Hats Group
+    this.hatGroup = new THREE.Group();
+    this.mesh.add(this.hatGroup);
 
-    const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.16, 16), strawMat);
-    crown.position.y = 1.79;
-    crown.castShadow = true;
-    this.mesh.add(crown);
-
-    const ribbon = new THREE.Mesh(new THREE.CylinderGeometry(0.285, 0.285, 0.04, 16), hatBandMat);
-    ribbon.position.y = 1.73;
-    this.mesh.add(ribbon);
+    let savedHat = 'STRAW_HAT';
+    try {
+      savedHat = localStorage.getItem('ofm_equipped_hat') || 'STRAW_HAT';
+    } catch (e) {}
+    this.setCosmeticHat(savedHat);
 
     // Torso & Overalls
     const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.30, 0.72, 10), shirtMat);
@@ -246,6 +241,81 @@ class Player {
     ctx.fillText(`${icon} ${text}`, 150, 50);
 
     this.headTexture.needsUpdate = true;
+  }
+
+  setCosmeticHat(hatId = 'STRAW_HAT') {
+    this.currentHat = hatId;
+    try { localStorage.setItem('ofm_equipped_hat', hatId); } catch (e) {}
+    if (!this.hatGroup) return;
+
+    while (this.hatGroup.children.length > 0) {
+      this.hatGroup.remove(this.hatGroup.children[0]);
+    }
+
+    if (hatId === 'STRAW_HAT') {
+      const strawMat = new THREE.MeshLambertMaterial({ color: 0xffd54f });
+      const hatBandMat = new THREE.MeshLambertMaterial({ color: 0xb71c1c });
+
+      const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.44, 0.44, 0.04, 16), strawMat);
+      brim.position.y = 1.70;
+      brim.castShadow = true;
+      addSketchLines(brim, 0x111111);
+      this.hatGroup.add(brim);
+
+      const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.28, 0.16, 16), strawMat);
+      crown.position.y = 1.79;
+      crown.castShadow = true;
+      addSketchLines(crown, 0x111111);
+      this.hatGroup.add(crown);
+
+      const ribbon = new THREE.Mesh(new THREE.CylinderGeometry(0.285, 0.285, 0.04, 16), hatBandMat);
+      ribbon.position.y = 1.73;
+      this.hatGroup.add(ribbon);
+    } else if (hatId === 'CHEF_TOQUE') {
+      const toqueMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+      const toqueBandMat = new THREE.MeshLambertMaterial({ color: 0xe0e0e0 });
+
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.26, 0.12, 16), toqueBandMat);
+      band.position.y = 1.72;
+      band.castShadow = true;
+      addSketchLines(band, 0x111111);
+      this.hatGroup.add(band);
+
+      const puff = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.27, 0.38, 16), toqueMat);
+      puff.position.y = 1.94;
+      puff.castShadow = true;
+      addSketchLines(puff, 0x111111);
+      this.hatGroup.add(puff);
+
+      const topDome = new THREE.Mesh(new THREE.SphereGeometry(0.35, 10, 8), toqueMat);
+      topDome.scale.set(1.0, 0.4, 1.0);
+      topDome.position.y = 2.12;
+      addSketchLines(topDome, 0x111111);
+      this.hatGroup.add(topDome);
+    } else if (hatId === 'GOLDEN_CROWN') {
+      const goldMat = new THREE.MeshLambertMaterial({ color: 0xffd700, emissive: 0xffa000, emissiveIntensity: 0.25 });
+      const rubyMat = new THREE.MeshLambertMaterial({ color: 0xe53935 });
+      const sapphireMat = new THREE.MeshLambertMaterial({ color: 0x1e88e5 });
+
+      const baseRing = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 16), goldMat);
+      baseRing.position.y = 1.74;
+      baseRing.castShadow = true;
+      addSketchLines(baseRing, 0x111111);
+      this.hatGroup.add(baseRing);
+
+      for (let i = 0; i < 5; i++) {
+        const angle = (i / 5) * Math.PI * 2;
+        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.065, 0.18, 4), goldMat);
+        spike.position.set(Math.cos(angle) * 0.26, 1.88, Math.sin(angle) * 0.26);
+        addSketchLines(spike, 0x111111);
+        this.hatGroup.add(spike);
+
+        const gemMat = (i % 2 === 0) ? rubyMat : sapphireMat;
+        const gem = new THREE.Mesh(new THREE.SphereGeometry(0.035, 6, 6), gemMat);
+        gem.position.set(Math.cos(angle) * 0.28, 1.74, Math.sin(angle) * 0.28);
+        this.hatGroup.add(gem);
+      }
+    }
   }
 
   static getCachedMaterial(colorHex) {

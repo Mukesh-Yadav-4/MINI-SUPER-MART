@@ -498,6 +498,10 @@ class CashRegister {
     for (let i = 0; i < this.cashMeshPool.length; i++) {
       this.cashMeshPool[i].visible = (i < visibleCount);
     }
+
+    if (typeof window !== 'undefined' && window.particleSystem) {
+      window.particleSystem.spawnCoinSplash(this.pos.x, 0.5, this.pos.z, 8);
+    }
   }
 
   collectAllCash() {
