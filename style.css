@@ -1536,20 +1536,74 @@ html, body {
 }
 
 /* Responsive adjustments */
-@media (max-width: 600px) {
+@media (max-width: 680px) {
   .top-bar {
-    padding: 10px 12px;
+    padding: 8px 10px;
+    gap: 6px;
+    box-sizing: border-box;
+    width: 100%;
+    max-width: 100vw;
   }
   .stat-badge {
+    font-size: 15px;
+    padding: 5px 10px;
+    gap: 5px;
+    border-width: 2px;
+    border-radius: 18px;
+    box-shadow: 0 3px 0 #388e3c, 0 5px 12px rgba(0, 0, 0, 0.15);
+    flex-shrink: 0;
+  }
+  .badge-icon {
     font-size: 16px;
-    padding: 6px 12px;
+  }
+  .top-actions {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+  }
+  .icon-btn {
+    width: 37px;
+    height: 37px;
+    min-width: 37px;
+    max-width: 37px;
+    padding: 0;
+    border-radius: 12px;
+    font-size: 17px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 3px 0 #b0bec5, 0 4px 8px rgba(0,0,0,0.12);
+  }
+  .icon-btn:hover {
+    transform: translateY(-1px);
+  }
+  .icon-btn:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 #b0bec5;
+  }
+  .action-btn {
+    box-shadow: 0 3px 0 #e65100, 0 4px 8px rgba(255, 143, 0, 0.35);
+  }
+  #btn-upgrade {
+    width: 39px;
+    height: 37px;
+    min-width: 39px;
+    max-width: 39px;
+  }
+  .quest-notification-dot {
+    top: -2px;
+    right: -2px;
+    width: 9px;
+    height: 9px;
   }
   .btn-label {
-    display: none;
+    display: none !important;
   }
   .side-actions {
-    top: 70px;
-    right: 10px;
+    top: 64px;
+    right: 8px;
+    gap: 8px;
   }
   .boost-btn {
     padding: 8px 10px;
@@ -1562,5 +1616,34 @@ html, body {
     left: 20px;
     width: 120px;
     height: 120px;
+  }
+}
+
+@media (max-width: 375px) {
+  .top-bar {
+    padding: 6px 6px;
+    gap: 4px;
+  }
+  .stat-badge {
+    font-size: 13.5px;
+    padding: 4px 7px;
+    gap: 3px;
+  }
+  .top-actions {
+    gap: 3.5px;
+  }
+  .icon-btn {
+    width: 33px;
+    height: 33px;
+    min-width: 33px;
+    max-width: 33px;
+    font-size: 15px;
+    border-radius: 10px;
+  }
+  #btn-upgrade {
+    width: 34px;
+    height: 33px;
+    min-width: 34px;
+    max-width: 34px;
   }
 }
