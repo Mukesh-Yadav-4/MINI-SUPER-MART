@@ -262,9 +262,23 @@ class UIManager {
     const btnRewardedBoost = document.getElementById('btn-rewarded-boost');
     if (btnRewardedBoost) {
       btnRewardedBoost.addEventListener('click', () => {
-        sdk.showRewardedAd('2x_profit', () => {
-          sdk.activateBoost(180);
-          this.showNotification('⚡ 2X PROFIT BOOST ACTIVATED FOR 3 MIN!');
+        sdk.showRewardedAd('vip_frenzy', () => {
+          sdk.activateVipFrenzy(180);
+          this.showNotification('👑 VIP FRENZY ACTIVATED! 2X CASH & +5 BAG FOR 3 MIN!');
+          sounds.playCash();
+        });
+      });
+    }
+
+    const btnVipBus = document.getElementById('btn-vip-bus');
+    if (btnVipBus) {
+      btnVipBus.addEventListener('click', () => {
+        sdk.showRewardedAd('vip_bus', () => {
+          if (this.game && this.game.customerManager) {
+            this.game.customerManager.spawnVipWave(5);
+            this.showNotification('🚌 VIP TOUR BUS ARRIVED! 5 GOLDEN BILLIONAIRES ENTERING!');
+            sounds.playCash();
+          }
         });
       });
     }
@@ -275,6 +289,7 @@ class UIManager {
         sdk.showRewardedAd('instant_crop', () => {
           this.game.instantHarvestAll();
           this.showNotification('🌾 ALL CROPS & STANDS INSTANTLY HARVESTED!');
+          sounds.playHarvest();
         });
       });
     }

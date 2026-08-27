@@ -140,8 +140,29 @@ class Customer {
     // 3. Hair & Accessories (4 distinct hairstyles)
     const hairStyle = this.isVip ? 'fedora' : ['crop', 'bob', 'ponytail', 'beanie'][Math.floor(Math.random() * 4)];
 
-    if (hairStyle === 'fedora') {
-      const hatMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+    if (this.isVip) {
+      // Royal Golden Crown for VIP Shoppers
+      const crownMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
+      const rubyMat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
+
+      const crownBase = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.22, 0.12, 16), crownMat);
+      crownBase.position.y = 1.66;
+      this.mesh.add(crownBase);
+
+      // 4 Crown Spikes
+      for (let p = 0; p < 4; p++) {
+        const pAngle = (p / 4) * Math.PI * 2;
+        const spike = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.12, 4), crownMat);
+        spike.position.set(Math.cos(pAngle) * 0.18, 1.74, Math.sin(pAngle) * 0.18);
+        this.mesh.add(spike);
+
+        const gem = new THREE.Mesh(new THREE.SphereGeometry(0.025, 4, 4), rubyMat);
+        gem.position.set(Math.cos(pAngle) * 0.19, 1.66, Math.sin(pAngle) * 0.19);
+        this.mesh.add(gem);
+      }
+
+    } else if (hairStyle === 'fedora') {
+      const hatMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
       const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 16), hatMat);
       brim.position.y = 1.60;
       this.mesh.add(brim);
@@ -379,7 +400,8 @@ class Customer {
     this.basketItems.forEach(id => {
       total += (CONFIG.getItemSellPrice ? CONFIG.getItemSellPrice(id) : (CONFIG.ITEMS[id] ? CONFIG.ITEMS[id].sellPrice : 1));
     });
-    if (this.isVip) total = Math.max(1, Math.round(total * 2.5));
+    if (this.isVip) total = Math.max(1, Math.round(total * 3.0));
+    if (sdk && sdk.boostActive) total = Math.round(total * (sdk.boostMultiplier || 2));
     return Math.max(1, total);
   }
 
@@ -394,6 +416,14 @@ class CustomerManager {
     this.customers = [];
     this.spawnTimer = 0;
     this.spawnCounter = 0;
+  }
+
+  spawnVipWave(count = 5) {
+    for (let c = 0; c < count; c++) {
+      setTimeout(() => {
+        this.customers.push(new Customer(this.scene, true, 'NORTH'));
+      }, c * 600);
+    }
   }
 
   update(dt, stands, cashRegisters, isCashierPresent, onCheckoutComplete, player, staffList = []) {

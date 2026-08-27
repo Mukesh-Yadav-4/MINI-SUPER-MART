@@ -14,8 +14,8 @@ class Player {
     this.position = new THREE.Vector3(0, 0, 2);
     this.baseSpeed = 9.5;
     this.speed = 9.5;
-    this.baseCapacity = 6;
-    this.capacity = 6;
+    this.baseCapacity = 4;
+    this.capacity = 4;
     this.stack = [];
     this.currentRotation = 0;
     this.walkCycle = 0;
@@ -388,9 +388,12 @@ class Player {
     const capLevel = CONFIG.UPGRADES.capacity.currentLevel;
     const spdLevel = CONFIG.UPGRADES.speed.currentLevel;
 
-    this.capacity = CONFIG.UPGRADES.capacity.levels[capLevel];
+    this.capacity = CONFIG.UPGRADES.capacity.levels[capLevel] + (sdk.boostActive ? 5 : 0);
     const baseSpd = CONFIG.UPGRADES.speed.levels[spdLevel];
-    this.speed = baseSpd * (sdk.boostActive ? 1.5 : 1.0);
+    this.speed = baseSpd * (sdk.boostActive ? 1.35 : 1.0);
+    if (this.selectionRing && this.selectionRing.material && this.selectionRing.material.color) {
+      this.selectionRing.material.color.setHex(sdk.boostActive ? 0xffd700 : 0x00e5ff);
+    }
     this.updateHeadBadge();
   }
 

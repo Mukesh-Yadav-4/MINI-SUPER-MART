@@ -97,14 +97,22 @@ class CrazySDKWrapper {
     }
   }
 
-  // Activate 2x Boost for duration (in seconds)
-  activate2xBoost(durationSec = 180) {
+  // Activate VIP Frenzy Boost for duration (in seconds)
+  activateVipFrenzy(durationSec = 180) {
     this.boostActive = true;
     this.boostMultiplier = 2;
     this.boostTimer = durationSec;
 
     const boostBadge = document.getElementById('boost-indicator');
     if (boostBadge) boostBadge.style.display = 'flex';
+  }
+
+  activate2xBoost(durationSec = 180) {
+    this.activateVipFrenzy(durationSec);
+  }
+
+  activateBoost(durationSec = 180) {
+    this.activateVipFrenzy(durationSec);
   }
 
   update(dt) {
@@ -114,7 +122,7 @@ class CrazySDKWrapper {
       if (boostTimerEl) {
         const mins = Math.floor(Math.max(0, this.boostTimer) / 60);
         const secs = Math.floor(Math.max(0, this.boostTimer) % 60);
-        boostTimerEl.textContent = `2X CASH (${mins}:${secs < 10 ? '0' : ''}${secs})`;
+        boostTimerEl.textContent = `👑 VIP FRENZY (${mins}:${secs < 10 ? '0' : ''}${secs})`;
       }
 
       if (this.boostTimer <= 0) {
