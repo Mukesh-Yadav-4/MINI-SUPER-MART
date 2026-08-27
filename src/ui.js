@@ -276,6 +276,20 @@ class UIManager {
       });
     }
 
+    // CrazyGames Live Auth Button
+    const btnCgAuth = document.getElementById('btn-cg-auth');
+    if (btnCgAuth) {
+      btnCgAuth.addEventListener('click', async () => {
+        const user = await sdk.promptCrazyAuth();
+        if (user && user.username) {
+          this.playerFarmName = `🎮 ${user.username}'s Mart`;
+          try { localStorage.setItem('ofm_farm_name', this.playerFarmName); } catch (e) {}
+          this.showNotification(`🎮 Logged in as ${user.username}! High score synced to CrazyGames!`);
+          this.renderLeaderboard();
+        }
+      });
+    }
+
     // Settings Modal
     const modalSettings = document.getElementById('modal-settings');
     const btnSettings = document.getElementById('btn-settings');
@@ -638,6 +652,10 @@ class UIManager {
       try {
         localStorage.setItem('ofm_peak_balance', this.playerHighScore.toString());
       } catch (e) {}
+      // Sync score to CrazyGames Cloud
+      if (typeof sdk !== 'undefined' && sdk.submitLeaderboardScore) {
+        sdk.submitLeaderboardScore(this.playerHighScore);
+      }
     }
 
     const currentRank = this.calculatePlayerRank(this.playerHighScore);
@@ -678,8 +696,27 @@ class UIManager {
     return '🌱 Fresh Start';
   }
 
-  renderLeaderboard() {
+  async renderLeaderboard() {
     this.updateHighScore(this.game ? this.game.money : 0);
+
+    // Check CrazyGames user account status
+    const cgBannerText = document.getElementById('cg-banner-text');
+    const btnCgAuth = document.getElementById('btn-cg-auth');
+    if (typeof sdk !== 'undefined' && sdk.getCrazyUser) {
+      try {
+        const user = await sdk.getCrazyUser();
+        if (user && user.username) {
+          if (cgBannerText) cgBannerText.textContent = `🎮 Logged in as: ${user.username}`;
+          if (btnCgAuth) {
+            btnCgAuth.textContent = '✅ Synced';
+            btnCgAuth.style.background = '#10b981';
+          }
+          if (this.playerFarmName === '🧑‍🌾 Green Acres Mart') {
+            this.playerFarmName = `🎮 ${user.username}'s Mart`;
+          }
+        }
+      } catch (e) {}
+    }
 
     const rank = this.calculatePlayerRank(this.playerHighScore);
     const tier = this.getPlayerTier(this.playerHighScore);
@@ -702,7 +739,7 @@ class UIManager {
     if (!list) return;
     list.innerHTML = '';
 
-    // Merge competitors + player
+    // Merge live competitors + player
     const playerEntry = {
       rank: rank,
       name: this.playerFarmName,

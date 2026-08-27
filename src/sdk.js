@@ -134,11 +134,65 @@ class CrazySDKWrapper {
     }
   }
 
+  // CrazyGames User & Leaderboard Methods
+  async getCrazyUser() {
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.user) {
+      try {
+        const isAvailable = await window.CrazyGames.SDK.user.isUserAccountAvailable();
+        if (isAvailable) {
+          const user = await window.CrazyGames.SDK.user.getUser();
+          return user;
+        }
+      } catch (e) {}
+    }
+    return null;
+  }
+
+  async promptCrazyAuth() {
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.user) {
+      try {
+        const user = await window.CrazyGames.SDK.user.showAuthPrompt();
+        return user;
+      } catch (e) {}
+    }
+    return null;
+  }
+
+  submitLeaderboardScore(score) {
+    // 1. Sync to CrazyGames Cloud Data storage
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.data) {
+      try {
+        window.CrazyGames.SDK.data.setItem('ofm_peak_balance', score.toString());
+      } catch (e) {}
+    }
+    // 2. Direct Leaderboard submission if enabled by CrazyGames
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.leaderboard) {
+      try {
+        window.CrazyGames.SDK.leaderboard.submitScore({ score: score });
+      } catch (e) {}
+    }
+  }
+
+  async getLeaderboardData() {
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.leaderboard) {
+      try {
+        const data = await window.CrazyGames.SDK.leaderboard.getScores();
+        if (data && Array.isArray(data) && data.length > 0) return data;
+      } catch (e) {}
+    }
+    return null;
+  }
+
   // Save / Load system
   saveGameState(state) {
     try {
       localStorage.setItem('organic_farm_mart_save', JSON.stringify(state));
     } catch (e) {}
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.data) {
+      try {
+        window.CrazyGames.SDK.data.setItem('organic_farm_mart_save', JSON.stringify(state));
+      } catch (e) {}
+    }
   }
 
   loadGameState() {
@@ -154,6 +208,11 @@ class CrazySDKWrapper {
     try {
       localStorage.removeItem('organic_farm_mart_save');
     } catch (e) {}
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.data) {
+      try {
+        window.CrazyGames.SDK.data.removeItem('organic_farm_mart_save');
+      } catch (e) {}
+    }
   }
 }
 

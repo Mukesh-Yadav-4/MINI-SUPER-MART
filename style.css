@@ -961,6 +961,42 @@ html, body {
   font-weight: 600;
 }
 
+.crazygames-auth-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  background: #1e1e38;
+  border: 1px solid #6366f1;
+  border-radius: 12px;
+  padding: 8px 14px;
+  margin: 10px 16px 0 16px;
+}
+
+.cg-banner-text {
+  font-size: 12px;
+  font-weight: 700;
+  color: #c7d2fe;
+}
+
+.cg-auth-btn {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 800;
+  border: none;
+  padding: 5px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+  transition: transform 0.1s, filter 0.15s;
+}
+
+.cg-auth-btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
 .leaderboard-player-spotlight {
   display: flex;
   align-items: center;
