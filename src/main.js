@@ -893,6 +893,7 @@ class GameEngine {
     this.staffStocker = new HelperWorker(this.scene, 'STOCKER', { x: -5.0, z: 0.5 });
     this.staffFarmer = new HelperWorker(this.scene, 'FARMER', { x: 2.25, z: 5.0 });
     this.staffHarvester = new HelperWorker(this.scene, 'HARVESTER', { x: 6.0, z: 4.5 });
+    this.staffBaker = new HelperWorker(this.scene, 'BAKER', { x: 4.8, z: 2.5 });
     this.staffChef = new HelperWorker(this.scene, 'CHEF', { x: 10.1, z: 2.5 });
     this.staffCashier = new HelperCashier(this.scene, { x: -6.5, z: 2.35 }, 0x8e24aa, 0xab47bc, 0x6a1b9a);
     this.staffCashier2 = new HelperCashier(this.scene, { x: 19.5, z: 2.35 }, 0x0284c7, 0x38bdf8, 0x0369a1);
@@ -918,6 +919,7 @@ class GameEngine {
     if (this.staffStocker) this.staffStocker.refreshStats();
     if (this.staffHarvester) this.staffHarvester.refreshStats();
     if (this.staffFarmer) this.staffFarmer.refreshStats();
+    if (this.staffBaker) this.staffBaker.refreshStats();
     if (this.staffChef) this.staffChef.refreshStats();
   }
 
@@ -1158,6 +1160,8 @@ class GameEngine {
       this.staffCashier2.setUnlocked(true);
     } else if (zoneId === 'helper_harvester') {
       this.staffHarvester.setUnlocked(true);
+    } else if (zoneId === 'helper_baker') {
+      this.staffBaker.setUnlocked(true);
     } else if (zoneId === 'helper_chef') {
       this.staffChef.setUnlocked(true);
     } else if (zoneId === 'door_east') {
@@ -1191,6 +1195,7 @@ class GameEngine {
       stand_cake: '🎂 Royal Cake Pedestal Stand Unlocked!',
       helper_stocker: '🧑‍🌾 Shelf Stocker Helper Hired!',
       helper_cashier: '👩‍💼 Checkout Cashier Hired!',
+      helper_baker: '🧑‍🍳 Artisan Baker Hired! (Oven & Bread 🍞)',
       helper_harvester: '🚜 Field Harvester Helper Hired!',
       helper_chef: '🧑‍🍳 Master Patissier Hired! (+20% Cake Value 🎂)'
     };
@@ -1423,10 +1428,11 @@ class GameEngine {
     this.marketStands.forEach(s => s.update(dt));
     this.unlockZones.forEach(z => z.update(dt));
 
-    const staffList = [this.staffStocker, this.staffFarmer, this.staffHarvester, this.staffChef];
+    const staffList = [this.staffStocker, this.staffFarmer, this.staffHarvester, this.staffBaker, this.staffChef];
     this.staffStocker.update(dt, this.cropPatches, this.animalPens, this.processingMachines, this.marketStands, this.dustbins);
     this.staffFarmer.update(dt, this.cropPatches, this.animalPens, this.processingMachines, this.marketStands, this.dustbins);
     this.staffHarvester.update(dt, this.cropPatches, this.animalPens, this.processingMachines, this.marketStands, this.dustbins);
+    this.staffBaker.update(dt, this.cropPatches, this.animalPens, this.processingMachines, this.marketStands, this.dustbins);
     this.staffChef.update(dt, this.cropPatches, this.animalPens, this.processingMachines, this.marketStands, this.dustbins);
     
     staffList.forEach(s => {

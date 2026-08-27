@@ -156,6 +156,15 @@ const CONFIG = {
       radius: 1.6,
       requires: 'machine_bakery'
     },
+    helper_baker: {
+      id: 'helper_baker',
+      name: 'Hire Artisan Baker',
+      cost: 1500,
+      unlocked: false,
+      pos: { x: 4.8, z: 2.5 },
+      radius: 1.6,
+      requires: 'stand_bread'
+    },
     helper_harvester: {
       id: 'helper_harvester',
       name: 'Hire Field Harvester',
