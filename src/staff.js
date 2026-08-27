@@ -51,11 +51,15 @@ class HelperWorker {
       shirtColor = 0xf97316; // Harvester: Radiant Orange
       capColor = 0xc2410c;
       hairColor = 0x1c1917;
+    } else if (this.type === 'CHEF') {
+      shirtColor = 0xffffff; // Master Patissier: Crisp White Double-Breasted Chef Jacket
+      capColor = 0xffffff;
+      hairColor = 0x3e2723;
     }
 
     const skinMat = new THREE.MeshLambertMaterial({ color: 0xffd180 });
     const shirtMat = new THREE.MeshLambertMaterial({ color: shirtColor });
-    const apronMat = new THREE.MeshLambertMaterial({ color: 0x334155 });
+    const apronMat = new THREE.MeshLambertMaterial({ color: this.type === 'CHEF' ? 0x0288d1 : 0x334155 });
     const capMat = new THREE.MeshLambertMaterial({ color: capColor });
     const hairMat = new THREE.MeshLambertMaterial({ color: hairColor });
     const pantsMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
@@ -91,19 +95,49 @@ class HelperWorker {
     smile.position.set(0, 1.50, 0.24);
     this.mesh.add(smile);
 
-    // 3. Hair & Worker Baseball Cap
+    // 3. Hair & Headwear
     const hair = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), hairMat);
     hair.position.set(0, 1.56, -0.04);
     this.mesh.add(hair);
 
-    const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.30, 0.16, 14), capMat);
-    capCrown.position.y = 1.70;
-    this.mesh.add(capCrown);
+    if (this.type === 'CHEF') {
+      // Tall Pleated French Toque Blanche (Chef Hat)
+      const toqueCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 16), capMat);
+      toqueCrown.position.y = 1.70;
+      addSketchLines(toqueCrown, 0x111111);
+      this.mesh.add(toqueCrown);
 
-    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.04, 0.22), capMat);
-    visor.position.set(0, 1.66, 0.26);
-    visor.rotation.x = 0.15;
-    this.mesh.add(visor);
+      const toquePuff = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.28, 0.36, 16), capMat);
+      toquePuff.position.y = 1.94;
+      addSketchLines(toquePuff, 0x111111);
+      this.mesh.add(toquePuff);
+
+      const toqueTop = new THREE.Mesh(new THREE.SphereGeometry(0.35, 10, 8), capMat);
+      toqueTop.scale.set(1.0, 0.4, 1.0);
+      toqueTop.position.y = 2.12;
+      this.mesh.add(toqueTop);
+
+      // Ruby Red French Ascot / Neckerchief
+      const neckerchief = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.045, 6, 12), new THREE.MeshLambertMaterial({ color: 0xc62828 }));
+      neckerchief.rotation.x = Math.PI / 2;
+      neckerchief.position.set(0, 1.34, 0);
+      this.mesh.add(neckerchief);
+
+      // French Curly Mustache
+      const mustache = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.016, 4, 8, Math.PI), new THREE.MeshLambertMaterial({ color: 0x3e2723 }));
+      mustache.rotation.x = Math.PI;
+      mustache.position.set(0, 1.51, 0.24);
+      this.mesh.add(mustache);
+    } else {
+      const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.30, 0.16, 14), capMat);
+      capCrown.position.y = 1.70;
+      this.mesh.add(capCrown);
+
+      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.04, 0.22), capMat);
+      visor.position.set(0, 1.66, 0.26);
+      visor.rotation.x = 0.15;
+      this.mesh.add(visor);
+    }
 
     // 4. Human Torso & Worker Apron / Uniform
     const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.30, 0.72, 10), shirtMat);
@@ -117,11 +151,18 @@ class HelperWorker {
     apron.castShadow = true;
     this.mesh.add(apron);
 
-    // Mini Garden Trowel in Pocket
-    const trowelBlade = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.14, 4), toolMat);
-    trowelBlade.rotation.x = 0.3;
-    trowelBlade.position.set(0.14, 1.05, 0.25);
-    this.mesh.add(trowelBlade);
+    if (this.type === 'CHEF') {
+      const rollingPin = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.32, 8), new THREE.MeshLambertMaterial({ color: 0xffd54f }));
+      rollingPin.rotation.x = 0.25;
+      rollingPin.position.set(0.14, 1.08, 0.25);
+      this.mesh.add(rollingPin);
+    } else {
+      // Mini Garden Trowel in Pocket
+      const trowelBlade = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.14, 4), toolMat);
+      trowelBlade.rotation.x = 0.3;
+      trowelBlade.position.set(0.14, 1.05, 0.25);
+      this.mesh.add(trowelBlade);
+    }
 
     // 5. Articulated Human Arms
     const armGeo = new THREE.BoxGeometry(0.12, 0.46, 0.12);
@@ -281,8 +322,10 @@ class HelperWorker {
       this.updateStockerAI(dt, patches, pens, machines, stands, dustbins);
     } else if (this.type === 'FARMER') {
       this.updateFarmerAI(dt, patches, pens, machines, stands, dustbins);
-    } else {
+    } else if (this.type === 'HARVESTER') {
       this.updateHarvesterAI(dt, patches, pens, machines, stands, dustbins);
+    } else if (this.type === 'CHEF') {
+      this.updateChefAI(dt, patches, pens, machines, stands, dustbins);
     }
   }
 
@@ -824,6 +867,137 @@ class HelperWorker {
     if (this.stack.length > 0) {
       this.isDelivering = true;
       return;
+    }
+
+    // Idle
+    this.setTarget(this.idlePos.x, this.idlePos.z);
+  }
+
+  // Master Patissier (Chef Jean AI): Automates Pastry Cake Mixer & Royal Cake Stand
+  updateChefAI(dt, patches, pens, machines, stands, dustbins) {
+    const cakery = machines.find(m => m.config.type === 'CAKERY' && m.unlocked);
+    const bakery = machines.find(m => m.config.type === 'BAKERY' && m.unlocked);
+    const standCake = stands.find(s => s.config.itemId === 'CAKE' && s.unlocked);
+    const standBread = stands.find(s => s.config.itemId === 'BREAD' && s.unlocked);
+    const cowPen = pens.find(p => p.config.type === 'COW' && p.unlocked);
+    const chickenPen = pens.find(p => p.config.type === 'CHICKEN' && p.unlocked);
+
+    // Toggle Delivery state: full -> deliver; empty -> gather
+    if (this.stack.length >= this.capacity) {
+      this.isDelivering = true;
+    } else if (this.stack.length === 0) {
+      this.isDelivering = false;
+    }
+
+    // ============================================
+    // 1. DELIVERY PHASE
+    // ============================================
+    if (this.isDelivering && this.stack.length > 0) {
+      // 1A. Deliver Royal Cakes to Cake Stand
+      if (this.stack.some(i => i.type === 'CAKE') && standCake) {
+        this.setTarget(standCake.pos.x, standCake.pos.z + 1.2);
+        if (this.position.distanceTo(standCake.pos) < 3.2 || Math.hypot(this.position.x - standCake.pos.x, this.position.z - (standCake.pos.z + 1.2)) < 2.0) {
+          const cake = this.popItem('CAKE');
+          if (cake) standCake.addItem();
+          if (standCake.isFull() || !this.stack.some(i => i.type === 'CAKE')) {
+            this.isDelivering = false;
+          }
+        }
+        return;
+      }
+
+      // 1B. Deliver Ingredients (Milk, Egg, Bread) into Cake Mixer Hopper
+      const ingredient = this.stack.find(i => ['MILK', 'EGG', 'BREAD'].includes(i.type));
+      if (ingredient && cakery && !cakery.isInputFull() && cakery.canAcceptIngredient(ingredient.type)) {
+        const inX = cakery.config.pos.x - 0.7;
+        const inZ = cakery.config.pos.z + 0.9;
+        this.setTarget(inX, inZ);
+        if (this.position.distanceTo(new THREE.Vector3(inX, 0, inZ)) < 3.2 || this.position.distanceTo(cakery.config.pos) < 3.2) {
+          const item = this.popItem(ingredient.type);
+          if (item) cakery.addIngredient(item);
+          if (cakery.isInputFull() || !this.stack.some(i => ['MILK', 'EGG', 'BREAD'].includes(i.type))) {
+            this.isDelivering = false;
+          }
+        }
+        return;
+      }
+
+      // Discard invalid / stray items in bin
+      if (dustbins && dustbins.length > 0) {
+        const bin = dustbins[0];
+        this.setTarget(bin.pos.x, bin.pos.z);
+        if (this.position.distanceTo(bin.pos) < 2.5) this.popItem();
+        return;
+      }
+    }
+
+    // ============================================
+    // 2. GATHERING / FETCHING PHASE
+    // ============================================
+    // 2A. Collect Ready Baked Cakes from Cake Mixer Tray
+    if (cakery && cakery.outputStock > 0 && standCake && !standCake.isFull()) {
+      const outX = cakery.config.pos.x + 0.7;
+      const outZ = cakery.config.pos.z + 0.9;
+      this.setTarget(outX, outZ);
+      if (this.position.distanceTo(new THREE.Vector3(outX, 0, outZ)) < 3.0 || this.position.distanceTo(cakery.config.pos) < 3.0) {
+        while (cakery.outputStock > 0 && this.stack.length < this.capacity) {
+          const cake = cakery.harvestOutput();
+          if (cake) this.addItem(cake);
+        }
+        this.isDelivering = true;
+      }
+      return;
+    }
+
+    // 2B. Fetch Milk if Cake Mixer accepts Milk
+    if (cakery && cakery.canAcceptIngredient('MILK') && cowPen && cowPen.produceStock > 0) {
+      this.setTarget(cowPen.pickupPos.x, cowPen.pickupPos.z);
+      if (this.position.distanceTo(cowPen.pickupPos) < 3.2) {
+        while (cowPen.produceStock > 0 && this.stack.length < this.capacity && cakery.canAcceptIngredient('MILK')) {
+          const milk = cowPen.harvestProduce();
+          if (milk) this.addItem(milk);
+        }
+        this.isDelivering = true;
+      }
+      return;
+    }
+
+    // 2C. Fetch Eggs if Cake Mixer accepts Eggs
+    if (cakery && cakery.canAcceptIngredient('EGG') && chickenPen && chickenPen.produceStock > 0) {
+      this.setTarget(chickenPen.pickupPos.x, chickenPen.pickupPos.z);
+      if (this.position.distanceTo(chickenPen.pickupPos) < 3.2) {
+        while (chickenPen.produceStock > 0 && this.stack.length < this.capacity && cakery.canAcceptIngredient('EGG')) {
+          const egg = chickenPen.harvestProduce();
+          if (egg) this.addItem(egg);
+        }
+        this.isDelivering = true;
+      }
+      return;
+    }
+
+    // 2D. Fetch Bread if Cake Mixer accepts Bread
+    if (cakery && cakery.canAcceptIngredient('BREAD')) {
+      if (bakery && bakery.outputStock > 0) {
+        const bOutX = bakery.config.pos.x + 0.7;
+        const bOutZ = bakery.config.pos.z + 0.9;
+        this.setTarget(bOutX, bOutZ);
+        if (this.position.distanceTo(new THREE.Vector3(bOutX, 0, bOutZ)) < 3.0 || this.position.distanceTo(bakery.config.pos) < 3.0) {
+          while (bakery.outputStock > 0 && this.stack.length < this.capacity && cakery.canAcceptIngredient('BREAD')) {
+            const bread = bakery.harvestOutput();
+            if (bread) this.addItem(bread);
+          }
+          this.isDelivering = true;
+        }
+        return;
+      } else if (standBread && standBread.stock.length > 0) {
+        this.setTarget(standBread.pos.x, standBread.pos.z + 1.2);
+        if (this.position.distanceTo(standBread.pos) < 3.2) {
+          const bread = standBread.takeItem();
+          if (bread) this.addItem(bread);
+          this.isDelivering = true;
+        }
+        return;
+      }
     }
 
     // Idle

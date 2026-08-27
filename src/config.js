@@ -184,7 +184,7 @@ const CONFIG = {
       requires: 'plot_carrot'
     },
 
-    // Phase 5 (40 - 50 mins): Royal Cake Bakery & Harvester
+    // Phase 5 (40 - 50 mins): Royal Cake Bakery & Master Patissier
     machine_cakery: {
       id: 'machine_cakery',
       name: 'Pastry Cake Mixer Machine',
@@ -202,6 +202,15 @@ const CONFIG = {
       pos: { x: 15.4, z: -12.5 },
       radius: 1.6,
       requires: 'machine_cakery'
+    },
+    helper_chef: {
+      id: 'helper_chef',
+      name: 'Hire Master Patissier (Chef Jean)',
+      cost: 6500,
+      unlocked: false,
+      pos: { x: 10.1, z: 2.5 },
+      radius: 1.6,
+      requires: 'stand_cake'
     }
   },
 
@@ -436,11 +445,16 @@ const CONFIG = {
     if (!itemId) return 1;
     const key = `quality_${itemId.toLowerCase()}`;
     const upg = this.UPGRADES ? this.UPGRADES[key] : null;
+    let price = this.ITEMS[itemId] ? this.ITEMS[itemId].sellPrice : 1;
     if (upg && Array.isArray(upg.levels)) {
       const lvl = Math.min(upg.currentLevel, upg.levels.length - 1);
-      return upg.levels[lvl];
+      price = upg.levels[lvl];
     }
-    return this.ITEMS[itemId] ? this.ITEMS[itemId].sellPrice : 1;
+    // +20% Price Hike when Master Patissier is hired!
+    if (itemId === 'CAKE' && this.UNLOCKS && this.UNLOCKS.helper_chef && this.UNLOCKS.helper_chef.unlocked) {
+      price = Math.round(price * 1.20);
+    }
+    return price;
   },
 
   CUSTOMER: {
