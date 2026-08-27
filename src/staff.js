@@ -14,6 +14,11 @@ function getStaffCorridorPath(start, dest) {
   const startX = start.x, startZ = start.z;
   const destX = dest.x, destZ = dest.z;
 
+  // Immediate short-distance path
+  if (Math.hypot(startX - destX, startZ - destZ) < 0.6) {
+    return [new THREE.Vector3(destX, 0, destZ)];
+  }
+
   const isStartFarm = (startZ > 2.2);
   const isDestFarm = (destZ > 2.2);
 
@@ -26,8 +31,10 @@ function getStaffCorridorPath(start, dest) {
   // 1. Moving from Farm (South) to Market (North)
   if (isStartFarm && !isDestFarm) {
     // Walk on Farm Avenue to central doorway
-    waypoints.push(new THREE.Vector3(startX, 0, DOORWAY_FARM_Z));
-    waypoints.push(new THREE.Vector3(DOORWAY_X, 0, DOORWAY_FARM_Z));
+    if (Math.abs(startX - DOORWAY_X) > 0.8) {
+      waypoints.push(new THREE.Vector3(startX, 0, DOORWAY_FARM_Z));
+      waypoints.push(new THREE.Vector3(DOORWAY_X, 0, DOORWAY_FARM_Z));
+    }
     // Pass cleanly through central doorway into store
     waypoints.push(new THREE.Vector3(DOORWAY_X, 0, DOORWAY_MART_Z));
     waypoints.push(new THREE.Vector3(DOORWAY_X, 0, CENTRAL_HIGHWAY_Z));
@@ -72,7 +79,9 @@ function getStaffCorridorPath(start, dest) {
     waypoints.push(new THREE.Vector3(DOORWAY_X, 0, DOORWAY_FARM_Z));
 
     // Route on Farm Avenue to target patch/pen
-    waypoints.push(new THREE.Vector3(destX, 0, DOORWAY_FARM_Z));
+    if (Math.abs(destX - DOORWAY_X) > 0.8) {
+      waypoints.push(new THREE.Vector3(destX, 0, DOORWAY_FARM_Z));
+    }
     waypoints.push(new THREE.Vector3(destX, 0, destZ));
     return waypoints;
   }
@@ -91,8 +100,10 @@ function getStaffCorridorPath(start, dest) {
   }
 
   // 4. Moving within Farm
-  waypoints.push(new THREE.Vector3(startX, 0, DOORWAY_FARM_Z));
-  waypoints.push(new THREE.Vector3(destX, 0, DOORWAY_FARM_Z));
+  if (Math.abs(startX - destX) > 2.0) {
+    waypoints.push(new THREE.Vector3(startX, 0, DOORWAY_FARM_Z));
+    waypoints.push(new THREE.Vector3(destX, 0, DOORWAY_FARM_Z));
+  }
   waypoints.push(new THREE.Vector3(destX, 0, destZ));
   return waypoints;
 }
@@ -618,28 +629,28 @@ class HelperWorker {
       this.isDelivering = false;
     }
 
-    // 1. Hysteresis Triggers (Trigger at 0, fill until 100% full)
+    // 1. Demand Hysteresis (Refill triggered when <= 50% capacity, filled until 100% full)
     if (chickenPen) {
-      if (chickenPen.feedStock === 0) this.chickenFeedRefillActive = true;
+      if (chickenPen.feedStock <= Math.floor(chickenPen.feedCapacity / 2)) this.chickenFeedRefillActive = true;
       if (chickenPen.feedStock >= chickenPen.feedCapacity) this.chickenFeedRefillActive = false;
     }
 
     if (cowPen) {
-      if (cowPen.feedStock === 0) this.cowFeedRefillActive = true;
+      if (cowPen.feedStock <= Math.floor(cowPen.feedCapacity / 2)) this.cowFeedRefillActive = true;
       if (cowPen.feedStock >= cowPen.feedCapacity) this.cowFeedRefillActive = false;
     }
 
     if (standWheat) {
-      if (standWheat.stock.length === 0) this.wheatRefillActive = true;
+      if (standWheat.stock.length <= Math.floor(standWheat.capacity / 2)) this.wheatRefillActive = true;
       if (standWheat.isFull()) this.wheatRefillActive = false;
     }
 
     if (standEgg) {
-      if (standEgg.stock.length === 0) this.eggRefillActive = true;
+      if (standEgg.stock.length <= Math.floor(standEgg.capacity / 2)) this.eggRefillActive = true;
       if (standEgg.isFull()) this.eggRefillActive = false;
     }
 
-    // Task Selection
+    // Task Selection: Pick next priority task ONLY when active demand is triggered
     if (this.chickenFeedRefillActive && chickenPen && chickenPen.feedStock < chickenPen.feedCapacity) {
       this.farmer_task = 'CHICKEN_FEED';
     } else if (this.cowFeedRefillActive && cowPen && cowPen.feedStock < cowPen.feedCapacity) {
@@ -648,17 +659,11 @@ class HelperWorker {
       this.farmer_task = 'WHEAT_SHELF';
     } else if (this.eggRefillActive && standEgg && !standEgg.isFull() && chickenPen && chickenPen.produceStock > 0) {
       this.farmer_task = 'EGG_SHELF';
-    } else if (!this.farmer_task) {
-      if (cowPen && cowPen.feedStock < cowPen.feedCapacity) {
-        this.farmer_task = 'COW_FEED';
-      } else if (standWheat && !standWheat.isFull()) {
-        this.farmer_task = 'WHEAT_SHELF';
-      } else if (standEgg && !standEgg.isFull() && chickenPen && chickenPen.produceStock > 0) {
-        this.farmer_task = 'EGG_SHELF';
-      }
+    } else {
+      this.farmer_task = null;
     }
 
-    // 1. DELIVERY PHASE (Direct Walkthrough)
+    // 1. DELIVERY PHASE
     if (this.isDelivering && this.stack.length > 0) {
       if (this.stack.some(i => i.type === 'WHEAT')) {
         if (this.farmer_task === 'CHICKEN_FEED' && chickenPen) {
@@ -702,18 +707,20 @@ class HelperWorker {
           return;
         }
 
-        // Fallbacks
+        // Fallbacks if holding wheat
         if (chickenPen && chickenPen.feedStock < chickenPen.feedCapacity) {
-          this.setTarget(chickenPen.pos.x, chickenPen.pos.z);
-          if (this.position.distanceTo(chickenPen.pos) < 3.4) {
+          const feederPos = chickenPen.feederPos || chickenPen.pos;
+          this.setTarget(feederPos.x, feederPos.z);
+          if (this.position.distanceTo(chickenPen.pos) < 3.4 || this.position.distanceTo(feederPos) < 3.4) {
             const wheat = this.popItem('WHEAT');
             if (wheat) chickenPen.addFeed(1);
           }
           return;
         }
         if (cowPen && cowPen.feedStock < cowPen.feedCapacity) {
-          this.setTarget(cowPen.pos.x, cowPen.pos.z);
-          if (this.position.distanceTo(cowPen.pos) < 3.4) {
+          const feederPos = cowPen.feederPos || cowPen.pos;
+          this.setTarget(feederPos.x, feederPos.z);
+          if (this.position.distanceTo(cowPen.pos) < 3.4 || this.position.distanceTo(feederPos) < 3.4) {
             const wheat = this.popItem('WHEAT');
             if (wheat) cowPen.addFeed(1);
           }
@@ -751,33 +758,58 @@ class HelperWorker {
       }
     }
 
+    // If holding any items, switch to deliver
+    if (this.stack.length > 0) {
+      this.isDelivering = true;
+      return;
+    }
+
     // 2. GATHERING PHASE
+    if (!this.farmer_task) {
+      this.setTarget(this.idlePos.x, this.idlePos.z);
+      return;
+    }
+
+    // 2A. Egg Gathering
     if (this.farmer_task === 'EGG_SHELF' && chickenPen && chickenPen.produceStock > 0) {
       const pickupPos = chickenPen.pickupPos || chickenPen.pos;
       this.setTarget(pickupPos.x, pickupPos.z);
       if (this.position.distanceTo(chickenPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
-        const egg = chickenPen.harvestProduce();
-        if (egg) this.addItem(egg);
-        if (this.stack.length >= this.capacity || chickenPen.produceStock === 0) {
+        while (chickenPen.produceStock > 0 && this.stack.length < this.capacity) {
+          const egg = chickenPen.harvestProduce();
+          if (!egg || !this.addItem(egg)) break;
+        }
+        if (this.stack.length > 0) {
           this.isDelivering = true;
         }
       }
       return;
     }
 
-    if (wheatPatch && wheatPatch.hasReadyCrops() && this.stack.length < this.capacity) {
-      if (this.farmer_task === 'CHICKEN_FEED' || this.farmer_task === 'COW_FEED' || this.farmer_task === 'WHEAT_SHELF') {
+    // 2B. Wheat Gathering (for Chicken Feed, Cow Feed, or Wheat Shelf)
+    if (this.farmer_task === 'CHICKEN_FEED' || this.farmer_task === 'COW_FEED' || this.farmer_task === 'WHEAT_SHELF') {
+      if (wheatPatch && wheatPatch.hasReadyCrops() && this.stack.length < this.capacity) {
         this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z);
         if (this.position.distanceTo(wheatPatch.pos) < 3.2) {
-          const w = wheatPatch.harvestOne();
-          if (w) this.addItem(w);
+          while (wheatPatch.hasReadyCrops() && this.stack.length < this.capacity) {
+            const w = wheatPatch.harvestOne();
+            if (!w || !this.addItem(w)) break;
+          }
+          if (this.stack.length > 0) {
+            this.isDelivering = true;
+          }
         }
         return;
       }
-    }
 
-    if (this.stack.length > 0) {
-      this.isDelivering = true;
+      // If we harvested items, proceed to deliver
+      if (this.stack.length > 0) {
+        this.isDelivering = true;
+        return;
+      }
+
+      // If wheat is still growing and we have no items, wait peacefully at idle spot
+      this.setTarget(this.idlePos.x, this.idlePos.z);
       return;
     }
 

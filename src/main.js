@@ -891,7 +891,7 @@ class GameEngine {
     ];
 
     this.staffStocker = new HelperWorker(this.scene, 'STOCKER', { x: -5.0, z: 0.5 });
-    this.staffFarmer = new HelperWorker(this.scene, 'FARMER', { x: -1.5, z: 4.5 });
+    this.staffFarmer = new HelperWorker(this.scene, 'FARMER', { x: 2.25, z: 5.0 });
     this.staffHarvester = new HelperWorker(this.scene, 'HARVESTER', { x: 6.0, z: 4.5 });
     this.staffChef = new HelperWorker(this.scene, 'CHEF', { x: 10.1, z: 2.5 });
     this.staffCashier = new HelperCashier(this.scene, { x: -6.5, z: 2.35 }, 0x8e24aa, 0xab47bc, 0x6a1b9a);
