@@ -284,14 +284,22 @@ class UIManager {
     const list = document.getElementById('upgrade-list');
     if (!list) return;
 
+    // Update real-time money badge in modal header
+    const modalMoney = document.getElementById('modal-money-count');
+    if (modalMoney) {
+      modalMoney.textContent = this.game.money >= 100000 
+        ? `$${(this.game.money / 1000).toFixed(1)}K` 
+        : `$${this.game.money.toLocaleString()}`;
+    }
+
     list.innerHTML = '';
 
     const allUpgrades = Object.values(CONFIG.UPGRADES);
     const groups = [
-      { id: 'production', title: '🌾 Production Rate (Crops & Animals)' },
-      { id: 'quality', title: '✨ Product Quality & Value (Higher Sell Prices)' },
-      { id: 'machinery', title: '⚙️ Machinery (Hopper & Shelves)' },
-      { id: 'worker_player', title: '👥 Worker + Main Character' }
+      { id: 'production', title: '🌾 Farm Speed & Livestock' },
+      { id: 'quality', title: '✨ Product Sell Value' },
+      { id: 'machinery', title: '⚙️ Machine Hoppers & Shelves' },
+      { id: 'worker_player', title: '👤 Player Mobility & Backpack' }
     ];
 
     const currentTab = this.activeUpgradeTab || 'all';
@@ -317,20 +325,43 @@ class UIManager {
           : (rawCost >= 10000 ? `${(rawCost / 1000).toFixed(1)}K` : (rawCost >= 1000 ? `${rawCost.toLocaleString()}` : `${rawCost}`));
 
         const canAfford = !isMax && this.game.money >= rawCost;
-        const currentVal = `${upg.levels[upg.currentLevel]} ${upg.unit || ''}`;
-        const category = upg.category || 'General';
+        const curVal = upg.levels[upg.currentLevel];
+        const nextVal = isMax ? curVal : upg.levels[upg.currentLevel + 1];
+        const unit = upg.unit || '';
+        const isQuality = upg.group === 'quality';
+
+        let benefitHTML = '';
+        if (isMax) {
+          benefitHTML = `<span class="benefit-max">⭐ MAX LEVEL (${isQuality ? '$' : ''}${curVal} ${unit})</span>`;
+        } else {
+          benefitHTML = `
+            <span class="benefit-cur">${isQuality ? '$' : ''}${curVal}</span>
+            <span class="benefit-arrow">➔</span>
+            <span class="benefit-next">${isQuality ? '$' : ''}${nextVal}</span>
+            <span class="benefit-unit">${unit}</span>
+          `;
+        }
 
         const itemDiv = document.createElement('div');
-        itemDiv.className = 'upgrade-item';
+        itemDiv.className = `upgrade-item ${canAfford ? 'affordable-card' : ''} ${isMax ? 'maxed-card' : ''}`;
         itemDiv.innerHTML = `
-          <div class="upgrade-icon">${upg.icon}</div>
-          <div class="upgrade-details">
-            <div class="upgrade-title">${upg.title} <span style="font-size:0.75em; opacity:0.7; font-weight:normal;">(${category})</span></div>
-            <div class="upgrade-level">Level ${upg.currentLevel + 1} (${currentVal})</div>
+          <div class="upgrade-icon-box">
+            <span class="upgrade-emoji">${upg.icon}</span>
           </div>
-          <button class="upgrade-buy-btn" ${canAfford ? '' : 'disabled'}>
-            ${formattedCost}
-          </button>
+          <div class="upgrade-info-col">
+            <div class="upgrade-title-row">
+              <span class="upgrade-title-text">${upg.title}</span>
+              <span class="upgrade-level-pill ${isMax ? 'max-pill' : ''}">Lv ${upg.currentLevel + 1}</span>
+            </div>
+            <div class="upgrade-benefit-row">
+              ${benefitHTML}
+            </div>
+          </div>
+          <div class="upgrade-btn-col">
+            <button class="upgrade-buy-btn ${isMax ? 'btn-max' : (canAfford ? 'btn-can-buy' : 'btn-cant-buy')}" ${canAfford ? '' : 'disabled'}>
+              ${isMax ? '⭐ MAX' : `💵 ${formattedCost}`}
+            </button>
+          </div>
         `;
 
         const buyBtn = itemDiv.querySelector('.upgrade-buy-btn');
@@ -345,7 +376,7 @@ class UIManager {
             this.game.refreshAllUpgrades();
 
             this.renderUpgradeModal();
-            this.showNotification(`⭐ ${upg.title} Upgraded to Lvl ${upg.currentLevel + 1}! (${upg.levels[upg.currentLevel]} ${upg.unit || ''})`);
+            this.showNotification(`⭐ ${upg.title} Upgraded to Lv ${upg.currentLevel + 1}! (${upg.levels[upg.currentLevel]} ${upg.unit || ''})`);
           });
         }
 
