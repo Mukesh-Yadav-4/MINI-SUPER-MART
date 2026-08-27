@@ -26,6 +26,11 @@ const GATES = {
     door: new THREE.Vector3(19.5, 0, -13.5),
     foyer: new THREE.Vector3(19.5, 0, -11.0),
     entryAisle: new THREE.Vector3(19.5, 0, -7.0)
+  },
+  EAST_EXIT: {
+    foyer: new THREE.Vector3(19.5, 0, -4.5),
+    door: new THREE.Vector3(22.0, 0, -4.5),
+    spawn: new THREE.Vector3(25.0, 0, -4.5)
   }
 };
 
@@ -611,15 +616,13 @@ class CustomerManager {
             cust.updateThoughtBadge();
 
             if (isReg2) {
-              // Exit via North-East Pastry Gate
+              // Exit via Right Wall Exit Gate (East Side Wall)
               const exitRightOfCounter = new THREE.Vector3(cust.assignedRegister.pos.x + 3.2, 0, cust.assignedRegister.customerCheckoutPos.z);
-              const exitAisleEast = new THREE.Vector3(19.5, 0, -7.0);
               cust.waypoints = [
                 exitRightOfCounter,
-                exitAisleEast,
-                GATES.EAST.foyer.clone(),
-                GATES.EAST.door.clone(),
-                GATES.EAST.spawn.clone()
+                GATES.EAST_EXIT.foyer.clone(),
+                GATES.EAST_EXIT.door.clone(),
+                GATES.EAST_EXIT.spawn.clone()
               ];
             } else {
               // Exit via West Gate
@@ -642,6 +645,7 @@ class CustomerManager {
       } else if (cust.state === 'LEAVE') {
         if (cust.waypoints.length === 0 && (
           cust.position.distanceTo(GATES.WEST.spawn) < 0.8 ||
+          cust.position.distanceTo(GATES.EAST_EXIT.spawn) < 0.8 ||
           cust.position.distanceTo(GATES.EAST.spawn) < 0.8 ||
           cust.position.distanceTo(GATES.NORTH.spawn) < 0.8
         )) {

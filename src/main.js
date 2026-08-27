@@ -448,17 +448,28 @@ class GameEngine {
     addSketch(wallTrim, 0x111111);
     this.scene.add(wallTrim);
 
-    // E. Solid East Side Wall
-    const rightWall = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.8, 16.5), new THREE.MeshLambertMaterial({ color: CONFIG.COLORS.BACK_WALL }));
-    rightWall.position.set(22.0, 1.4, -5.25);
-    rightWall.castShadow = true;
-    addSketch(rightWall, 0x111111);
-    this.scene.add(rightWall);
+    // E. East Side Wall (Top & Bottom segments flanking the Right Side Exit Doorway)
+    const rightWallTop = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.8, 6.5), new THREE.MeshLambertMaterial({ color: CONFIG.COLORS.BACK_WALL }));
+    rightWallTop.position.set(22.0, 1.4, -10.25);
+    rightWallTop.castShadow = true;
+    addSketch(rightWallTop, 0x111111);
+    this.scene.add(rightWallTop);
 
-    const rightTrim = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 16.5), new THREE.MeshLambertMaterial({ color: 0x795548 }));
-    rightTrim.position.set(22.0, 2.7, -5.25);
-    addSketch(rightTrim, 0x111111);
-    this.scene.add(rightTrim);
+    const rightTrimTop = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 6.5), new THREE.MeshLambertMaterial({ color: 0x795548 }));
+    rightTrimTop.position.set(22.0, 2.7, -10.25);
+    addSketch(rightTrimTop, 0x111111);
+    this.scene.add(rightTrimTop);
+
+    const rightWallBottom = new THREE.Mesh(new THREE.BoxGeometry(0.18, 2.8, 6.0), new THREE.MeshLambertMaterial({ color: CONFIG.COLORS.BACK_WALL }));
+    rightWallBottom.position.set(22.0, 1.4, 1.0);
+    rightWallBottom.castShadow = true;
+    addSketch(rightWallBottom, 0x111111);
+    this.scene.add(rightWallBottom);
+
+    const rightTrimBottom = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.24, 6.0), new THREE.MeshLambertMaterial({ color: 0x795548 }));
+    rightTrimBottom.position.set(22.0, 2.7, 1.0);
+    addSketch(rightTrimBottom, 0x111111);
+    this.scene.add(rightTrimBottom);
 
     // Architectural Timber Pillars & Cozy Wall Sconces framing gates & departments
     const timberMat = new THREE.MeshLambertMaterial({ color: 0x5d4037 });
@@ -773,6 +784,65 @@ class GameEngine {
       this.eastBarricadeGroup.add(plank);
     }
     this.scene.add(this.eastBarricadeGroup);
+
+    // Right Side Wall Exit Gate (East Side Wall at x = 22.0, z = -4.5)
+    const eastPillar1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.8, 0.3), pillarMat);
+    eastPillar1.position.set(22.0, 1.4, -7.0);
+    eastPillar1.castShadow = true;
+    addSketch(eastPillar1, 0x111111);
+    this.scene.add(eastPillar1);
+
+    const eastPillar1Cap = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.15, 0.35), pillarHighlight);
+    eastPillar1Cap.position.set(22.0, 2.8, -7.0);
+    addSketch(eastPillar1Cap, 0x111111);
+    this.scene.add(eastPillar1Cap);
+
+    const eastPillar2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 2.8, 0.3), pillarMat);
+    eastPillar2.position.set(22.0, 1.4, -2.0);
+    eastPillar2.castShadow = true;
+    addSketch(eastPillar2, 0x111111);
+    this.scene.add(eastPillar2);
+
+    const eastPillar2Cap = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.15, 0.35), pillarHighlight);
+    eastPillar2Cap.position.set(22.0, 2.8, -2.0);
+    addSketch(eastPillar2Cap, 0x111111);
+    this.scene.add(eastPillar2Cap);
+
+    this.eastExitGroup = new THREE.Group();
+    const eastExitMat = new THREE.Mesh(new THREE.PlaneGeometry(3.6, 3.2), new THREE.MeshLambertMaterial({ color: 0xba8c59 }));
+    eastExitMat.rotation.x = -Math.PI / 2;
+    eastExitMat.position.set(22.0, 0.018, -4.5);
+    eastExitMat.receiveShadow = true;
+    addSketch(eastExitMat, 0x111111);
+    this.eastExitGroup.add(eastExitMat);
+
+    const eastExitAwningGroup = new THREE.Group();
+    eastExitAwningGroup.position.set(22.0, 2.4, -4.5);
+    for (let i = 0; i < stripeCount; i++) {
+      const isRed = i % 2 === 0;
+      const stripeMat = new THREE.MeshLambertMaterial({ color: isRed ? CONFIG.COLORS.AWNING_RED : CONFIG.COLORS.AWNING_WHITE });
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.08, stripeW), stripeMat);
+      stripe.position.set(-0.6, 0, (i - stripeCount/2 + 0.5) * stripeW);
+      stripe.rotation.z = 0.35;
+      stripe.castShadow = true;
+      addSketch(stripe, 0x111111);
+      eastExitAwningGroup.add(stripe);
+    }
+    this.eastExitGroup.add(eastExitAwningGroup);
+    this.eastExitGroup.visible = false;
+    this.scene.add(this.eastExitGroup);
+
+    // East Exit Under-Renovation Barricade when locked
+    this.eastExitBarricade = new THREE.Group();
+    this.eastExitBarricade.position.set(22.0, 0, -4.5);
+    for (let p = 0; p < 3; p++) {
+      const plank = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.28, 4.4), new THREE.MeshLambertMaterial({ color: 0xa1887f }));
+      plank.position.set(0, 0.5 + p * 0.6, 0);
+      plank.castShadow = true;
+      addSketch(plank, 0x111111);
+      this.eastExitBarricade.add(plank);
+    }
+    this.scene.add(this.eastExitBarricade);
   }
 
   initGameObjects() {
@@ -956,11 +1026,15 @@ class GameEngine {
     this.resolveBoxCollision(entityPos, { x: -10.0, z: -13.5 }, 2.0, 0.2, radius);
     this.resolveBoxCollision(entityPos, { x: 6.75, z: -13.5 }, 10.75, 0.2, radius);
     this.resolveBoxCollision(entityPos, { x: 21.8, z: -13.5 }, 0.3, 0.2, radius);
-    this.resolveBoxCollision(entityPos, { x: 22.0, z: -5.25 }, 0.2, 8.25, radius);
 
-    // North-East Pastry Gate Barricade collision when locked
+    // East Side Wall Segments (Top & Bottom flanking the Right Wall Exit Door at z = -4.5)
+    this.resolveBoxCollision(entityPos, { x: 22.0, z: -10.25 }, 0.2, 3.25, radius);
+    this.resolveBoxCollision(entityPos, { x: 22.0, z: 1.0 }, 0.2, 3.0, radius);
+
+    // Barricade collisions when locked (North Entry & East Exit)
     if (CONFIG.UNLOCKS.door_east && !CONFIG.UNLOCKS.door_east.unlocked) {
       this.resolveBoxCollision(entityPos, { x: 19.5, z: -13.5 }, 1.9, 0.2, radius);
+      this.resolveBoxCollision(entityPos, { x: 22.0, z: -4.5 }, 0.2, 2.5, radius);
     }
   }
 
@@ -1042,6 +1116,8 @@ class GameEngine {
     } else if (zoneId === 'door_east') {
       if (this.eastDoorGroup) this.eastDoorGroup.visible = true;
       if (this.eastBarricadeGroup) this.eastBarricadeGroup.visible = false;
+      if (this.eastExitGroup) this.eastExitGroup.visible = true;
+      if (this.eastExitBarricade) this.eastExitBarricade.visible = false;
     }
   }
 
