@@ -1,4 +1,4 @@
-// Autonomous Staff Workers: Direct Navigation Engine, Master Stocker & Farm Hand
+// Autonomous Staff Workers: Clean Store Corridor Navigation Engine
 function addSketchLines(mesh, color = 0x111111) {
   if (!mesh || !mesh.geometry) return;
   try {
@@ -8,6 +8,95 @@ function addSketchLines(mesh, color = 0x111111) {
   } catch (e) {}
 }
 
+// Clean Corridor Pathfinding: Guarantees workers always walk through doors and open aisles
+function getStaffCorridorPath(start, dest) {
+  const waypoints = [];
+  const startX = start.x, startZ = start.z;
+  const destX = dest.x, destZ = dest.z;
+
+  const isStartFarm = (startZ > 2.2);
+  const isDestFarm = (destZ > 2.2);
+
+  // Doorway central passage between Farm & Mart (wide threshold at x = 0.0)
+  const DOORWAY_X = 0.0;
+  const DOORWAY_FARM_Z = 4.2;
+  const DOORWAY_MART_Z = 1.5;
+  const CENTRAL_HIGHWAY_Z = 0.5;
+
+  // 1. Moving from Farm (South) to Market (North)
+  if (isStartFarm && !isDestFarm) {
+    // Walk on Farm Avenue to central doorway
+    waypoints.push(new THREE.Vector3(startX, 0, DOORWAY_FARM_Z));
+    waypoints.push(new THREE.Vector3(DOORWAY_X, 0, DOORWAY_FARM_Z));
+    // Pass cleanly through central doorway into store
+    waypoints.push(new THREE.Vector3(DOORWAY_X, 0, DOORWAY_MART_Z));
+    waypoints.push(new THREE.Vector3(DOORWAY_X, 0, CENTRAL_HIGHWAY_Z));
+
+    // Route within store to destination
+    if (destZ < -8.0) {
+      // Row 2 Shelves (North Wall): Route via vertical artery to North corridor (z = -11.0)
+      const arteryX = destX < 5.0 ? 2.0 : 7.5;
+      waypoints.push(new THREE.Vector3(arteryX, 0, CENTRAL_HIGHWAY_Z));
+      waypoints.push(new THREE.Vector3(arteryX, 0, -11.0));
+      waypoints.push(new THREE.Vector3(destX, 0, -11.0));
+    } else if (destZ < -2.5) {
+      // Row 1 Shelves (Middle Row): Route via vertical artery to Row 1 corridor (z = -5.2)
+      const arteryX = destX < 2.0 ? -3.0 : (destX < 8.0 ? 2.0 : 7.5);
+      waypoints.push(new THREE.Vector3(arteryX, 0, CENTRAL_HIGHWAY_Z));
+      waypoints.push(new THREE.Vector3(arteryX, 0, -5.2));
+      waypoints.push(new THREE.Vector3(destX, 0, -5.2));
+    } else {
+      // Processing Machines (z ≈ -0.8): Travel along Central Highway directly in front of machine
+      waypoints.push(new THREE.Vector3(destX, 0, CENTRAL_HIGHWAY_Z));
+      waypoints.push(new THREE.Vector3(destX, 0, destZ));
+    }
+    return waypoints;
+  }
+
+  // 2. Moving from Market (North) to Farm (South)
+  if (!isStartFarm && isDestFarm) {
+    // Exit shelf/machine to Central Highway
+    if (startZ < -8.0) {
+      const arteryX = startX < 5.0 ? 2.0 : 7.5;
+      waypoints.push(new THREE.Vector3(arteryX, 0, -11.0));
+      waypoints.push(new THREE.Vector3(arteryX, 0, CENTRAL_HIGHWAY_Z));
+    } else if (startZ < -2.5) {
+      const arteryX = startX < 2.0 ? -3.0 : (startX < 8.0 ? 2.0 : 7.5);
+      waypoints.push(new THREE.Vector3(arteryX, 0, -5.2));
+      waypoints.push(new THREE.Vector3(arteryX, 0, CENTRAL_HIGHWAY_Z));
+    } else {
+      waypoints.push(new THREE.Vector3(startX, 0, CENTRAL_HIGHWAY_Z));
+    }
+    waypoints.push(new THREE.Vector3(DOORWAY_X, 0, CENTRAL_HIGHWAY_Z));
+    waypoints.push(new THREE.Vector3(DOORWAY_X, 0, DOORWAY_MART_Z));
+    waypoints.push(new THREE.Vector3(DOORWAY_X, 0, DOORWAY_FARM_Z));
+
+    // Route on Farm Avenue to target patch/pen
+    waypoints.push(new THREE.Vector3(destX, 0, DOORWAY_FARM_Z));
+    waypoints.push(new THREE.Vector3(destX, 0, destZ));
+    return waypoints;
+  }
+
+  // 3. Moving within Market
+  if (!isStartFarm && !isDestFarm) {
+    if (Math.abs(startZ - destZ) > 3.0 || Math.abs(startX - destX) > 4.5) {
+      const startArtery = startX < 4.0 ? 2.0 : 7.5;
+      const destArtery = destX < 4.0 ? 2.0 : 7.5;
+      const intermediateZ = (startZ < -8.0 || destZ < -8.0) ? -11.0 : ((startZ < -2.5 || destZ < -2.5) ? -5.2 : CENTRAL_HIGHWAY_Z);
+      waypoints.push(new THREE.Vector3(startArtery, 0, intermediateZ));
+      waypoints.push(new THREE.Vector3(destArtery, 0, intermediateZ));
+    }
+    waypoints.push(new THREE.Vector3(destX, 0, destZ));
+    return waypoints;
+  }
+
+  // 4. Moving within Farm
+  waypoints.push(new THREE.Vector3(startX, 0, DOORWAY_FARM_Z));
+  waypoints.push(new THREE.Vector3(destX, 0, DOORWAY_FARM_Z));
+  waypoints.push(new THREE.Vector3(destX, 0, destZ));
+  return waypoints;
+}
+
 class HelperWorker {
   constructor(scene, type, initialPos) {
     this.scene = scene;
@@ -15,6 +104,8 @@ class HelperWorker {
     this.position = new THREE.Vector3(initialPos.x, 0, initialPos.z);
     this.targetPos = new THREE.Vector3(initialPos.x, 0, initialPos.z);
     this.idlePos = new THREE.Vector3(initialPos.x, 0, initialPos.z);
+    this.finalDest = new THREE.Vector3(initialPos.x, 0, initialPos.z);
+    this.waypoints = [];
     this.baseSpeed = 2.8;
     this.speed = 2.8;
     this.baseCapacity = 3;
@@ -23,7 +114,8 @@ class HelperWorker {
     this.unlocked = false;
     this.currentRotation = 0;
     this.walkCycle = 0;
-    this.deadlockTimer = 0;
+    this.stuckTimer = 0;
+    this.lastPos = new THREE.Vector3(initialPos.x, 0, initialPos.z);
     this.isDelivering = false;
     this.w1_task = null;
     this.w2_task = null;
@@ -39,20 +131,20 @@ class HelperWorker {
   createMesh() {
     this.mesh = new THREE.Group();
 
-    let shirtColor = 0x2e7d32; // Stocker: Crisp Forest Emerald Green
+    let shirtColor = 0x2e7d32;
     let capColor = 0x1b5e20;
     let hairColor = 0x451a03;
 
     if (this.type === 'FARMER') {
-      shirtColor = 0x0288d1; // Farm Hand: Ocean Blue
+      shirtColor = 0x0288d1;
       capColor = 0x01579b;
       hairColor = 0x78350f;
     } else if (this.type === 'HARVESTER') {
-      shirtColor = 0xf97316; // Harvester: Radiant Orange
+      shirtColor = 0xf97316;
       capColor = 0xc2410c;
       hairColor = 0x1c1917;
     } else if (this.type === 'CHEF') {
-      shirtColor = 0xffffff; // Master Patissier: Crisp White Double-Breasted Chef Jacket
+      shirtColor = 0xffffff;
       capColor = 0xffffff;
       hairColor = 0x3e2723;
     }
@@ -68,13 +160,11 @@ class HelperWorker {
     const toolMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
     const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28 });
 
-    // 1. Soft contact shadow
     const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.44, 14), shadowMat);
     shadow.rotation.x = -Math.PI / 2;
     shadow.position.y = 0.02;
     this.mesh.add(shadow);
 
-    // 2. Human Head & Friendly Face
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), skinMat);
     head.position.y = 1.55;
     head.castShadow = true;
@@ -95,18 +185,11 @@ class HelperWorker {
     smile.position.set(0, 1.50, 0.24);
     this.mesh.add(smile);
 
-    // 3. Hair & Headwear
     const hair = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), hairMat);
     hair.position.set(0, 1.56, -0.04);
     this.mesh.add(hair);
 
     if (this.type === 'CHEF') {
-      // Tall Pleated French Toque Blanche (Chef Hat)
-      const toqueCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.28, 0.12, 16), capMat);
-      toqueCrown.position.y = 1.70;
-      addSketchLines(toqueCrown, 0x111111);
-      this.mesh.add(toqueCrown);
-
       const toquePuff = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.28, 0.36, 16), capMat);
       toquePuff.position.y = 1.94;
       addSketchLines(toquePuff, 0x111111);
@@ -276,7 +359,16 @@ class HelperWorker {
   }
 
   setTarget(x, z) {
-    this.targetPos.set(x, 0, z);
+    const dest = new THREE.Vector3(x, 0, z);
+    if (!this.finalDest || this.finalDest.distanceTo(dest) > 0.6 || (this.waypoints.length === 0 && this.position.distanceTo(this.targetPos) < 0.3)) {
+      this.finalDest = dest.clone();
+      this.waypoints = getStaffCorridorPath(this.position, dest);
+      if (this.waypoints.length > 0) {
+        this.targetPos.copy(this.waypoints.shift());
+      } else {
+        this.targetPos.copy(dest);
+      }
+    }
   }
 
   update(dt, patches, pens, machines, stands, dustbins = []) {
@@ -284,14 +376,18 @@ class HelperWorker {
 
     this.refreshStats();
 
-    // Direct Smooth Movement
+    // Corridor Waypoint Navigation with Step Snapping
     const dx = this.targetPos.x - this.position.x;
     const dz = this.targetPos.z - this.position.z;
     const dist = Math.sqrt(dx * dx + dz * dz);
     const stepDist = this.speed * dt;
 
-    if (dist <= stepDist || dist < 0.1) {
-      this.position.copy(this.targetPos);
+    if (dist <= stepDist || dist < 0.35) {
+      if (this.waypoints.length > 0) {
+        this.targetPos.copy(this.waypoints.shift());
+      } else {
+        this.position.copy(this.targetPos);
+      }
       this.leftLeg.rotation.x = 0;
       this.rightLeg.rotation.x = 0;
       if (this.leftArm) this.leftArm.rotation.x = 0;
@@ -313,6 +409,25 @@ class HelperWorker {
       this.rightLeg.rotation.x = -Math.sin(this.walkCycle) * 0.5;
       if (this.leftArm) this.leftArm.rotation.x = -Math.sin(this.walkCycle) * 0.45;
       if (this.rightArm) this.rightArm.rotation.x = Math.sin(this.walkCycle) * 0.45;
+    }
+
+    // Responsive Anti-Stuck Watchdog: advance waypoint or snap if delayed
+    if (!this.lastPos) this.lastPos = new THREE.Vector3();
+    const moveDelta = this.position.distanceTo(this.lastPos);
+    this.lastPos.copy(this.position);
+
+    if (moveDelta < 0.05 * dt) {
+      this.stuckTimer = (this.stuckTimer || 0) + dt;
+      if (this.stuckTimer > 1.0) {
+        this.stuckTimer = 0;
+        if (this.waypoints.length > 0) {
+          this.targetPos.copy(this.waypoints.shift());
+        } else if (this.finalDest) {
+          this.position.copy(this.finalDest);
+        }
+      }
+    } else {
+      this.stuckTimer = 0;
     }
 
     this.mesh.position.copy(this.position);
