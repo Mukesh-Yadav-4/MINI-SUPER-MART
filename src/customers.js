@@ -118,7 +118,6 @@ class Customer {
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.24, 12, 10), skinMat);
     head.position.y = 1.44;
     head.castShadow = true;
-    addSketchLines(head, 0x111111);
     this.mesh.add(head);
 
     // Expressive Eyes
@@ -145,12 +144,10 @@ class Customer {
       const hatMat = new THREE.MeshLambertMaterial({ color: 0xffd700 });
       const brim = new THREE.Mesh(new THREE.CylinderGeometry(0.42, 0.42, 0.04, 16), hatMat);
       brim.position.y = 1.60;
-      addSketchLines(brim, 0x111111);
       this.mesh.add(brim);
 
       const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.28, 0.18, 16), hatMat);
       crown.position.y = 1.70;
-      addSketchLines(crown, 0x111111);
       this.mesh.add(crown);
 
       const band = new THREE.Mesh(new THREE.CylinderGeometry(0.285, 0.285, 0.05, 16), new THREE.MeshLambertMaterial({ color: 0x991b1b }));
@@ -161,7 +158,6 @@ class Customer {
       const hair = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), hairMat);
       hair.scale.set(1.02, 0.8, 1.05);
       hair.position.set(0, 1.54, -0.02);
-      addSketchLines(hair, 0x111111);
       this.mesh.add(hair);
 
       const bangs = new THREE.Mesh(new THREE.BoxGeometry(0.28, 0.08, 0.12), hairMat);
@@ -171,7 +167,6 @@ class Customer {
     } else if (hairStyle === 'bob') {
       const hair = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), hairMat);
       hair.position.set(0, 1.48, -0.04);
-      addSketchLines(hair, 0x111111);
       this.mesh.add(hair);
 
       const leftSide = new THREE.Mesh(new THREE.BoxGeometry(0.08, 0.25, 0.24), hairMat);
@@ -185,20 +180,21 @@ class Customer {
     } else if (hairStyle === 'ponytail') {
       const hair = new THREE.Mesh(new THREE.SphereGeometry(0.26, 10, 8), hairMat);
       hair.position.set(0, 1.52, -0.02);
-      addSketchLines(hair, 0x111111);
       this.mesh.add(hair);
 
       const tail = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.04, 0.28, 8), hairMat);
       tail.rotation.x = -0.6;
       tail.position.set(0, 1.48, -0.26);
-      addSketchLines(tail, 0x111111);
       this.mesh.add(tail);
+
+      const scrunchie = new THREE.Mesh(new THREE.TorusGeometry(0.06, 0.025, 6, 12), new THREE.MeshLambertMaterial({ color: 0xf43f5e }));
+      scrunchie.position.set(0, 1.56, -0.22);
+      this.mesh.add(scrunchie);
 
     } else { // Beanie
       const beanieMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
       const beanie = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), beanieMat);
       beanie.position.set(0, 1.54, -0.02);
-      addSketchLines(beanie, 0x111111);
       this.mesh.add(beanie);
     }
 
@@ -206,7 +202,6 @@ class Customer {
     const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.27, 0.65, 10), shirtMat);
     torso.position.y = 0.95;
     torso.castShadow = true;
-    addSketchLines(torso, 0x111111);
     this.mesh.add(torso);
 
     // Collar / neckline detail
@@ -224,7 +219,6 @@ class Customer {
     const leftArmMesh = new THREE.Mesh(armGeo, shirtMat);
     leftArmMesh.position.y = -0.18;
     leftArmMesh.castShadow = true;
-    addSketchLines(leftArmMesh, 0x111111);
     this.leftArm.add(leftArmMesh);
 
     const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), skinMat);
@@ -238,7 +232,6 @@ class Customer {
     const rightArmMesh = new THREE.Mesh(armGeo, shirtMat);
     rightArmMesh.position.y = -0.18;
     rightArmMesh.castShadow = true;
-    addSketchLines(rightArmMesh, 0x111111);
     this.rightArm.add(rightArmMesh);
 
     const rightHand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), skinMat);
@@ -254,12 +247,10 @@ class Customer {
     const lLegMesh = new THREE.Mesh(legGeo, pantsMat);
     lLegMesh.position.y = -0.23;
     lLegMesh.castShadow = true;
-    addSketchLines(lLegMesh, 0x111111);
     this.leftLeg.add(lLegMesh);
 
     const lShoe = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.22), shoeMat);
     lShoe.position.set(0, -0.48, 0.03);
-    addSketchLines(lShoe, 0x111111);
     this.leftLeg.add(lShoe);
     this.mesh.add(this.leftLeg);
 
@@ -268,12 +259,10 @@ class Customer {
     const rLegMesh = new THREE.Mesh(legGeo, pantsMat);
     rLegMesh.position.y = -0.23;
     rLegMesh.castShadow = true;
-    addSketchLines(rLegMesh, 0x111111);
     this.rightLeg.add(rLegMesh);
 
     const rShoe = new THREE.Mesh(new THREE.BoxGeometry(0.15, 0.1, 0.22), shoeMat);
     rShoe.position.set(0, -0.48, 0.03);
-    addSketchLines(rShoe, 0x111111);
     this.rightLeg.add(rShoe);
     this.mesh.add(this.rightLeg);
 
@@ -284,7 +273,6 @@ class Customer {
     const basketMat = new THREE.MeshLambertMaterial({ color: 0xd97706 });
     const basketMesh = new THREE.Mesh(new THREE.BoxGeometry(0.38, 0.22, 0.30), basketMat);
     basketMesh.castShadow = true;
-    addSketchLines(basketMesh, 0x111111);
     this.basketAnchor.add(basketMesh);
 
     // Basket Handle

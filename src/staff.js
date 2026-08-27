@@ -74,7 +74,6 @@ class HelperWorker {
     const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), skinMat);
     head.position.y = 1.55;
     head.castShadow = true;
-    addSketchLines(head, 0x111111);
     this.mesh.add(head);
 
     // Expressive Eyes
@@ -95,32 +94,27 @@ class HelperWorker {
     // 3. Hair & Worker Baseball Cap
     const hair = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), hairMat);
     hair.position.set(0, 1.56, -0.04);
-    addSketchLines(hair, 0x111111);
     this.mesh.add(hair);
 
     const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.30, 0.16, 14), capMat);
     capCrown.position.y = 1.70;
-    addSketchLines(capCrown, 0x111111);
     this.mesh.add(capCrown);
 
     const visor = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.04, 0.22), capMat);
     visor.position.set(0, 1.66, 0.26);
     visor.rotation.x = 0.15;
-    addSketchLines(visor, 0x111111);
     this.mesh.add(visor);
 
     // 4. Human Torso & Worker Apron / Uniform
     const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.30, 0.72, 10), shirtMat);
     torso.position.y = 1.0;
     torso.castShadow = true;
-    addSketchLines(torso, 0x111111);
     this.mesh.add(torso);
 
     // Work Utility Apron
     const apron = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.52, 0.44), apronMat);
     apron.position.set(0, 0.90, 0.04);
     apron.castShadow = true;
-    addSketchLines(apron, 0x111111);
     this.mesh.add(apron);
 
     // Mini Garden Trowel in Pocket
@@ -137,7 +131,6 @@ class HelperWorker {
     const lArmMesh = new THREE.Mesh(armGeo, shirtMat);
     lArmMesh.position.y = -0.20;
     lArmMesh.castShadow = true;
-    addSketchLines(lArmMesh, 0x111111);
     this.leftArm.add(lArmMesh);
 
     const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.065, 6, 6), skinMat);
@@ -150,7 +143,6 @@ class HelperWorker {
     const rArmMesh = new THREE.Mesh(armGeo, shirtMat);
     rArmMesh.position.y = -0.20;
     rArmMesh.castShadow = true;
-    addSketchLines(rArmMesh, 0x111111);
     this.rightArm.add(rArmMesh);
 
     const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.065, 6, 6), skinMat);
@@ -166,12 +158,10 @@ class HelperWorker {
     const lLegMesh = new THREE.Mesh(legGeo, pantsMat);
     lLegMesh.position.y = -0.25;
     lLegMesh.castShadow = true;
-    addSketchLines(lLegMesh, 0x111111);
     this.leftLeg.add(lLegMesh);
 
     const lBoot = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.26), bootMat);
     lBoot.position.set(0, -0.52, 0.04);
-    addSketchLines(lBoot, 0x111111);
     this.leftLeg.add(lBoot);
     this.mesh.add(this.leftLeg);
 
@@ -180,12 +170,10 @@ class HelperWorker {
     const rLegMesh = new THREE.Mesh(legGeo, pantsMat);
     rLegMesh.position.y = -0.25;
     rLegMesh.castShadow = true;
-    addSketchLines(rLegMesh, 0x111111);
     this.rightLeg.add(rLegMesh);
 
     const rBoot = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.12, 0.26), bootMat);
     rBoot.position.set(0, -0.52, 0.04);
-    addSketchLines(rBoot, 0x111111);
     this.rightLeg.add(rBoot);
     this.mesh.add(this.rightLeg);
 
@@ -974,36 +962,139 @@ class HelperCashier {
     this.mesh.position.set(this.pos.x, 0, this.pos.z);
 
     const skinMat = new THREE.MeshLambertMaterial({ color: 0xffd180 });
-    const shirtMat = new THREE.MeshLambertMaterial({ color: 0xab47bc });
-    const capMat = new THREE.MeshLambertMaterial({ color: 0x8e24aa });
-
+    const shirtMat = new THREE.MeshLambertMaterial({ color: 0x8e24aa }); // Purple/Plum store uniform
+    const vestMat = new THREE.MeshLambertMaterial({ color: 0xab47bc });
+    const capMat = new THREE.MeshLambertMaterial({ color: 0x6a1b9a });
+    const hairMat = new THREE.MeshLambertMaterial({ color: 0x4e342e });
+    const pantsMat = new THREE.MeshLambertMaterial({ color: 0x263238 });
+    const shoeMat = new THREE.MeshLambertMaterial({ color: 0x1e293b });
+    const darkEyeMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
+    const blushMat = new THREE.MeshLambertMaterial({ color: 0xf472b6 });
+    const badgeGoldMat = new THREE.MeshLambertMaterial({ color: 0xffd54f });
     const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28 });
+
+    // 1. Soft contact shadow
     const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.44, 14), shadowMat);
     shadow.rotation.x = -Math.PI / 2;
     shadow.position.y = 0.02;
     this.mesh.add(shadow);
 
-    const torso = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.8, 0.35), shirtMat);
-    torso.position.y = 0.95;
-    torso.castShadow = true;
-    addSketchLines(torso, 0x111111);
-    this.mesh.add(torso);
-
-    const head = new THREE.Mesh(new THREE.SphereGeometry(0.28, 8, 8), skinMat);
-    head.position.y = 1.6;
+    // 2. Human Head & Friendly Face
+    const head = new THREE.Mesh(new THREE.SphereGeometry(0.26, 12, 10), skinMat);
+    head.position.y = 1.55;
     head.castShadow = true;
-    addSketchLines(head, 0x111111);
     this.mesh.add(head);
 
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 0.15, 12), capMat);
-    cap.position.y = 1.78;
-    addSketchLines(cap, 0x111111);
-    this.mesh.add(cap);
+    // Expressive Eyes
+    const eyeL = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), darkEyeMat);
+    eyeL.position.set(-0.09, 1.57, -0.23); // Facing south (-Z) towards register counter
+    this.mesh.add(eyeL);
 
-    const visor = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.05, 0.3), capMat);
-    visor.position.set(0, 1.72, 0.3);
-    addSketchLines(visor, 0x111111);
+    const eyeR = new THREE.Mesh(new THREE.SphereGeometry(0.04, 6, 6), darkEyeMat);
+    eyeR.position.set(0.09, 1.57, -0.23);
+    this.mesh.add(eyeR);
+
+    // Cheerful rosy cheeks
+    const blushL = new THREE.Mesh(new THREE.CircleGeometry(0.03, 6), blushMat);
+    blushL.position.set(-0.13, 1.50, -0.23);
+    blushL.rotation.y = Math.PI;
+    this.mesh.add(blushL);
+    const blushR = new THREE.Mesh(new THREE.CircleGeometry(0.03, 6), blushMat);
+    blushR.position.set(0.13, 1.50, -0.23);
+    blushR.rotation.y = Math.PI;
+    this.mesh.add(blushR);
+
+    // Friendly smile
+    const smile = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.015, 4, 8, Math.PI), new THREE.MeshLambertMaterial({ color: 0xad1457 }));
+    smile.position.set(0, 1.48, -0.24);
+    this.mesh.add(smile);
+
+    // 3. Hair & Cashier Headband / Sun Visor
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(0.27, 10, 8), hairMat);
+    hair.position.set(0, 1.56, 0.02);
+    this.mesh.add(hair);
+
+    const visor = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.04, 6, 16), capMat);
+    visor.rotation.x = Math.PI / 2 + 0.1;
+    visor.position.set(0, 1.66, 0);
     this.mesh.add(visor);
+
+    const visorBrim = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.04, 0.18), capMat);
+    visorBrim.position.set(0, 1.67, -0.24);
+    visorBrim.rotation.x = -0.15;
+    this.mesh.add(visorBrim);
+
+    // 4. Torso & Store Uniform
+    const torso = new THREE.Mesh(new THREE.CylinderGeometry(0.26, 0.28, 0.72, 10), shirtMat);
+    torso.position.y = 1.0;
+    torso.castShadow = true;
+    this.mesh.add(torso);
+
+    const vest = new THREE.Mesh(new THREE.BoxGeometry(0.52, 0.50, 0.42), vestMat);
+    vest.position.set(0, 0.96, 0);
+    vest.castShadow = true;
+    this.mesh.add(vest);
+
+    // Golden Name Badge on Chest
+    const nameBadge = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.06, 0.03), badgeGoldMat);
+    nameBadge.position.set(0.14, 1.08, -0.22);
+    this.mesh.add(nameBadge);
+
+    // 5. Articulated Arms Scanning at Counter
+    const armGeo = new THREE.BoxGeometry(0.11, 0.44, 0.11);
+
+    this.leftArm = new THREE.Group();
+    this.leftArm.position.set(-0.32, 1.22, 0);
+    const lArmMesh = new THREE.Mesh(armGeo, shirtMat);
+    lArmMesh.position.set(0, -0.15, -0.12);
+    lArmMesh.rotation.x = -0.55;
+    lArmMesh.castShadow = true;
+    this.leftArm.add(lArmMesh);
+
+    const lHand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), skinMat);
+    lHand.position.set(0, -0.32, -0.24);
+    this.leftArm.add(lHand);
+    this.mesh.add(this.leftArm);
+
+    this.rightArm = new THREE.Group();
+    this.rightArm.position.set(0.32, 1.22, 0);
+    const rArmMesh = new THREE.Mesh(armGeo, shirtMat);
+    rArmMesh.position.set(0, -0.15, -0.12);
+    rArmMesh.rotation.x = -0.55;
+    rArmMesh.castShadow = true;
+    this.rightArm.add(rArmMesh);
+
+    const rHand = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), skinMat);
+    rHand.position.set(0, -0.32, -0.24);
+    this.rightArm.add(rHand);
+    this.mesh.add(this.rightArm);
+
+    // 6. Legs & Store Shoes
+    const legGeo = new THREE.BoxGeometry(0.15, 0.48, 0.15);
+
+    this.leftLeg = new THREE.Group();
+    this.leftLeg.position.set(-0.14, 0.65, 0);
+    const lLegMesh = new THREE.Mesh(legGeo, pantsMat);
+    lLegMesh.position.y = -0.24;
+    lLegMesh.castShadow = true;
+    this.leftLeg.add(lLegMesh);
+
+    const lShoe = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.24), shoeMat);
+    lShoe.position.set(0, -0.50, -0.02);
+    this.leftLeg.add(lShoe);
+    this.mesh.add(this.leftLeg);
+
+    this.rightLeg = new THREE.Group();
+    this.rightLeg.position.set(0.14, 0.65, 0);
+    const rLegMesh = new THREE.Mesh(legGeo, pantsMat);
+    rLegMesh.position.y = -0.24;
+    rLegMesh.castShadow = true;
+    this.rightLeg.add(rLegMesh);
+
+    const rShoe = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.1, 0.24), shoeMat);
+    rShoe.position.set(0, -0.50, -0.02);
+    this.rightLeg.add(rShoe);
+    this.mesh.add(this.rightLeg);
 
     this.mesh.visible = false;
     this.scene.add(this.mesh);
