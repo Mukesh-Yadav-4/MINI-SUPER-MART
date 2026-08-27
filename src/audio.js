@@ -243,27 +243,7 @@ class SoundSystem {
   }
 
   playCoin() {
-    if (this.muted) return;
-    this.ensureContext();
-    if (!this.ctx) return;
-
-    try {
-      const t = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const gain = this.ctx.createGain();
-
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(1046, t);
-      osc.frequency.setValueAtTime(1396, t + 0.04);
-
-      gain.gain.setValueAtTime(0.28, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
-
-      osc.connect(gain);
-      gain.connect(this.ctx.destination);
-      osc.start(t);
-      osc.stop(t + 0.14);
-    } catch (e) {}
+    // Silenced per user request
   }
 
   playPlace() {
@@ -290,57 +270,9 @@ class SoundSystem {
     } catch (e) {}
   }
 
-  // Delightful Oven Bell "Ding!" ("Ding-g-g! 🍞🎂")
+  // Silenced collection ting / oven ding
   playOvenDing() {
-    if (this.muted) return;
-    this.ensureContext();
-    if (!this.ctx) return;
-
-    try {
-      const t = this.ctx.currentTime;
-
-      // Primary Crystal Bell Ding (1760 Hz - A6)
-      const osc1 = this.ctx.createOscillator();
-      const gain1 = this.ctx.createGain();
-      osc1.type = 'sine';
-      osc1.frequency.setValueAtTime(1760, t);
-
-      gain1.gain.setValueAtTime(0.42, t);
-      gain1.gain.exponentialRampToValueAtTime(0.001, t + 1.2);
-
-      osc1.connect(gain1);
-      gain1.connect(this.ctx.destination);
-      osc1.start(t);
-      osc1.stop(t + 1.2);
-
-      // Shimmering High Harmonic (3520 Hz - A7)
-      const osc2 = this.ctx.createOscillator();
-      const gain2 = this.ctx.createGain();
-      osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(3520, t);
-
-      gain2.gain.setValueAtTime(0.22, t);
-      gain2.gain.exponentialRampToValueAtTime(0.001, t + 0.8);
-
-      osc2.connect(gain2);
-      gain2.connect(this.ctx.destination);
-      osc2.start(t);
-      osc2.stop(t + 0.8);
-
-      // Soft Warm Undertone (880 Hz - A5)
-      const osc3 = this.ctx.createOscillator();
-      const gain3 = this.ctx.createGain();
-      osc3.type = 'triangle';
-      osc3.frequency.setValueAtTime(880, t);
-
-      gain3.gain.setValueAtTime(0.25, t);
-      gain3.gain.exponentialRampToValueAtTime(0.001, t + 0.9);
-
-      osc3.connect(gain3);
-      gain3.connect(this.ctx.destination);
-      osc3.start(t);
-      osc3.stop(t + 0.9);
-    } catch (e) {}
+    // Silenced per user request
   }
 
   // Natural Bird Chirp ("Cheep-cheep-tweet! 🐦")

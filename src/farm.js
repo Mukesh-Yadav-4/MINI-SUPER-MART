@@ -329,6 +329,7 @@ class AnimalPen {
     this.feedStock = 0;
     this.productionTimer = 0;
     this.animTimer = Math.random() * 10;
+    this.soundCooldown = 0;
     this.animals = [];
 
     this.refreshStats();
@@ -749,6 +750,8 @@ class AnimalPen {
       }
     });
 
+    this.soundCooldown = Math.max(0, this.soundCooldown - dt);
+
     if (this.feedStock > 0 && this.produceStock < this.produceCapacity) {
       const effSpeed = (this.speedMult || 1.0) * growthMultiplier;
       this.productionTimer += dt * effSpeed;
@@ -760,9 +763,12 @@ class AnimalPen {
         this.produceStock++;
         this.updateBadges();
 
-        if (typeof sounds !== 'undefined') {
-          if (isChicken) sounds.playCluck();
-          else sounds.playMoo();
+        // Only one single gentle moo occasionally (at most once every 20 seconds)
+        if (!isChicken && this.soundCooldown <= 0) {
+          this.soundCooldown = 20.0;
+          if (typeof sounds !== 'undefined' && sounds.playMoo) {
+            sounds.playMoo();
+          }
         }
       }
     }
@@ -775,8 +781,6 @@ class AnimalPen {
     this.updateBadges();
     if (typeof sounds !== 'undefined') {
       sounds.playPlace();
-      if (this.config.type === 'CHICKEN') sounds.playCluck();
-      else sounds.playMoo();
     }
     return added;
   }
@@ -786,15 +790,13 @@ class AnimalPen {
     this.produceStock--;
     this.updateBadges();
 
-    if (this.config.type === 'CHICKEN') {
-      sounds.playCluck();
-    } else {
-      sounds.playMoo();
-    }
-
     if (typeof window !== 'undefined' && window.particleSystem) {
       const color = (this.config.type === 'CHICKEN') ? 0xfff9c4 : 0x81d4fa;
       window.particleSystem.spawnHarvestSparkles(this.pickupPos.x, 0.5, this.pickupPos.z, color, 8);
+    }
+
+    if (typeof sounds !== 'undefined' && sounds.triggerHaptic) {
+      sounds.triggerHaptic('light');
     }
 
     return this.config.produceId;
@@ -1114,10 +1116,6 @@ class ProcessingMachine {
           if (typeof questManager !== 'undefined') {
             questManager.recordEvent('cakesBaked', 1);
           }
-
-          if (typeof sounds !== 'undefined' && sounds.playOvenDing) {
-            sounds.playOvenDing();
-          }
         }
       }
     } else {
@@ -1145,10 +1143,6 @@ class ProcessingMachine {
 
           if (typeof questManager !== 'undefined') {
             questManager.recordEvent('breadBaked', 1);
-          }
-
-          if (typeof sounds !== 'undefined' && sounds.playOvenDing) {
-            sounds.playOvenDing();
           }
         }
       }

@@ -762,7 +762,6 @@ class UnlockZone {
     this.remainingCost -= actual;
 
     this.updateCardBadge();
-    sounds.playCoin();
 
     if (this.remainingCost <= 0) {
       this.unlocked = true;
