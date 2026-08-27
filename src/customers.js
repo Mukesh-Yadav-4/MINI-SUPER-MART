@@ -617,7 +617,7 @@ class CustomerManager {
 
             if (isReg2) {
               // Exit via Right Wall Exit Gate (East Side Wall)
-              const exitRightOfCounter = new THREE.Vector3(cust.assignedRegister.pos.x + 3.2, 0, cust.assignedRegister.customerCheckoutPos.z);
+              const exitRightOfCounter = new THREE.Vector3(21.0, 0, cust.assignedRegister.customerCheckoutPos.z);
               cust.waypoints = [
                 exitRightOfCounter,
                 GATES.EAST_EXIT.foyer.clone(),

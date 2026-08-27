@@ -323,11 +323,11 @@ class GameEngine {
       return texture;
     };
 
-    const runnerGeo = new THREE.PlaneGeometry(24.0, 1.8);
+    const runnerGeo = new THREE.PlaneGeometry(30.0, 1.8);
     const runnerMat = new THREE.MeshLambertMaterial({ map: createTileRunnerTexture() });
     const walkwayRunner = new THREE.Mesh(runnerGeo, runnerMat);
     walkwayRunner.rotation.x = -Math.PI / 2;
-    walkwayRunner.position.set(4.0, 0.015, 2.0);
+    walkwayRunner.position.set(6.5, 0.015, 2.0);
     walkwayRunner.receiveShadow = true;
     this.scene.add(walkwayRunner);
 
@@ -497,7 +497,7 @@ class GameEngine {
 
     const lampPositions = [
       [-6.5, 0.0], [-0.5, -4.5], [4.8, -4.5], [10.1, -4.5], [15.4, -4.5],
-      [-0.5, -10.5], [4.8, -10.5], [10.1, -10.5], [15.4, -10.5], [14.4, 0.0]
+      [-0.5, -10.5], [4.8, -10.5], [10.1, -10.5], [15.4, -10.5], [19.5, 0.0]
     ];
 
     lampPositions.forEach(pos => {
@@ -878,7 +878,7 @@ class GameEngine {
 
     this.cashRegisters = [
       new CashRegister(this.scene, { x: -6.5, z: 2.0 }),
-      new CashRegister(this.scene, { x: 14.4, z: 2.0 })
+      new CashRegister(this.scene, { x: 19.5, z: 2.0 })
     ];
 
     // Single central dustbin (rightmost removed as requested)
@@ -890,7 +890,7 @@ class GameEngine {
     this.staffFarmer = new HelperWorker(this.scene, 'FARMER', { x: 0.0, z: 4.5 });
     this.staffHarvester = new HelperWorker(this.scene, 'HARVESTER', { x: 3.5, z: 4.5 });
     this.staffCashier = new HelperCashier(this.scene, { x: -6.5, z: 2.35 }, 0x8e24aa, 0xab47bc, 0x6a1b9a);
-    this.staffCashier2 = new HelperCashier(this.scene, { x: 14.4, z: 2.35 }, 0x0284c7, 0x38bdf8, 0x0369a1);
+    this.staffCashier2 = new HelperCashier(this.scene, { x: 19.5, z: 2.35 }, 0x0284c7, 0x38bdf8, 0x0369a1);
 
     this.customerManager = new CustomerManager(this.scene);
 

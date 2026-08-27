@@ -132,7 +132,7 @@ const CONFIG = {
       name: 'Hire Express Cashier (Reg #2)',
       cost: 950,
       unlocked: false,
-      pos: { x: 14.4, z: 2.35 },
+      pos: { x: 19.5, z: 2.35 },
       radius: 1.6,
       requires: 'door_east'
     },
