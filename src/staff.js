@@ -1090,34 +1090,24 @@ class HelperWorker {
     }
 
     // ============================================
-    // 2. GATHERING PHASE
+    // 2. GATHERING & BATCHING PHASE (Ordered: 1. Full Batch Eggs -> 2. Full Batch Wheat -> 3. Full Batch Bread)
     // ============================================
-
-    // Priority 1: Harvest Baked Bread from Bakery Output Tray
-    if (bakery.outputStock > 0 && standBread && !standBread.isFull()) {
-      this.setTarget(bakery.config.pos.x + 0.7, bakery.config.pos.z + 0.9);
-      if (this.position.distanceTo(bakery.config.pos) < 3.4 || Math.hypot(this.position.x - (bakery.config.pos.x + 0.7), this.position.z - (bakery.config.pos.z + 0.9)) < 1.5) {
-        while (bakery.outputStock > 0 && this.stack.length < this.capacity) {
-          const bread = bakery.harvestOutput();
-          if (!bread || !this.addItem(bread)) break;
-        }
-        if (this.stack.length > 0) this.isDelivering = true;
-      }
-      return;
-    }
-
-    // Check Bakery Hopper Needs (Requires Eggs + Wheat)
     const maxEgg = Math.max(2, Math.floor(bakery.inputCapacity * 0.5));
     const maxWheat = Math.max(3, Math.floor(bakery.inputCapacity * 0.7));
+    const eggTarget = Math.min(maxEgg, this.capacity);
+    const wheatTarget = Math.min(maxWheat, this.capacity);
+
     const eggCountInHopper = bakery.ingredients.filter(i => i === 'EGG').length;
     const wheatCountInHopper = bakery.ingredients.filter(i => i === 'WHEAT').length;
+    const breadPending = Math.min(eggCountInHopper, wheatCountInHopper);
+    const targetBreadBatch = Math.min(bakery.outputCapacity, this.capacity, bakery.outputStock + breadPending);
 
-    // Step 1: Take Eggs in full batch from Chicken Coop
-    if (eggCountInHopper < maxEgg && !bakery.isInputFull() && chickenPen && chickenPen.produceStock > 0) {
+    // Step 1: Take Eggs FIRST in full batch from Chicken Coop
+    if (eggCountInHopper < eggTarget && !bakery.isInputFull() && chickenPen && chickenPen.produceStock > 0) {
       const pickupPos = chickenPen.pickupPos || chickenPen.pos;
       this.setTarget(pickupPos.x, pickupPos.z);
       if (this.position.distanceTo(chickenPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
-        const needed = Math.min(maxEgg - eggCountInHopper, this.capacity);
+        const needed = Math.min(eggTarget - eggCountInHopper, this.capacity);
         while (chickenPen.produceStock > 0 && this.stack.length < needed) {
           const egg = chickenPen.harvestProduce();
           if (!egg || !this.addItem(egg)) break;
@@ -1127,11 +1117,11 @@ class HelperWorker {
       return;
     }
 
-    // Step 2: Take Wheat in full batch from Wheat Patch
-    if (wheatCountInHopper < maxWheat && !bakery.isInputFull() && wheatPatch) {
+    // Step 2: Take Wheat SECOND in full batch from Wheat Patch
+    if (wheatCountInHopper < wheatTarget && !bakery.isInputFull() && wheatPatch) {
       this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z);
       if (this.position.distanceTo(wheatPatch.pos) < 3.4) {
-        const needed = Math.min(maxWheat - wheatCountInHopper, this.capacity);
+        const needed = Math.min(wheatTarget - wheatCountInHopper, this.capacity);
         while (wheatPatch.hasReadyCrops() && this.stack.length < needed) {
           const w = wheatPatch.harvestOne();
           if (!w || !this.addItem(w)) break;
@@ -1140,6 +1130,31 @@ class HelperWorker {
       if (this.stack.length > 0) {
         this.isDelivering = true;
       }
+      return;
+    }
+
+    // Step 3: Harvest Full Batch of Finished Bread (or wait if bread is actively baking towards batch)
+    if (bakery.outputStock > 0 && standBread && !standBread.isFull()) {
+      if (bakery.outputStock >= targetBreadBatch || breadPending === 0) {
+        this.setTarget(bakery.config.pos.x + 0.7, bakery.config.pos.z + 0.9);
+        if (this.position.distanceTo(bakery.config.pos) < 3.4 || Math.hypot(this.position.x - (bakery.config.pos.x + 0.7), this.position.z - (bakery.config.pos.z + 0.9)) < 1.5) {
+          while (bakery.outputStock > 0 && this.stack.length < this.capacity) {
+            const bread = bakery.harvestOutput();
+            if (!bread || !this.addItem(bread)) break;
+          }
+          if (this.stack.length > 0) this.isDelivering = true;
+        }
+        return;
+      } else {
+        // Wait at Bakery Oven while bread finishes baking
+        this.setTarget(bakery.config.pos.x + 0.7, bakery.config.pos.z + 0.9);
+        return;
+      }
+    }
+
+    // Step 4: Wait at Bakery Oven if ingredients are loaded and baking is in progress
+    if (breadPending > 0) {
+      this.setTarget(bakery.config.pos.x + 0.7, bakery.config.pos.z + 0.9);
       return;
     }
 
