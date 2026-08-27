@@ -286,204 +286,118 @@ class HelperWorker {
     }
   }
 
-  // Worker 1 (Stocker AI): Smooth Active Priority Pipeline (Canned Juice Delivery -> Jam Machine Max Loading -> Tomato Shelf Hysteresis -> Bread Shelf)
+  // Worker 1 (Stocker AI): Active, Smooth, Never-Stuck Restock & Processing Pipeline
   updateStockerAI(dt, patches, pens, machines, stands, dustbins) {
-    const standTomato = stands.find(s => s.config.itemId === 'TOMATO');
-    const juicer = machines.find(m => m.config.type === 'JUICER');
-    const standJuice = stands.find(s => s.config.itemId === 'JUICE');
-    const bakery = machines.find(m => m.config.type === 'BAKERY');
-    const standBread = stands.find(s => s.config.itemId === 'BREAD');
+    const standTomato = stands.find(s => s.config.itemId === 'TOMATO' && s.unlocked);
+    const standJuice = stands.find(s => s.config.itemId === 'JUICE' && s.unlocked);
+    const standBread = stands.find(s => s.config.itemId === 'BREAD' && s.unlocked);
+    const juicer = machines.find(m => m.config.type === 'JUICER' && m.unlocked);
+    const bakery = machines.find(m => m.config.type === 'BAKERY' && m.unlocked);
+    const tomatoPatch = patches.find(p => p.unlocked && p.config.itemId === 'TOMATO');
 
-    // Batching delivery state toggle
-    if (this.stack.length >= this.capacity) {
-      this.isDelivering = true;
-    } else if (this.stack.length === 0) {
-      this.isDelivering = false;
-    }
-
-    // 1. TOMATO SHELF HYSTERESIS (0 -> Max):
-    // Starts restocking only when empty (0), and once full (6/6), stops and waits until empty again
-    if (standTomato && standTomato.unlocked) {
-      if (standTomato.stock.length === 0) {
-        this.tomatoRefillActive = true;
-      }
-      if (standTomato.isFull()) {
-        this.tomatoRefillActive = false;
-        if (this.w1_task === 'TOMATO_SHELF') this.w1_task = null;
-      }
-    }
-
-    // 2. JAM / CANNERY MACHINE (JUICER) INPUT HOPPER (0/Low -> Max):
-    // When Juicer is unlocked and not full, Worker 1 continuously loads tomatoes one by one until input is 100% full
-    if (juicer && juicer.unlocked) {
-      if (!juicer.isInputFull()) {
-        this.juicerInputActive = true;
-      }
-      if (juicer.isInputFull()) {
-        this.juicerInputActive = false;
-        if (this.w1_task === 'TOMATO_MIXER') this.w1_task = null;
-      }
-    }
-
-    // 3. PRIORITY TASK SELECTION:
-    // A. Priority 1: Take finished Canned Jam/Juice from Juicer output tray to stand_juice shelf
-    if (!this.w1_task && standJuice && standJuice.unlocked && !standJuice.isFull() && juicer && (juicer.outputStock > 0 || this.stack.some(i => i.type === 'JUICE'))) {
-      this.w1_task = 'JUICE_SHELF';
-    }
-
-    // B. Priority 2: Fill Jam Machine (Juicer) to max/max capacity with fresh tomatoes
-    if (!this.w1_task && this.juicerInputActive && juicer && juicer.unlocked && !juicer.isInputFull()) {
-      this.w1_task = 'TOMATO_MIXER';
-    }
-
-    // C. Priority 3: Restock Tomato Shelf when empty (hysteresis active)
-    if (!this.w1_task && this.tomatoRefillActive && standTomato && standTomato.unlocked && !standTomato.isFull()) {
-      this.w1_task = 'TOMATO_SHELF';
-    }
-
-    // D. Priority 4: Restock Fresh Bread from Bakery to Bread Shelf
-    if (!this.w1_task && standBread && standBread.unlocked && !standBread.isFull() && bakery && (bakery.outputStock > 0 || this.stack.some(i => i.type === 'BREAD'))) {
-      this.w1_task = 'BREAD_SHELF';
-    }
-
-    // E. Priority 5: Fallback general maintenance for Tomato Shelf if idle
-    if (!this.w1_task && standTomato && standTomato.unlocked && !standTomato.isFull() && (!juicer || !juicer.unlocked || juicer.isInputFull())) {
-      this.w1_task = 'TOMATO_SHELF';
-    }
-
-    // Execute Active Task
-    if (this.w1_task === 'TOMATO_SHELF' && standTomato) {
-      // Deliver full batch
-      if (this.isDelivering && this.stack.some(i => i.type === 'TOMATO')) {
-        this.setTarget(standTomato.pos.x, standTomato.pos.z + 1.2);
-        if (this.position.distanceTo(standTomato.pos) < 3.2) {
-          const item = this.popItem('TOMATO');
-          if (item) standTomato.addItem();
-          if (standTomato.isFull() || !this.stack.some(i => i.type === 'TOMATO')) {
-            if (standTomato.isFull()) {
-              this.w1_task = null;
-              this.tomatoRefillActive = false;
-            }
-            this.isDelivering = false;
-          }
-        }
-        return;
-      }
-      // Gather up to max carry limit
-      const tomatoPatch = patches.find(p => p.unlocked && p.config.itemId === 'TOMATO' && p.hasReadyCrops());
-      if (tomatoPatch) {
-        this.setTarget(tomatoPatch.config.pos.x, tomatoPatch.config.pos.z);
-        if (this.position.distanceTo(new THREE.Vector3(tomatoPatch.config.pos.x, 0, tomatoPatch.config.pos.z)) < 3.0) {
-          const t = tomatoPatch.harvestOne();
-          if (t) this.addItem(t);
-        }
-        return;
-      }
-      if (this.stack.some(i => i.type === 'TOMATO')) {
-        this.isDelivering = true;
-        return;
-      }
-    } else if (this.w1_task === 'TOMATO_MIXER' && juicer) {
-      // Deliver tomatoes to juicer input hopper
-      if (this.isDelivering && this.stack.some(i => i.type === 'TOMATO')) {
-        const inputX = juicer.config.pos.x - 0.9;
-        const inputZ = juicer.config.pos.z + 0.9;
-        this.setTarget(inputX, inputZ);
-        if (this.position.distanceTo(new THREE.Vector3(inputX, 0, inputZ)) < 3.2 || this.position.distanceTo(juicer.config.pos) < 3.2) {
-          const item = this.popItem('TOMATO');
-          if (item) juicer.addIngredient(item);
-          if (juicer.isInputFull() || !this.stack.some(i => i.type === 'TOMATO')) {
-            if (juicer.isInputFull()) {
-              this.w1_task = null;
-              this.juicerInputActive = false;
-            }
-            this.isDelivering = false;
-          }
-        }
-        return;
-      }
-      // Gather up to max carry limit
-      const tomatoPatch = patches.find(p => p.unlocked && p.config.itemId === 'TOMATO' && p.hasReadyCrops());
-      if (tomatoPatch) {
-        this.setTarget(tomatoPatch.config.pos.x, tomatoPatch.config.pos.z);
-        if (this.position.distanceTo(new THREE.Vector3(tomatoPatch.config.pos.x, 0, tomatoPatch.config.pos.z)) < 3.0) {
-          const t = tomatoPatch.harvestOne();
-          if (t) this.addItem(t);
-        }
-        return;
-      }
-      if (this.stack.some(i => i.type === 'TOMATO')) {
-        this.isDelivering = true;
-        return;
-      }
-    } else if (this.w1_task === 'JUICE_SHELF' && standJuice) {
-      // Deliver full batch of canned juice to shelf
-      if (this.isDelivering && this.stack.some(i => i.type === 'JUICE')) {
+    // 1. If currently carrying items in backpack -> DELIVER THEM DIRECTLY
+    if (this.stack.length > 0) {
+      // Deliver Canned Jam to Jam Shelf
+      if (this.stack.some(i => i.type === 'JUICE') && standJuice && !standJuice.isFull()) {
         this.setTarget(standJuice.pos.x, standJuice.pos.z + 1.2);
-        if (this.position.distanceTo(standJuice.pos) < 3.5 || Math.hypot(this.position.x - standJuice.pos.x, this.position.z - (standJuice.pos.z + 1.2)) < 2.2) {
+        if (this.position.distanceTo(standJuice.pos) < 3.4 || Math.hypot(this.position.x - standJuice.pos.x, this.position.z - (standJuice.pos.z + 1.2)) < 2.0) {
           const item = this.popItem('JUICE');
           if (item) standJuice.addItem();
-          if (standJuice.isFull() || !this.stack.some(i => i.type === 'JUICE')) {
-            if (standJuice.isFull()) this.w1_task = null;
-            this.isDelivering = false;
-          }
         }
         return;
       }
-      // Gather juice from juicer output tray
-      if (juicer && juicer.outputStock > 0) {
-        const outX = juicer.config.pos.x + 0.9;
-        const outZ = juicer.config.pos.z + 0.9;
-        this.setTarget(outX, outZ);
-        if (this.position.distanceTo(new THREE.Vector3(outX, 0, outZ)) < 3.2 || this.position.distanceTo(juicer.config.pos) < 3.2) {
-          const out = juicer.harvestOutput();
-          if (out) this.addItem(out);
-        }
-        return;
-      }
-      if (this.stack.some(i => i.type === 'JUICE')) {
-        this.isDelivering = true;
-        return;
-      }
-    } else if (this.w1_task === 'BREAD_SHELF' && standBread) {
-      // Deliver bread to shelf
-      if (this.isDelivering && this.stack.some(i => i.type === 'BREAD')) {
+
+      // Deliver Bread to Bread Shelf
+      if (this.stack.some(i => i.type === 'BREAD') && standBread && !standBread.isFull()) {
         this.setTarget(standBread.pos.x, standBread.pos.z + 1.2);
         if (this.position.distanceTo(standBread.pos) < 3.2) {
-          const bread = this.popItem('BREAD');
-          if (bread) standBread.addItem();
-          if (standBread.isFull() || !this.stack.some(i => i.type === 'BREAD')) {
-            if (standBread.isFull()) this.w1_task = null;
-            this.isDelivering = false;
+          const item = this.popItem('BREAD');
+          if (item) standBread.addItem();
+        }
+        return;
+      }
+
+      // If holding Tomatoes -> Load Juicer hopper or stock Tomato shelf
+      if (this.stack.some(i => i.type === 'TOMATO')) {
+        // Prioritize loading Juicer machine if it needs tomatoes
+        if (juicer && !juicer.isInputFull()) {
+          const inputX = juicer.config.pos.x - 0.9;
+          const inputZ = juicer.config.pos.z + 0.9;
+          this.setTarget(inputX, inputZ);
+          if (this.position.distanceTo(new THREE.Vector3(inputX, 0, inputZ)) < 3.2 || this.position.distanceTo(juicer.config.pos) < 3.2) {
+            const item = this.popItem('TOMATO');
+            if (item) juicer.addIngredient(item);
           }
+          return;
         }
-        return;
-      }
-      if (bakery && bakery.outputStock > 0) {
-        this.setTarget(bakery.group.position.x, bakery.group.position.z + 0.8);
-        if (this.position.distanceTo(bakery.group.position) < 3.0) {
-          const out = bakery.harvestOutput();
-          if (out) this.addItem(out);
+
+        // Deliver to Tomato Shelf if shelf needs stock
+        if (standTomato && !standTomato.isFull()) {
+          this.setTarget(standTomato.pos.x, standTomato.pos.z + 1.2);
+          if (this.position.distanceTo(standTomato.pos) < 3.2) {
+            const item = this.popItem('TOMATO');
+            if (item) standTomato.addItem();
+          }
+          return;
         }
-        return;
       }
-      if (this.stack.some(i => i.type === 'BREAD')) {
-        this.isDelivering = true;
+
+      // If holding unusable leftover items, dispose in dustbin to prevent inventory jam
+      if (dustbins && dustbins.length > 0) {
+        const bin = dustbins[0];
+        this.setTarget(bin.pos.x, bin.pos.z);
+        if (this.position.distanceTo(bin.pos) < 2.5) {
+          this.popItem();
+        }
         return;
       }
     }
 
-    // Overflow discard if holding unneeded items
-    if (this.stack.length > 0 && dustbins.length > 0) {
-      const bin = dustbins[0];
-      this.setTarget(bin.pos.x, bin.pos.z);
-      if (this.position.distanceTo(bin.pos) < 2.5) {
-        this.popItem();
+    // 2. Backpack is empty (or has room) -> GATHER HIGHEST PRIORITY NEED
+
+    // Priority A: Harvest finished Canned Jam from Juicer output tray
+    if (juicer && juicer.outputStock > 0 && standJuice && !standJuice.isFull() && this.stack.length < this.capacity) {
+      const outX = juicer.config.pos.x + 0.9;
+      const outZ = juicer.config.pos.z + 0.9;
+      this.setTarget(outX, outZ);
+      if (this.position.distanceTo(new THREE.Vector3(outX, 0, outZ)) < 3.2 || this.position.distanceTo(juicer.config.pos) < 3.2) {
+        const out = juicer.harvestOutput();
+        if (out) this.addItem(out);
       }
       return;
     }
 
-    // Return to Idle Station
+    // Priority B: Load Juicer Hopper with Tomatoes if Juicer needs ingredients
+    if (juicer && !juicer.isInputFull() && tomatoPatch && tomatoPatch.hasReadyCrops() && this.stack.length < this.capacity) {
+      this.setTarget(tomatoPatch.config.pos.x, tomatoPatch.config.pos.z);
+      if (this.position.distanceTo(new THREE.Vector3(tomatoPatch.config.pos.x, 0, tomatoPatch.config.pos.z)) < 3.0) {
+        const t = tomatoPatch.harvestOne();
+        if (t) this.addItem(t);
+      }
+      return;
+    }
+
+    // Priority C: Restock Tomato Shelf if shelf needs stock
+    if (standTomato && !standTomato.isFull() && tomatoPatch && tomatoPatch.hasReadyCrops() && this.stack.length < this.capacity) {
+      this.setTarget(tomatoPatch.config.pos.x, tomatoPatch.config.pos.z);
+      if (this.position.distanceTo(new THREE.Vector3(tomatoPatch.config.pos.x, 0, tomatoPatch.config.pos.z)) < 3.0) {
+        const t = tomatoPatch.harvestOne();
+        if (t) this.addItem(t);
+      }
+      return;
+    }
+
+    // Priority D: Harvest finished Bread from Bakery output tray
+    if (bakery && bakery.outputStock > 0 && standBread && !standBread.isFull() && this.stack.length < this.capacity) {
+      this.setTarget(bakery.group.position.x, bakery.group.position.z + 0.8);
+      if (this.position.distanceTo(bakery.group.position) < 3.2) {
+        const out = bakery.harvestOutput();
+        if (out) this.addItem(out);
+      }
+      return;
+    }
+
+    // 3. Idle Standby: Everything in Worker 1's domain is satisfied
     this.setTarget(this.idlePos.x, this.idlePos.z);
   }
 
