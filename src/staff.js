@@ -377,7 +377,7 @@ class HelperWorker {
 
   setTarget(x, z) {
     const dest = new THREE.Vector3(x, 0, z);
-    if (!this.finalDest || this.finalDest.distanceTo(dest) > 0.6 || (this.waypoints.length === 0 && this.position.distanceTo(this.targetPos) < 0.3)) {
+    if (!this.finalDest || this.finalDest.distanceTo(dest) > 0.8) {
       this.finalDest = dest.clone();
       this.waypoints = getStaffCorridorPath(this.position, dest);
       if (this.waypoints.length > 0) {
@@ -385,6 +385,8 @@ class HelperWorker {
       } else {
         this.targetPos.copy(dest);
       }
+    } else if (this.waypoints.length === 0 && this.position.distanceTo(this.targetPos) < 0.3) {
+      this.targetPos.copy(dest);
     }
   }
 
@@ -393,39 +395,51 @@ class HelperWorker {
 
     this.refreshStats();
 
-    // Corridor Waypoint Navigation with Step Snapping
-    const dx = this.targetPos.x - this.position.x;
-    const dz = this.targetPos.z - this.position.z;
-    const dist = Math.sqrt(dx * dx + dz * dz);
-    const stepDist = this.speed * dt;
+    // Corridor Waypoint Navigation with Continuous Step Consumption
+    let remainingStep = this.speed * dt;
+    let isMoving = false;
 
-    if (dist <= stepDist || dist < 0.35) {
-      if (this.waypoints.length > 0) {
-        this.targetPos.copy(this.waypoints.shift());
-      } else {
+    while (remainingStep > 0.0001) {
+      const dx = this.targetPos.x - this.position.x;
+      const dz = this.targetPos.z - this.position.z;
+      const dist = Math.hypot(dx, dz);
+
+      if (dist <= remainingStep) {
         this.position.copy(this.targetPos);
+        remainingStep -= dist;
+        if (this.waypoints.length > 0) {
+          this.targetPos.copy(this.waypoints.shift());
+          isMoving = true;
+        } else {
+          break;
+        }
+      } else {
+        const dirX = dx / dist;
+        const dirZ = dz / dist;
+        this.position.x += dirX * remainingStep;
+        this.position.z += dirZ * remainingStep;
+        remainingStep = 0;
+        isMoving = true;
+
+        const targetRot = Math.atan2(dirX, dirZ);
+        let angleDiff = targetRot - this.currentRotation;
+        while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+        while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+        this.currentRotation += angleDiff * Math.min(1.0, 14 * dt);
       }
-      this.leftLeg.rotation.x = 0;
-      this.rightLeg.rotation.x = 0;
-      if (this.leftArm) this.leftArm.rotation.x = 0;
-      if (this.rightArm) this.rightArm.rotation.x = 0;
-    } else {
-      const dirX = dx / dist;
-      const dirZ = dz / dist;
-      this.position.x += dirX * stepDist;
-      this.position.z += dirZ * stepDist;
+    }
 
-      const targetRot = Math.atan2(dirX, dirZ);
-      let angleDiff = targetRot - this.currentRotation;
-      while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
-      while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
-      this.currentRotation += angleDiff * Math.min(1.0, 14 * dt);
-
+    if (isMoving) {
       this.walkCycle += dt * 5.5;
       this.leftLeg.rotation.x = Math.sin(this.walkCycle) * 0.5;
       this.rightLeg.rotation.x = -Math.sin(this.walkCycle) * 0.5;
       if (this.leftArm) this.leftArm.rotation.x = -Math.sin(this.walkCycle) * 0.45;
       if (this.rightArm) this.rightArm.rotation.x = Math.sin(this.walkCycle) * 0.45;
+    } else {
+      this.leftLeg.rotation.x = 0;
+      this.rightLeg.rotation.x = 0;
+      if (this.leftArm) this.leftArm.rotation.x = 0;
+      if (this.rightArm) this.rightArm.rotation.x = 0;
     }
 
     // Responsive Anti-Stuck Watchdog: advance waypoint or snap if delayed
@@ -630,10 +644,9 @@ class HelperWorker {
     const cowPen = pens.find(p => p.config.type === 'COW' && p.unlocked);
     const wheatPatch = patches.find(p => p.unlocked && p.config.itemId === 'WHEAT');
 
-    // Sequential Loop Phases: 1. CHICKEN_FEED -> 2. WHEAT_SHELF -> 3. COW_FEED -> 4. EGG_SHELF
+    // 1. Determine Current Sequential Loop Goal
     if (!this.farmer_phase) this.farmer_phase = 'CHICKEN_FEED';
 
-    // Check phase completion and advance to next step in loop
     if (this.farmer_phase === 'CHICKEN_FEED') {
       if (!chickenPen || chickenPen.feedStock >= chickenPen.feedCapacity) {
         this.farmer_phase = 'WHEAT_SHELF';
@@ -651,7 +664,7 @@ class HelperWorker {
     }
     if (this.farmer_phase === 'EGG_SHELF') {
       if (!standEgg || standEgg.isFull() || (chickenPen && chickenPen.produceStock === 0 && !this.stack.some(i => i.type === 'EGG'))) {
-        // Loop finished -> Check if any station needs refill to restart loop
+        // Restart loop from first consumer that needs refill
         if (chickenPen && chickenPen.feedStock < chickenPen.feedCapacity) {
           this.farmer_phase = 'CHICKEN_FEED';
         } else if (standWheat && !standWheat.isFull()) {
@@ -666,17 +679,26 @@ class HelperWorker {
       }
     }
     if (this.farmer_phase === 'STANDBY') {
-      if (chickenPen && chickenPen.feedStock === 0) this.farmer_phase = 'CHICKEN_FEED';
-      else if (standWheat && standWheat.stock.length === 0) this.farmer_phase = 'WHEAT_SHELF';
-      else if (cowPen && cowPen.feedStock === 0) this.farmer_phase = 'COW_FEED';
-      else if (chickenPen && chickenPen.produceStock >= 2 && standEgg && !standEgg.isFull()) this.farmer_phase = 'EGG_SHELF';
-      else if (chickenPen && chickenPen.feedStock < chickenPen.feedCapacity) this.farmer_phase = 'CHICKEN_FEED';
+      if (chickenPen && chickenPen.feedStock < chickenPen.feedCapacity) this.farmer_phase = 'CHICKEN_FEED';
+      else if (standWheat && !standWheat.isFull()) this.farmer_phase = 'WHEAT_SHELF';
+      else if (cowPen && cowPen.feedStock < cowPen.feedCapacity) this.farmer_phase = 'COW_FEED';
+      else if (chickenPen && chickenPen.produceStock > 0 && standEgg && !standEgg.isFull()) this.farmer_phase = 'EGG_SHELF';
     }
 
+    // Toggle delivery state
+    if (this.stack.length >= this.capacity) {
+      this.isDelivering = true;
+      this.batchWaitTimer = 0;
+    } else if (this.stack.length === 0) {
+      this.isDelivering = false;
+    }
+
+    // ============================================
     // 1. DELIVERY PHASE
+    // ============================================
     if (this.isDelivering && this.stack.length > 0) {
       // 1A. Deliver Wheat to Chicken Pen
-      if (this.stack.some(i => i.type === 'WHEAT') && this.farmer_phase === 'CHICKEN_FEED' && chickenPen) {
+      if (this.stack.some(i => i.type === 'WHEAT') && this.farmer_phase === 'CHICKEN_FEED' && chickenPen && chickenPen.feedStock < chickenPen.feedCapacity) {
         const feederPos = chickenPen.feederPos || chickenPen.pos;
         this.setTarget(feederPos.x, feederPos.z);
         if (this.position.distanceTo(chickenPen.pos) < 3.4 || this.position.distanceTo(feederPos) < 3.4) {
@@ -684,32 +706,28 @@ class HelperWorker {
             const wheat = this.popItem('WHEAT');
             if (wheat) chickenPen.addFeed(1);
           }
-          if (chickenPen.feedStock >= chickenPen.feedCapacity || !this.stack.some(i => i.type === 'WHEAT')) {
-            this.isDelivering = false;
-            if (chickenPen.feedStock >= chickenPen.feedCapacity) this.farmer_phase = 'WHEAT_SHELF';
-          }
+          if (chickenPen.feedStock >= chickenPen.feedCapacity) this.farmer_phase = 'WHEAT_SHELF';
+          if (this.stack.length === 0) this.isDelivering = false;
         }
         return;
       }
 
       // 1B. Deliver Wheat to Wheat Stand
-      if (this.stack.some(i => i.type === 'WHEAT') && this.farmer_phase === 'WHEAT_SHELF' && standWheat) {
+      if (this.stack.some(i => i.type === 'WHEAT') && this.farmer_phase === 'WHEAT_SHELF' && standWheat && !standWheat.isFull()) {
         this.setTarget(standWheat.pos.x, standWheat.pos.z + 0.9);
-        if (this.position.distanceTo(standWheat.pos) < 3.2 || Math.hypot(this.position.x - standWheat.pos.x, this.position.z - (standWheat.pos.z + 0.9)) < 1.5) {
+        if (this.position.distanceTo(standWheat.pos) < 3.4 || Math.hypot(this.position.x - standWheat.pos.x, this.position.z - (standWheat.pos.z + 0.9)) < 1.5) {
           while (this.stack.some(i => i.type === 'WHEAT') && !standWheat.isFull()) {
             const wheat = this.popItem('WHEAT');
             if (wheat) standWheat.addItem();
           }
-          if (standWheat.isFull() || !this.stack.some(i => i.type === 'WHEAT')) {
-            this.isDelivering = false;
-            if (standWheat.isFull()) this.farmer_phase = 'COW_FEED';
-          }
+          if (standWheat.isFull()) this.farmer_phase = 'COW_FEED';
+          if (this.stack.length === 0) this.isDelivering = false;
         }
         return;
       }
 
       // 1C. Deliver Wheat to Cow Pen
-      if (this.stack.some(i => i.type === 'WHEAT') && this.farmer_phase === 'COW_FEED' && cowPen) {
+      if (this.stack.some(i => i.type === 'WHEAT') && this.farmer_phase === 'COW_FEED' && cowPen && cowPen.feedStock < cowPen.feedCapacity) {
         const feederPos = cowPen.feederPos || cowPen.pos;
         this.setTarget(feederPos.x, feederPos.z);
         if (this.position.distanceTo(cowPen.pos) < 3.4 || this.position.distanceTo(feederPos) < 3.4) {
@@ -717,55 +735,51 @@ class HelperWorker {
             const wheat = this.popItem('WHEAT');
             if (wheat) cowPen.addFeed(1);
           }
-          if (cowPen.feedStock >= cowPen.feedCapacity || !this.stack.some(i => i.type === 'WHEAT')) {
-            this.isDelivering = false;
-            if (cowPen.feedStock >= cowPen.feedCapacity) this.farmer_phase = 'EGG_SHELF';
-          }
+          if (cowPen.feedStock >= cowPen.feedCapacity) this.farmer_phase = 'EGG_SHELF';
+          if (this.stack.length === 0) this.isDelivering = false;
         }
         return;
       }
 
       // 1D. Deliver Eggs to Egg Stand
-      if (this.stack.some(i => i.type === 'EGG') && standEgg) {
+      if (this.stack.some(i => i.type === 'EGG') && standEgg && !standEgg.isFull()) {
         this.setTarget(standEgg.pos.x, standEgg.pos.z + 0.9);
-        if (this.position.distanceTo(standEgg.pos) < 3.2 || Math.hypot(this.position.x - standEgg.pos.x, this.position.z - (standEgg.pos.z + 0.9)) < 1.5) {
+        if (this.position.distanceTo(standEgg.pos) < 3.4 || Math.hypot(this.position.x - standEgg.pos.x, this.position.z - (standEgg.pos.z + 0.9)) < 1.5) {
           while (this.stack.some(i => i.type === 'EGG') && !standEgg.isFull()) {
             const egg = this.popItem('EGG');
             if (egg) standEgg.addItem();
           }
-          if (standEgg.isFull() || !this.stack.some(i => i.type === 'EGG')) {
-            this.isDelivering = false;
-            if (standEgg.isFull()) this.farmer_phase = 'CHICKEN_FEED';
-          }
+          if (standEgg.isFull()) this.farmer_phase = 'CHICKEN_FEED';
+          if (this.stack.length === 0) this.isDelivering = false;
         }
         return;
       }
 
-      // Fallback discards / unloading
+      // 1E. Fallback Wheat Unloading (if consumer was filled before arrival)
       if (this.stack.some(i => i.type === 'WHEAT')) {
         if (chickenPen && chickenPen.feedStock < chickenPen.feedCapacity) {
           const feederPos = chickenPen.feederPos || chickenPen.pos;
           this.setTarget(feederPos.x, feederPos.z);
-          if (this.position.distanceTo(chickenPen.pos) < 3.4 || this.position.distanceTo(feederPos) < 3.4) {
+          if (this.position.distanceTo(feederPos) < 3.4) {
             const wheat = this.popItem('WHEAT');
             if (wheat) chickenPen.addFeed(1);
+          }
+          return;
+        }
+        if (standWheat && !standWheat.isFull()) {
+          this.setTarget(standWheat.pos.x, standWheat.pos.z + 0.9);
+          if (this.position.distanceTo(standWheat.pos) < 3.4) {
+            const wheat = this.popItem('WHEAT');
+            if (wheat) standWheat.addItem();
           }
           return;
         }
         if (cowPen && cowPen.feedStock < cowPen.feedCapacity) {
           const feederPos = cowPen.feederPos || cowPen.pos;
           this.setTarget(feederPos.x, feederPos.z);
-          if (this.position.distanceTo(cowPen.pos) < 3.4 || this.position.distanceTo(feederPos) < 3.4) {
+          if (this.position.distanceTo(feederPos) < 3.4) {
             const wheat = this.popItem('WHEAT');
             if (wheat) cowPen.addFeed(1);
-          }
-          return;
-        }
-        if (standWheat && !standWheat.isFull()) {
-          this.setTarget(standWheat.pos.x, standWheat.pos.z + 0.9);
-          if (this.position.distanceTo(standWheat.pos) < 3.2) {
-            const wheat = this.popItem('WHEAT');
-            if (wheat) standWheat.addItem();
           }
           return;
         }
@@ -779,13 +793,9 @@ class HelperWorker {
       }
     }
 
-    if (this.stack.length >= this.capacity) {
-      this.isDelivering = true;
-      this.batchWaitTimer = 0;
-      return;
-    }
-
+    // ============================================
     // 2. GATHERING PHASE
+    // ============================================
     if (this.farmer_phase === 'STANDBY') {
       if (this.stack.length > 0) {
         this.isDelivering = true;
@@ -795,54 +805,60 @@ class HelperWorker {
       return;
     }
 
-    // Phase 4: Egg Gathering (Full Batch)
-    if (this.farmer_phase === 'EGG_SHELF' && chickenPen && chickenPen.produceStock > 0) {
-      const pickupPos = chickenPen.pickupPos || chickenPen.pos;
-      this.setTarget(pickupPos.x, pickupPos.z);
-      if (this.position.distanceTo(chickenPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
-        while (chickenPen.produceStock > 0 && this.stack.length < this.capacity) {
-          const egg = chickenPen.harvestProduce();
-          if (!egg || !this.addItem(egg)) break;
+    // 2A. Egg Gathering (for Egg Shelf)
+    if (this.farmer_phase === 'EGG_SHELF') {
+      if (chickenPen && chickenPen.produceStock > 0 && this.stack.length < this.capacity) {
+        const pickupPos = chickenPen.pickupPos || chickenPen.pos;
+        this.setTarget(pickupPos.x, pickupPos.z);
+        if (this.position.distanceTo(chickenPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
+          while (chickenPen.produceStock > 0 && this.stack.length < this.capacity) {
+            const egg = chickenPen.harvestProduce();
+            if (!egg || !this.addItem(egg)) break;
+          }
+          if (this.stack.length >= this.capacity || chickenPen.produceStock === 0) {
+            this.isDelivering = true;
+            this.batchWaitTimer = 0;
+          }
         }
+        return;
       }
-      if (this.stack.length >= this.capacity || (this.stack.length > 0 && chickenPen.produceStock === 0)) {
+      if (this.stack.length > 0) {
         this.isDelivering = true;
-        this.batchWaitTimer = 0;
+        return;
       }
+      this.farmer_phase = 'CHICKEN_FEED';
       return;
     }
 
-    // Phases 1, 2, 3: Wheat Gathering (Full Batch for Chicken Feed, Wheat Shelf, or Cow Feed)
+    // 2B. Wheat Gathering (for Chicken Coop, Wheat Shelf, or Cow Pen)
     if (this.farmer_phase === 'CHICKEN_FEED' || this.farmer_phase === 'WHEAT_SHELF' || this.farmer_phase === 'COW_FEED') {
-      this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z);
-      if (wheatPatch && wheatPatch.hasReadyCrops() && this.stack.length < this.capacity) {
-        if (this.position.distanceTo(wheatPatch.pos) < 3.2) {
+      if (wheatPatch) {
+        this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z);
+        if (this.position.distanceTo(wheatPatch.pos) < 3.4) {
           while (wheatPatch.hasReadyCrops() && this.stack.length < this.capacity) {
             const w = wheatPatch.harvestOne();
             if (!w || !this.addItem(w)) break;
           }
         }
-      }
 
-      if (this.stack.length >= this.capacity) {
-        this.isDelivering = true;
-        this.batchWaitTimer = 0;
-        return;
-      }
-
-      if (this.stack.length > 0) {
-        this.batchWaitTimer = (this.batchWaitTimer || 0) + dt;
-        if (this.batchWaitTimer > 2.5) {
+        if (this.stack.length >= this.capacity) {
           this.isDelivering = true;
           this.batchWaitTimer = 0;
           return;
         }
-        this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z - 1.2);
+
+        if (this.stack.length > 0) {
+          this.batchWaitTimer = (this.batchWaitTimer || 0) + dt;
+          if (this.batchWaitTimer > 2.5) {
+            this.isDelivering = true;
+            this.batchWaitTimer = 0;
+            return;
+          }
+          this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z - 1.2);
+          return;
+        }
         return;
       }
-
-      this.setTarget(this.idlePos.x, this.idlePos.z);
-      return;
     }
 
     this.setTarget(this.idlePos.x, this.idlePos.z);
@@ -855,56 +871,49 @@ class HelperWorker {
     const cowPen = pens.find(p => p.config.type === 'COW' && p.unlocked);
     const cornPatch = patches.find(p => p.unlocked && p.config.itemId === 'CARROT');
 
-    // 1. Demand Hysteresis (Refill triggered when <= 50% capacity, filled until full)
-    if (standCorn) {
-      if (standCorn.stock.length <= Math.floor(standCorn.capacity / 2)) this.cornRefillActive = true;
-      if (standCorn.isFull()) this.cornRefillActive = false;
-    }
-
-    if (standMilk) {
-      if (standMilk.stock.length <= Math.floor(standMilk.capacity / 2)) this.milkRefillActive = true;
-      if (standMilk.isFull()) this.milkRefillActive = false;
-    }
-
-    // Task Selection
-    if (this.cornRefillActive && standCorn && !standCorn.isFull()) {
+    // 1. Demand Selection
+    if (standCorn && !standCorn.isFull()) {
       this.w3_task = 'CORN_SHELF';
-    } else if (this.milkRefillActive && standMilk && !standMilk.isFull() && cowPen && cowPen.produceStock > 0) {
+    } else if (standMilk && !standMilk.isFull()) {
       this.w3_task = 'MILK_SHELF';
     } else {
       this.w3_task = null;
     }
 
+    // Toggle delivery state
+    if (this.stack.length >= this.capacity) {
+      this.isDelivering = true;
+      this.batchWaitTimer = 0;
+    } else if (this.stack.length === 0) {
+      this.isDelivering = false;
+    }
+
+    // ============================================
     // 1. DELIVERY PHASE
+    // ============================================
     if (this.isDelivering && this.stack.length > 0) {
       // 1A. Deliver Sweetcorn to Corn Stand
-      if (this.stack.some(i => i.type === 'CARROT') && standCorn) {
+      if (this.stack.some(i => i.type === 'CARROT') && standCorn && !standCorn.isFull()) {
         this.setTarget(standCorn.pos.x, standCorn.pos.z + 0.9);
-        if (this.position.distanceTo(standCorn.pos) < 3.2 || Math.hypot(this.position.x - standCorn.pos.x, this.position.z - (standCorn.pos.z + 0.9)) < 1.5) {
+        if (this.position.distanceTo(standCorn.pos) < 3.4 || Math.hypot(this.position.x - standCorn.pos.x, this.position.z - (standCorn.pos.z + 0.9)) < 1.5) {
           while (this.stack.some(i => i.type === 'CARROT') && !standCorn.isFull()) {
             const corn = this.popItem('CARROT');
             if (corn) standCorn.addItem();
           }
-          if (standCorn.isFull() || !this.stack.some(i => i.type === 'CARROT')) {
-            this.w3_task = null;
-            this.isDelivering = false;
-          }
+          if (this.stack.length === 0) this.isDelivering = false;
         }
         return;
       }
 
       // 1B. Deliver Milk to Milk Fridge
-      if (this.stack.some(i => i.type === 'MILK') && standMilk) {
+      if (this.stack.some(i => i.type === 'MILK') && standMilk && !standMilk.isFull()) {
         this.setTarget(standMilk.pos.x, standMilk.pos.z + 0.9);
         if (this.position.distanceTo(standMilk.pos) < 3.5 || Math.hypot(this.position.x - standMilk.pos.x, this.position.z - (standMilk.pos.z + 0.9)) < 1.5) {
           while (this.stack.some(i => i.type === 'MILK') && !standMilk.isFull()) {
             const milk = this.popItem('MILK');
             if (milk) standMilk.addItem();
           }
-          if (standMilk.isFull() || !this.stack.some(i => i.type === 'MILK')) {
-            this.w3_task = null;
-            this.isDelivering = false;
-          }
+          if (this.stack.length === 0) this.isDelivering = false;
         }
         return;
       }
@@ -917,13 +926,9 @@ class HelperWorker {
       }
     }
 
-    if (this.stack.length >= this.capacity) {
-      this.isDelivering = true;
-      this.batchWaitTimer = 0;
-      return;
-    }
-
+    // ============================================
     // 2. GATHERING PHASE
+    // ============================================
     if (!this.w3_task) {
       if (this.stack.length > 0) {
         this.isDelivering = true;
@@ -936,19 +941,19 @@ class HelperWorker {
     // 2A. Sweetcorn Gathering (Full Batch)
     if (this.w3_task === 'CORN_SHELF' && cornPatch) {
       this.setTarget(cornPatch.config.pos.x, cornPatch.config.pos.z);
-      if (cornPatch.hasReadyCrops() && this.stack.length < this.capacity) {
-        if (this.position.distanceTo(cornPatch.pos) < 3.2) {
-          while (cornPatch.hasReadyCrops() && this.stack.length < this.capacity) {
-            const c = cornPatch.harvestOne();
-            if (!c || !this.addItem(c)) break;
-          }
+      if (this.position.distanceTo(cornPatch.pos) < 3.4) {
+        while (cornPatch.hasReadyCrops() && this.stack.length < this.capacity) {
+          const c = cornPatch.harvestOne();
+          if (!c || !this.addItem(c)) break;
         }
       }
+
       if (this.stack.length >= this.capacity) {
         this.isDelivering = true;
         this.batchWaitTimer = 0;
         return;
       }
+
       if (this.stack.length > 0) {
         this.batchWaitTimer = (this.batchWaitTimer || 0) + dt;
         if (this.batchWaitTimer > 2.5) {
@@ -959,34 +964,43 @@ class HelperWorker {
         this.setTarget(cornPatch.config.pos.x, cornPatch.config.pos.z - 1.2);
         return;
       }
-      this.setTarget(this.idlePos.x, this.idlePos.z);
       return;
     }
 
     // 2B. Milk Gathering (Full Batch)
-    if (this.w3_task === 'MILK_SHELF' && cowPen && cowPen.produceStock > 0) {
-      const pickupPos = cowPen.pickupPos || cowPen.pos;
-      this.setTarget(pickupPos.x, pickupPos.z);
-      if (this.position.distanceTo(cowPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
-        while (cowPen.produceStock > 0 && this.stack.length < this.capacity) {
-          const milk = cowPen.harvestProduce();
-          if (!milk || !this.addItem(milk)) break;
+    if (this.w3_task === 'MILK_SHELF' && cowPen) {
+      if (cowPen.produceStock > 0 && this.stack.length < this.capacity) {
+        const pickupPos = cowPen.pickupPos || cowPen.pos;
+        this.setTarget(pickupPos.x, pickupPos.z);
+        if (this.position.distanceTo(cowPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
+          while (cowPen.produceStock > 0 && this.stack.length < this.capacity) {
+            const milk = cowPen.harvestProduce();
+            if (!milk || !this.addItem(milk)) break;
+          }
+          if (this.stack.length >= this.capacity || cowPen.produceStock === 0) {
+            this.isDelivering = true;
+            this.batchWaitTimer = 0;
+          }
         }
+        return;
       }
-      if (this.stack.length >= this.capacity || (this.stack.length > 0 && cowPen.produceStock === 0)) {
+      if (this.stack.length > 0) {
         this.isDelivering = true;
-        this.batchWaitTimer = 0;
+        return;
       }
+      this.setTarget(this.idlePos.x, this.idlePos.z);
       return;
     }
 
     this.setTarget(this.idlePos.x, this.idlePos.z);
   }
 
-  // Worker 5 (Baker AI): Dedicated Artisan Bakery Manager (Eggs Batch -> Wheat Batch -> Bread Delivery)
+  // Worker 5 (Baker AI): Dedicated Artisan Bakery Manager
   updateBakerAI(dt, patches, pens, machines, stands, dustbins) {
     const bakery = machines.find(m => m.config.type === 'BAKERY' && m.unlocked);
     const standBread = stands.find(s => s.config.itemId === 'BREAD' && s.unlocked);
+    const standWheat = stands.find(s => s.config.itemId === 'WHEAT' && s.unlocked);
+    const standEgg = stands.find(s => s.config.itemId === 'EGG' && s.unlocked);
     const chickenPen = pens.find(p => p.config.type === 'CHICKEN' && p.unlocked);
     const wheatPatch = patches.find(p => p.unlocked && p.config.itemId === 'WHEAT');
 
@@ -995,34 +1009,59 @@ class HelperWorker {
       return;
     }
 
+    // ============================================
     // 1. DELIVERY PHASE
-    if (this.isDelivering && this.stack.length > 0) {
+    // ============================================
+    if (this.stack.length > 0) {
       // 1A. Deliver baked Bread to Bread Showcase
-      if (this.stack.some(i => i.type === 'BREAD') && standBread) {
+      if (this.stack.some(i => i.type === 'BREAD') && standBread && !standBread.isFull()) {
         this.setTarget(standBread.pos.x, standBread.pos.z + 0.9);
         if (this.position.distanceTo(standBread.pos) < 3.4 || Math.hypot(this.position.x - standBread.pos.x, this.position.z - (standBread.pos.z + 0.9)) < 1.5) {
           while (this.stack.some(i => i.type === 'BREAD') && !standBread.isFull()) {
             const bread = this.popItem('BREAD');
             if (bread) standBread.addItem();
           }
-          if (standBread.isFull() || !this.stack.some(i => i.type === 'BREAD')) {
-            this.isDelivering = false;
-          }
+          if (this.stack.length === 0) this.isDelivering = false;
         }
         return;
       }
 
       // 1B. Deliver Eggs / Wheat ingredients into Bakery Oven Hopper
       const ingredient = this.stack.find(i => i.type === 'EGG' || i.type === 'WHEAT');
-      if (ingredient && bakery && !bakery.isInputFull()) {
+      if (ingredient && bakery && !bakery.isInputFull() && bakery.canAcceptIngredient(ingredient.type)) {
         this.setTarget(bakery.config.pos.x - 0.7, bakery.config.pos.z + 0.9);
-        if (this.position.distanceTo(bakery.config.pos) < 3.2 || Math.hypot(this.position.x - (bakery.config.pos.x - 0.7), this.position.z - (bakery.config.pos.z + 0.9)) < 1.5) {
+        if (this.position.distanceTo(bakery.config.pos) < 3.4 || Math.hypot(this.position.x - (bakery.config.pos.x - 0.7), this.position.z - (bakery.config.pos.z + 0.9)) < 1.5) {
           while (this.stack.length > 0 && !bakery.isInputFull()) {
-            const item = this.popItem(ingredient.type);
-            if (item) bakery.addIngredient(item);
+            const nextIng = this.stack[this.stack.length - 1];
+            if (bakery.canAcceptIngredient(nextIng.type)) {
+              const item = this.popItem(nextIng.type);
+              if (item) bakery.addIngredient(item);
+            } else {
+              break;
+            }
           }
-          if (bakery.isInputFull() || this.stack.length === 0) {
-            this.isDelivering = false;
+          if (this.stack.length === 0) this.isDelivering = false;
+        }
+        return;
+      }
+
+      // 1C. Graceful Shelf Overflow: If holding unaccepted ingredients, deposit into respective mart shelves!
+      if (this.stack.some(i => i.type === 'EGG') && standEgg && !standEgg.isFull()) {
+        this.setTarget(standEgg.pos.x, standEgg.pos.z + 0.9);
+        if (this.position.distanceTo(standEgg.pos) < 3.4) {
+          while (this.stack.some(i => i.type === 'EGG') && !standEgg.isFull()) {
+            const e = this.popItem('EGG');
+            if (e) standEgg.addItem();
+          }
+        }
+        return;
+      }
+      if (this.stack.some(i => i.type === 'WHEAT') && standWheat && !standWheat.isFull()) {
+        this.setTarget(standWheat.pos.x, standWheat.pos.z + 0.9);
+        if (this.position.distanceTo(standWheat.pos) < 3.4) {
+          while (this.stack.some(i => i.type === 'WHEAT') && !standWheat.isFull()) {
+            const w = this.popItem('WHEAT');
+            if (w) standWheat.addItem();
           }
         }
         return;
@@ -1036,26 +1075,19 @@ class HelperWorker {
       }
     }
 
-    if (this.stack.length >= this.capacity) {
-      this.isDelivering = true;
-      this.batchWaitTimer = 0;
-      return;
-    }
-
-    // 2. GATHERING PHASE (Ordered: 1. Harvest Baked Bread -> 2. Batch Eggs -> 3. Batch Wheat)
+    // ============================================
+    // 2. GATHERING PHASE
+    // ============================================
 
     // Priority 1: Harvest Baked Bread from Bakery Output Tray
     if (bakery.outputStock > 0 && standBread && !standBread.isFull()) {
       this.setTarget(bakery.config.pos.x + 0.7, bakery.config.pos.z + 0.9);
-      if (this.position.distanceTo(bakery.config.pos) < 3.2 || Math.hypot(this.position.x - (bakery.config.pos.x + 0.7), this.position.z - (bakery.config.pos.z + 0.9)) < 1.5) {
+      if (this.position.distanceTo(bakery.config.pos) < 3.4 || Math.hypot(this.position.x - (bakery.config.pos.x + 0.7), this.position.z - (bakery.config.pos.z + 0.9)) < 1.5) {
         while (bakery.outputStock > 0 && this.stack.length < this.capacity) {
           const bread = bakery.harvestOutput();
           if (!bread || !this.addItem(bread)) break;
         }
-        if (this.stack.length >= this.capacity || (this.stack.length > 0 && bakery.outputStock === 0)) {
-          this.isDelivering = true;
-          this.batchWaitTimer = 0;
-        }
+        if (this.stack.length > 0) this.isDelivering = true;
       }
       return;
     }
@@ -1065,18 +1097,16 @@ class HelperWorker {
     const wheatCountInHopper = bakery.ingredients.filter(i => i === 'WHEAT').length;
 
     // Step 1: Take Eggs in full batch from Chicken Coop
-    if (eggCountInHopper < 3 && !bakery.isInputFull() && chickenPen && chickenPen.produceStock > 0) {
+    if (eggCountInHopper < 2 && !bakery.isInputFull() && chickenPen && chickenPen.produceStock > 0) {
       const pickupPos = chickenPen.pickupPos || chickenPen.pos;
       this.setTarget(pickupPos.x, pickupPos.z);
       if (this.position.distanceTo(chickenPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
-        while (chickenPen.produceStock > 0 && this.stack.length < this.capacity) {
+        const needed = Math.min(2 - eggCountInHopper, this.capacity);
+        while (chickenPen.produceStock > 0 && this.stack.length < needed) {
           const egg = chickenPen.harvestProduce();
           if (!egg || !this.addItem(egg)) break;
         }
-      }
-      if (this.stack.length >= this.capacity || (this.stack.length > 0 && chickenPen.produceStock === 0)) {
-        this.isDelivering = true;
-        this.batchWaitTimer = 0;
+        if (this.stack.length > 0) this.isDelivering = true;
       }
       return;
     }
@@ -1084,28 +1114,15 @@ class HelperWorker {
     // Step 2: Take Wheat in full batch from Wheat Patch
     if (wheatCountInHopper < 3 && !bakery.isInputFull() && wheatPatch) {
       this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z);
-      if (wheatPatch.hasReadyCrops() && this.stack.length < this.capacity) {
-        if (this.position.distanceTo(wheatPatch.pos) < 3.2) {
-          while (wheatPatch.hasReadyCrops() && this.stack.length < this.capacity) {
-            const w = wheatPatch.harvestOne();
-            if (!w || !this.addItem(w)) break;
-          }
+      if (this.position.distanceTo(wheatPatch.pos) < 3.4) {
+        const needed = Math.min(3 - wheatCountInHopper, this.capacity);
+        while (wheatPatch.hasReadyCrops() && this.stack.length < needed) {
+          const w = wheatPatch.harvestOne();
+          if (!w || !this.addItem(w)) break;
         }
-      }
-      if (this.stack.length >= this.capacity) {
-        this.isDelivering = true;
-        this.batchWaitTimer = 0;
-        return;
       }
       if (this.stack.length > 0) {
-        this.batchWaitTimer = (this.batchWaitTimer || 0) + dt;
-        if (this.batchWaitTimer > 2.5) {
-          this.isDelivering = true;
-          this.batchWaitTimer = 0;
-          return;
-        }
-        this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z - 1.2);
-        return;
+        this.isDelivering = true;
       }
       return;
     }
@@ -1114,13 +1131,14 @@ class HelperWorker {
     this.setTarget(this.idlePos.x, this.idlePos.z);
   }
 
-  // Master Patissier (Chef Jean AI): Automates Pastry Cake Mixer & Royal Cake Stand (Zero-Waste Quota AI)
+  // Master Patissier (Chef Jean AI): Automates Pastry Cake Mixer & Royal Cake Stand
   updateChefAI(dt, patches, pens, machines, stands, dustbins) {
     const cakery = machines.find(m => m.config.type === 'CAKERY' && m.unlocked);
     const bakery = machines.find(m => m.config.type === 'BAKERY' && m.unlocked);
     const standCake = stands.find(s => s.config.itemId === 'CAKE' && s.unlocked);
     const standBread = stands.find(s => s.config.itemId === 'BREAD' && s.unlocked);
     const standMilk = stands.find(s => s.config.itemId === 'MILK' && s.unlocked);
+    const standEgg = stands.find(s => s.config.itemId === 'EGG' && s.unlocked);
     const chickenPen = pens.find(p => p.config.type === 'CHICKEN' && p.unlocked);
     const cowPen = pens.find(p => p.config.type === 'COW' && p.unlocked);
 
@@ -1129,7 +1147,9 @@ class HelperWorker {
       return;
     }
 
+    // ============================================
     // 1. DELIVERY PHASE
+    // ============================================
     if (this.stack.length > 0) {
       // 1A. Deliver Royal Cakes to Cake Stand
       if (this.stack.some(i => i.type === 'CAKE') && standCake) {
@@ -1139,9 +1159,7 @@ class HelperWorker {
             const cake = this.popItem('CAKE');
             if (cake) standCake.addItem();
           }
-          if (standCake.isFull() || !this.stack.some(i => i.type === 'CAKE')) {
-            this.isDelivering = false;
-          }
+          if (this.stack.length === 0) this.isDelivering = false;
         }
         return;
       }
@@ -1160,38 +1178,54 @@ class HelperWorker {
               break;
             }
           }
-          if (cakery.isInputFull() || this.stack.length === 0) {
-            this.isDelivering = false;
-          }
+          if (this.stack.length === 0) this.isDelivering = false;
         }
         return;
       }
 
-      // Overflow fallback: stock into shelves if mixer is full
+      // 1C. Graceful Shelf Overflow: If holding unaccepted ingredients, deposit into respective mart shelves!
+      if (this.stack.some(i => i.type === 'EGG') && standEgg && !standEgg.isFull()) {
+        this.setTarget(standEgg.pos.x, standEgg.pos.z + 0.9);
+        if (this.position.distanceTo(standEgg.pos) < 3.4) {
+          while (this.stack.some(i => i.type === 'EGG') && !standEgg.isFull()) {
+            const e = this.popItem('EGG');
+            if (e) standEgg.addItem();
+          }
+        }
+        return;
+      }
       if (this.stack.some(i => i.type === 'MILK') && standMilk && !standMilk.isFull()) {
         this.setTarget(standMilk.pos.x, standMilk.pos.z + 0.9);
         if (this.position.distanceTo(standMilk.pos) < 3.4) {
-          const m = this.popItem('MILK');
-          if (m) standMilk.addItem();
+          while (this.stack.some(i => i.type === 'MILK') && !standMilk.isFull()) {
+            const m = this.popItem('MILK');
+            if (m) standMilk.addItem();
+          }
         }
         return;
       }
       if (this.stack.some(i => i.type === 'BREAD') && standBread && !standBread.isFull()) {
         this.setTarget(standBread.pos.x, standBread.pos.z + 0.9);
         if (this.position.distanceTo(standBread.pos) < 3.4) {
-          const b = this.popItem('BREAD');
-          if (b) standBread.addItem();
+          while (this.stack.some(i => i.type === 'BREAD') && !standBread.isFull()) {
+            const b = this.popItem('BREAD');
+            if (b) standBread.addItem();
+          }
         }
         return;
       }
 
-      if (cakery) {
-        this.setTarget(cakery.config.pos.x - 0.7, cakery.config.pos.z + 1.2);
+      if (dustbins && dustbins.length > 0) {
+        const bin = dustbins[0];
+        this.setTarget(bin.pos.x, bin.pos.z);
+        if (this.position.distanceTo(bin.pos) < 2.8) this.popItem();
         return;
       }
     }
 
-    // 2. GATHERING PHASE (Sequential Order: 1. Harvest Baked Cakes -> 2. Batch 1: Eggs -> 3. Batch 2: Milk -> 4. Batch 3: Bread)
+    // ============================================
+    // 2. GATHERING PHASE (Ordered: 1. Ready Cakes -> 2. Eggs -> 3. Milk -> 4. Bread)
+    // ============================================
 
     // Step 1: Collect Finished Royal Cakes from Cake Mixer Tray
     if (cakery.outputStock > 0 && standCake && !standCake.isFull()) {
@@ -1206,16 +1240,18 @@ class HelperWorker {
       return;
     }
 
-    const hasEggs = cakery.ingredients.includes('EGG');
-    const hasMilk = cakery.ingredients.includes('MILK');
-    const hasBread = cakery.ingredients.includes('BREAD');
+    // Calculate exact ingredient needs for Cakery
+    const eggCountInHopper = cakery.ingredients.filter(i => i === 'EGG').length;
+    const milkCountInHopper = cakery.ingredients.filter(i => i === 'MILK').length;
+    const breadCountInHopper = cakery.ingredients.filter(i => i === 'BREAD').length;
 
     // Step 2 (Batch 1): Take Eggs FIRST from Chicken Coop
-    if (!hasEggs && !cakery.isInputFull() && chickenPen && chickenPen.produceStock > 0) {
+    if (eggCountInHopper < 2 && !cakery.isInputFull() && chickenPen && chickenPen.produceStock > 0) {
       const pickupPos = chickenPen.pickupPos || chickenPen.pos;
       this.setTarget(pickupPos.x, pickupPos.z);
       if (this.position.distanceTo(chickenPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
-        while (chickenPen.produceStock > 0 && this.stack.length < this.capacity) {
+        const needed = Math.min(2 - eggCountInHopper, this.capacity);
+        while (chickenPen.produceStock > 0 && this.stack.length < needed) {
           const egg = chickenPen.harvestProduce();
           if (!egg || !this.addItem(egg)) break;
         }
@@ -1225,11 +1261,12 @@ class HelperWorker {
     }
 
     // Step 3 (Batch 2): Take Milk SECOND from Cow Pen
-    if (!hasMilk && !cakery.isInputFull() && cowPen && cowPen.produceStock > 0) {
+    if (milkCountInHopper < 2 && !cakery.isInputFull() && cowPen && cowPen.produceStock > 0) {
       const pickupPos = cowPen.pickupPos || cowPen.pos;
       this.setTarget(pickupPos.x, pickupPos.z);
       if (this.position.distanceTo(cowPen.pos) < 3.4 || this.position.distanceTo(pickupPos) < 3.4) {
-        while (cowPen.produceStock > 0 && this.stack.length < this.capacity) {
+        const needed = Math.min(2 - milkCountInHopper, this.capacity);
+        while (cowPen.produceStock > 0 && this.stack.length < needed) {
           const milk = cowPen.harvestProduce();
           if (!milk || !this.addItem(milk)) break;
         }
@@ -1239,11 +1276,12 @@ class HelperWorker {
     }
 
     // Step 4 (Batch 3): Take Bread THIRD from Bakery Machine (or Bread Showcase)
-    if (!hasBread && !cakery.isInputFull()) {
+    if (breadCountInHopper < 2 && !cakery.isInputFull()) {
       if (bakery && bakery.outputStock > 0) {
         this.setTarget(bakery.config.pos.x + 0.7, bakery.config.pos.z + 0.9);
         if (this.position.distanceTo(bakery.config.pos) < 3.4 || Math.hypot(this.position.x - (bakery.config.pos.x + 0.7), this.position.z - (bakery.config.pos.z + 0.9)) < 1.5) {
-          while (bakery.outputStock > 0 && this.stack.length < this.capacity) {
+          const needed = Math.min(2 - breadCountInHopper, this.capacity);
+          while (bakery.outputStock > 0 && this.stack.length < needed) {
             const bread = bakery.harvestOutput();
             if (!bread || !this.addItem(bread)) break;
           }
@@ -1253,17 +1291,18 @@ class HelperWorker {
       } else if (standBread && standBread.stock.length > 0) {
         this.setTarget(standBread.pos.x, standBread.pos.z + 0.9);
         if (this.position.distanceTo(standBread.pos) < 3.4 || Math.hypot(this.position.x - standBread.pos.x, this.position.z - (standBread.pos.z + 0.9)) < 1.5) {
-          const b = standBread.takeItem();
-          if (b) {
-            this.addItem(b);
-            this.isDelivering = true;
+          const needed = Math.min(2 - breadCountInHopper, this.capacity);
+          while (standBread.stock.length > 0 && this.stack.length < needed) {
+            const b = standBread.takeItem();
+            if (!b || !this.addItem(b)) break;
           }
+          if (this.stack.length > 0) this.isDelivering = true;
         }
         return;
       }
     }
 
-    // Standby at Cake Mixer
+    // Standby in front of Cake Mixer
     this.setTarget(this.idlePos.x, this.idlePos.z);
   }
 }
