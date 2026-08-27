@@ -464,7 +464,7 @@ class GameEngine {
 
     const lampPositions = [
       [-6.5, 0.0], [-0.5, -4.5], [4.8, -4.5], [10.1, -4.5], [15.4, -4.5],
-      [-0.5, -10.5], [4.8, -10.5], [10.1, -7.5], [15.4, -7.5], [14.4, 0.0]
+      [-0.5, -10.5], [4.8, -10.5], [10.1, -10.5], [15.4, -10.5], [14.4, 0.0]
     ];
 
     lampPositions.forEach(pos => {
@@ -752,7 +752,7 @@ class GameEngine {
       new MarketStand(this.scene, { id: 'stand_juice', itemId: 'JUICE', pos: { x: -0.5, z: -12.5 }, unlocked: false }),
       new MarketStand(this.scene, { id: 'stand_milk', itemId: 'MILK', pos: { x: 4.8, z: -12.5 }, unlocked: false }),
       new MarketStand(this.scene, { id: 'stand_bread', itemId: 'BREAD', pos: { x: 10.1, z: -9.5 }, unlocked: false }),
-      new MarketStand(this.scene, { id: 'stand_cake', itemId: 'CAKE', pos: { x: 15.4, z: -9.5 }, unlocked: false })
+      new MarketStand(this.scene, { id: 'stand_cake', itemId: 'CAKE', pos: { x: 15.4, z: -12.5 }, unlocked: false })
     ];
 
     this.cashRegisters = [

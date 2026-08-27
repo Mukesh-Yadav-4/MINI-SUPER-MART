@@ -181,7 +181,7 @@ const CONFIG = {
       name: 'Royal Cake Pedestal Stand',
       cost: 4500,
       unlocked: false,
-      pos: { x: 15.4, z: -9.5 },
+      pos: { x: 15.4, z: -12.5 },
       radius: 1.6,
       requires: 'machine_cakery'
     }
