@@ -873,35 +873,42 @@ class HelperWorker {
     this.setTarget(this.idlePos.x, this.idlePos.z);
   }
 
-  // Master Patissier (Chef Jean AI): Automates Pastry Cake Mixer & Royal Cake Stand
+  // Master Patissier (Chef Jean AI): Automates Pastry Cake Mixer & Royal Cake Stand (Zero-Waste Quota AI)
   updateChefAI(dt, patches, pens, machines, stands, dustbins) {
     const cakery = machines.find(m => m.config.type === 'CAKERY' && m.unlocked);
     const bakery = machines.find(m => m.config.type === 'BAKERY' && m.unlocked);
     const standCake = stands.find(s => s.config.itemId === 'CAKE' && s.unlocked);
     const standBread = stands.find(s => s.config.itemId === 'BREAD' && s.unlocked);
+    const standMilk = stands.find(s => s.config.itemId === 'MILK' && s.unlocked);
     const cowPen = pens.find(p => p.config.type === 'COW' && p.unlocked);
     const chickenPen = pens.find(p => p.config.type === 'CHICKEN' && p.unlocked);
 
-    // Toggle Delivery state: full -> deliver; empty -> gather
-    if (this.stack.length >= this.capacity) {
-      this.isDelivering = true;
-    } else if (this.stack.length === 0) {
-      this.isDelivering = false;
-    }
+    // Calculate exact ingredient needs for Cake Mixer accounting for hopper + current carried backpack items
+    const currentMilkInHopper = cakery ? cakery.ingredients.filter(i => i === 'MILK').length : 0;
+    const currentMilkInStack = this.stack.filter(i => i.type === 'MILK').length;
+    const maxMilkAllowed = cakery ? Math.max(2, Math.floor(cakery.inputCapacity / 3)) : 2;
+    const neededMilk = Math.max(0, maxMilkAllowed - currentMilkInHopper - currentMilkInStack);
+
+    const currentEggsInHopper = cakery ? cakery.ingredients.filter(i => i === 'EGG').length : 0;
+    const currentEggsInStack = this.stack.filter(i => i.type === 'EGG').length;
+    const maxEggsAllowed = cakery ? Math.max(2, Math.floor(cakery.inputCapacity / 3)) : 2;
+    const neededEggs = Math.max(0, maxEggsAllowed - currentEggsInHopper - currentEggsInStack);
+
+    const currentBreadInHopper = cakery ? cakery.ingredients.filter(i => i === 'BREAD').length : 0;
+    const currentBreadInStack = this.stack.filter(i => i.type === 'BREAD').length;
+    const maxBreadAllowed = cakery ? Math.max(2, Math.floor(cakery.inputCapacity / 3)) : 2;
+    const neededBread = Math.max(0, maxBreadAllowed - currentBreadInHopper - currentBreadInStack);
 
     // ============================================
     // 1. DELIVERY PHASE
     // ============================================
-    if (this.isDelivering && this.stack.length > 0) {
+    if (this.stack.length > 0) {
       // 1A. Deliver Royal Cakes to Cake Stand
       if (this.stack.some(i => i.type === 'CAKE') && standCake) {
         this.setTarget(standCake.pos.x, standCake.pos.z + 1.2);
         if (this.position.distanceTo(standCake.pos) < 3.2 || Math.hypot(this.position.x - standCake.pos.x, this.position.z - (standCake.pos.z + 1.2)) < 2.0) {
           const cake = this.popItem('CAKE');
           if (cake) standCake.addItem();
-          if (standCake.isFull() || !this.stack.some(i => i.type === 'CAKE')) {
-            this.isDelivering = false;
-          }
         }
         return;
       }
@@ -915,24 +922,43 @@ class HelperWorker {
         if (this.position.distanceTo(new THREE.Vector3(inX, 0, inZ)) < 3.2 || this.position.distanceTo(cakery.config.pos) < 3.2) {
           const item = this.popItem(ingredient.type);
           if (item) cakery.addIngredient(item);
-          if (cakery.isInputFull() || !this.stack.some(i => ['MILK', 'EGG', 'BREAD'].includes(i.type))) {
-            this.isDelivering = false;
-          }
         }
         return;
       }
 
-      // Discard invalid / stray items in bin
-      if (dustbins && dustbins.length > 0) {
-        const bin = dustbins[0];
-        this.setTarget(bin.pos.x, bin.pos.z);
-        if (this.position.distanceTo(bin.pos) < 2.5) this.popItem();
+      // 1C. If carrying Milk and Cake Mixer is temporarily full -> Stock excess in Milk Refrigerator instead of wasting!
+      const carriedMilk = this.stack.find(i => i.type === 'MILK');
+      if (carriedMilk && standMilk && !standMilk.isFull()) {
+        this.setTarget(standMilk.pos.x, standMilk.pos.z + 1.2);
+        if (this.position.distanceTo(standMilk.pos) < 3.2) {
+          const m = this.popItem('MILK');
+          if (m) standMilk.addItem();
+        }
+        return;
+      }
+
+      // 1D. If carrying Bread and Cake Mixer is temporarily full -> Stock excess in Bread Showcase instead of wasting!
+      const carriedBread = this.stack.find(i => i.type === 'BREAD');
+      if (carriedBread && standBread && !standBread.isFull()) {
+        this.setTarget(standBread.pos.x, standBread.pos.z + 1.2);
+        if (this.position.distanceTo(standBread.pos) < 3.2) {
+          const b = this.popItem('BREAD');
+          if (b) standBread.addItem();
+        }
+        return;
+      }
+
+      // 1E. If Cake Mixer is actively baking -> Wait near mixer with ingredients ready for the next batch!
+      if (cakery) {
+        const inX = cakery.config.pos.x - 0.7;
+        const inZ = cakery.config.pos.z + 0.9;
+        this.setTarget(inX, inZ);
         return;
       }
     }
 
     // ============================================
-    // 2. GATHERING / FETCHING PHASE
+    // 2. GATHERING / FETCHING PHASE (Only fetch what is needed!)
     // ============================================
     // 2A. Collect Ready Baked Cakes from Cake Mixer Tray
     if (cakery && cakery.outputStock > 0 && standCake && !standCake.isFull()) {
@@ -944,49 +970,48 @@ class HelperWorker {
           const cake = cakery.harvestOutput();
           if (cake) this.addItem(cake);
         }
-        this.isDelivering = true;
       }
       return;
     }
 
-    // 2B. Fetch Milk if Cake Mixer accepts Milk
-    if (cakery && cakery.canAcceptIngredient('MILK') && cowPen && cowPen.produceStock > 0) {
+    // 2B. Fetch Milk ONLY IF neededMilk > 0
+    if (neededMilk > 0 && cowPen && cowPen.produceStock > 0 && this.stack.length < this.capacity) {
       this.setTarget(cowPen.pickupPos.x, cowPen.pickupPos.z);
       if (this.position.distanceTo(cowPen.pickupPos) < 3.2) {
-        while (cowPen.produceStock > 0 && this.stack.length < this.capacity && cakery.canAcceptIngredient('MILK')) {
+        const toTake = Math.min(neededMilk, cowPen.produceStock, this.capacity - this.stack.length);
+        for (let k = 0; k < toTake; k++) {
           const milk = cowPen.harvestProduce();
           if (milk) this.addItem(milk);
         }
-        this.isDelivering = true;
       }
       return;
     }
 
-    // 2C. Fetch Eggs if Cake Mixer accepts Eggs
-    if (cakery && cakery.canAcceptIngredient('EGG') && chickenPen && chickenPen.produceStock > 0) {
+    // 2C. Fetch Eggs ONLY IF neededEggs > 0
+    if (neededEggs > 0 && chickenPen && chickenPen.produceStock > 0 && this.stack.length < this.capacity) {
       this.setTarget(chickenPen.pickupPos.x, chickenPen.pickupPos.z);
       if (this.position.distanceTo(chickenPen.pickupPos) < 3.2) {
-        while (chickenPen.produceStock > 0 && this.stack.length < this.capacity && cakery.canAcceptIngredient('EGG')) {
+        const toTake = Math.min(neededEggs, chickenPen.produceStock, this.capacity - this.stack.length);
+        for (let k = 0; k < toTake; k++) {
           const egg = chickenPen.harvestProduce();
           if (egg) this.addItem(egg);
         }
-        this.isDelivering = true;
       }
       return;
     }
 
-    // 2D. Fetch Bread if Cake Mixer accepts Bread
-    if (cakery && cakery.canAcceptIngredient('BREAD')) {
+    // 2D. Fetch Bread ONLY IF neededBread > 0
+    if (neededBread > 0 && this.stack.length < this.capacity) {
       if (bakery && bakery.outputStock > 0) {
         const bOutX = bakery.config.pos.x + 0.7;
         const bOutZ = bakery.config.pos.z + 0.9;
         this.setTarget(bOutX, bOutZ);
         if (this.position.distanceTo(new THREE.Vector3(bOutX, 0, bOutZ)) < 3.0 || this.position.distanceTo(bakery.config.pos) < 3.0) {
-          while (bakery.outputStock > 0 && this.stack.length < this.capacity && cakery.canAcceptIngredient('BREAD')) {
+          const toTake = Math.min(neededBread, bakery.outputStock, this.capacity - this.stack.length);
+          for (let k = 0; k < toTake; k++) {
             const bread = bakery.harvestOutput();
             if (bread) this.addItem(bread);
           }
-          this.isDelivering = true;
         }
         return;
       } else if (standBread && standBread.stock.length > 0) {
@@ -994,13 +1019,12 @@ class HelperWorker {
         if (this.position.distanceTo(standBread.pos) < 3.2) {
           const bread = standBread.takeItem();
           if (bread) this.addItem(bread);
-          this.isDelivering = true;
         }
         return;
       }
     }
 
-    // Idle
+    // Idle at Cake Mixer
     this.setTarget(this.idlePos.x, this.idlePos.z);
   }
 }
