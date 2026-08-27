@@ -34,7 +34,8 @@ class GameEngine {
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     this.renderer.setSize(window.innerWidth, window.innerHeight);
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    const isMobile = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMobile ? 1.5 : 1.75));
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 
@@ -69,6 +70,8 @@ class GameEngine {
       this.camera.aspect = window.innerWidth / window.innerHeight;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
+      const isMob = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio, isMob ? 1.5 : 1.75));
     });
   }
 
@@ -919,57 +922,100 @@ class GameEngine {
   }
 
   initParticles() {
-    this.particles = [];
+    this.activeParticles = [];
     this.particleGeo = new THREE.BoxGeometry(0.12, 0.12, 0.12);
+    this.puffGeo = new THREE.SphereGeometry(0.1, 4, 4);
+
+    const colors = [0xffea00, 0x00e676, 0x00e5ff, 0xff1744, 0xff9100];
+    this.confettiMaterials = colors.map(c => new THREE.MeshBasicMaterial({ color: c }));
+    this.puffMaterial = new THREE.MeshBasicMaterial({ color: 0x78909c });
+
+    this.confettiPool = [];
+    for (let i = 0; i < 64; i++) {
+      const mat = this.confettiMaterials[i % this.confettiMaterials.length];
+      const mesh = new THREE.Mesh(this.particleGeo, mat);
+      mesh.visible = false;
+      this.scene.add(mesh);
+      this.confettiPool.push({
+        mesh,
+        vx: 0, vy: 0, vz: 0,
+        rotVx: 0, rotVy: 0,
+        life: 0, maxLife: 1.4,
+        type: 'CONFETTI'
+      });
+    }
+
+    this.puffPool = [];
+    for (let i = 0; i < 32; i++) {
+      const mesh = new THREE.Mesh(this.puffGeo, this.puffMaterial);
+      mesh.visible = false;
+      this.scene.add(mesh);
+      this.puffPool.push({
+        mesh,
+        vx: 0, vy: 0, vz: 0,
+        rotVx: 0, rotVy: 0,
+        life: 0, maxLife: 0.6,
+        type: 'PUFF'
+      });
+    }
   }
 
   spawnConfetti(pos) {
-    const colors = [0xffea00, 0x00e676, 0x00e5ff, 0xff1744, 0xff9100];
-    for (let i = 0; i < 28; i++) {
-      const mat = new THREE.MeshBasicMaterial({ color: colors[Math.floor(Math.random() * colors.length)] });
-      const p = new THREE.Mesh(this.particleGeo, mat);
-      p.position.set(pos.x, pos.y + 0.8, pos.z);
-      
+    const count = Math.min(24, this.confettiPool.length);
+    for (let i = 0; i < count; i++) {
+      const p = this.confettiPool.pop();
+      if (!p) break;
+      p.mesh.position.set(pos.x, pos.y + 0.8, pos.z);
+      p.mesh.scale.set(1, 1, 1);
+      p.mesh.visible = true;
+
       const angle = Math.random() * Math.PI * 2;
-      const speed = 2.5 + Math.random() * 4.0;
-      
-      this.scene.add(p);
-      this.particles.push({
-        mesh: p,
-        vx: Math.cos(angle) * speed,
-        vy: 4.0 + Math.random() * 3.5,
-        vz: Math.sin(angle) * speed,
-        rotVx: (Math.random() - 0.5) * 10,
-        rotVy: (Math.random() - 0.5) * 10,
-        life: 1.5,
-        maxLife: 1.5
-      });
+      const speed = 2.5 + Math.random() * 3.5;
+      p.vx = Math.cos(angle) * speed;
+      p.vy = 3.5 + Math.random() * 3.0;
+      p.vz = Math.sin(angle) * speed;
+      p.rotVx = (Math.random() - 0.5) * 10;
+      p.rotVy = (Math.random() - 0.5) * 10;
+      p.life = 1.4;
+      p.maxLife = 1.4;
+
+      this.activeParticles.push(p);
     }
   }
 
   spawnTrashPuff(pos) {
-    for (let i = 0; i < 6; i++) {
-      const mat = new THREE.MeshBasicMaterial({ color: 0x78909c });
-      const p = new THREE.Mesh(new THREE.SphereGeometry(0.1, 4, 4), mat);
-      p.position.set(pos.x, pos.y + 0.6, pos.z);
-      this.scene.add(p);
-      this.particles.push({
-        mesh: p,
-        vx: (Math.random() - 0.5) * 1.5,
-        vy: 1.2 + Math.random() * 1.0,
-        vz: (Math.random() - 0.5) * 1.5,
-        rotVx: 0,
-        rotVy: 0,
-        life: 0.6,
-        maxLife: 0.6
-      });
+    const count = Math.min(6, this.puffPool.length);
+    for (let i = 0; i < count; i++) {
+      const p = this.puffPool.pop();
+      if (!p) break;
+      p.mesh.position.set(pos.x, pos.y + 0.6, pos.z);
+      p.mesh.scale.set(1, 1, 1);
+      p.mesh.visible = true;
+
+      p.vx = (Math.random() - 0.5) * 1.5;
+      p.vy = 1.2 + Math.random() * 1.0;
+      p.vz = (Math.random() - 0.5) * 1.5;
+      p.rotVx = 0;
+      p.rotVy = 0;
+      p.life = 0.6;
+      p.maxLife = 0.6;
+
+      this.activeParticles.push(p);
     }
   }
 
   updateParticles(dt) {
-    for (let i = this.particles.length - 1; i >= 0; i--) {
-      const p = this.particles[i];
+    for (let i = this.activeParticles.length - 1; i >= 0; i--) {
+      const p = this.activeParticles[i];
       p.life -= dt;
+
+      if (p.life <= 0) {
+        p.mesh.visible = false;
+        this.activeParticles.splice(i, 1);
+        if (p.type === 'CONFETTI') this.confettiPool.push(p);
+        else this.puffPool.push(p);
+        continue;
+      }
 
       p.mesh.position.x += p.vx * dt;
       p.mesh.position.y += p.vy * dt;
@@ -981,11 +1027,6 @@ class GameEngine {
 
       const scale = Math.max(0, p.life / p.maxLife);
       p.mesh.scale.set(scale, scale, scale);
-
-      if (p.life <= 0) {
-        this.scene.remove(p.mesh);
-        this.particles.splice(i, 1);
-      }
     }
   }
 

@@ -248,18 +248,26 @@ class Player {
     this.headTexture.needsUpdate = true;
   }
 
+  static getCachedMaterial(colorHex) {
+    if (!Player._matCache) Player._matCache = {};
+    if (!Player._matCache[colorHex]) {
+      Player._matCache[colorHex] = new THREE.MeshLambertMaterial({ color: colorHex });
+    }
+    return Player._matCache[colorHex];
+  }
+
   static createItemMesh(itemId) {
     const group = new THREE.Group();
     const def = CONFIG.ITEMS[itemId];
     if (!def) return group;
 
     if (itemId === 'TOMATO') {
-      const redMat = new THREE.MeshLambertMaterial({ color: 0xef4444 });
-      const stemMat = new THREE.MeshLambertMaterial({ color: 0x166534 });
-      const leafMat = new THREE.MeshLambertMaterial({ color: 0x22c55e });
+      const redMat = Player.getCachedMaterial(0xef4444);
+      const stemMat = Player.getCachedMaterial(0x166534);
+      const leafMat = Player.getCachedMaterial(0x22c55e);
 
       // Plump organic tomato body with slight squashed top and rounded lobes
-      const tomatoBody = new THREE.Mesh(new THREE.SphereGeometry(0.22, 14, 12), redMat);
+      const tomatoBody = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 10), redMat);
       tomatoBody.scale.set(1.2, 0.95, 1.2);
       tomatoBody.position.y = 0.18;
       tomatoBody.castShadow = true;
@@ -295,34 +303,34 @@ class Player {
       group.add(babyLeaf);
 
     } else if (itemId === 'WHEAT') {
-      const wheatMat = new THREE.MeshLambertMaterial({ color: def.color });
+      const wheatMat = Player.getCachedMaterial(def.color);
       const sheaf = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.18, 0.45, 8), wheatMat);
       sheaf.castShadow = true;
       addSketchLines(sheaf, 0x111111);
       group.add(sheaf);
 
-      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.06, 8), new THREE.MeshLambertMaterial({ color: 0x8d6e63 }));
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.13, 0.06, 8), Player.getCachedMaterial(0x8d6e63));
       band.position.y = -0.05;
       group.add(band);
 
     } else if (itemId === 'EGG') {
-      const eggMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
-      const egg = new THREE.Mesh(new THREE.SphereGeometry(0.22, 12, 12), eggMat);
+      const eggMat = Player.getCachedMaterial(0xffffff);
+      const egg = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), eggMat);
       egg.scale.set(0.88, 1.3, 0.88);
       egg.position.y = 0.16;
       egg.castShadow = true;
       addSketchLines(egg, 0x111111);
       group.add(egg);
 
-      const nestMat = new THREE.MeshLambertMaterial({ color: 0xffca28 });
-      const nestCushion = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.08, 12), nestMat);
+      const nestMat = Player.getCachedMaterial(0xffca28);
+      const nestCushion = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.26, 0.08, 10), nestMat);
       nestCushion.position.y = 0.04;
       addSketchLines(nestCushion, 0x111111);
       group.add(nestCushion);
 
     } else if (itemId === 'MILK') {
-      const cartonMat = new THREE.MeshLambertMaterial({ color: 0x0288d1 });
-      const whiteMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+      const cartonMat = Player.getCachedMaterial(0x0288d1);
+      const whiteMat = Player.getCachedMaterial(0xffffff);
 
       const carton = new THREE.Mesh(new THREE.BoxGeometry(0.24, 0.42, 0.24), cartonMat);
       carton.castShadow = true;
@@ -336,27 +344,27 @@ class Player {
       group.add(topSlant);
 
     } else if (itemId === 'BREAD') {
-      const breadMat = new THREE.MeshLambertMaterial({ color: def.color });
+      const breadMat = Player.getCachedMaterial(def.color);
       const loaf = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.24, 0.26), breadMat);
       loaf.castShadow = true;
       addSketchLines(loaf, 0x111111);
       group.add(loaf);
 
     } else if (itemId === 'JUICE') {
-      const canMat = new THREE.MeshLambertMaterial({ color: def.color });
+      const canMat = Player.getCachedMaterial(def.color);
       const can = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.14, 0.35, 10), canMat);
       can.castShadow = true;
       addSketchLines(can, 0x111111);
       group.add(can);
 
-      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 8), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+      const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.08, 8), Player.getCachedMaterial(0xffffff));
       cap.position.y = 0.2;
       group.add(cap);
 
     } else if (itemId === 'CAKE') {
-      const cakeMat = new THREE.MeshLambertMaterial({ color: 0xfff0f5 });
-      const icingMat = new THREE.MeshLambertMaterial({ color: 0xf06292 });
-      const berryMat = new THREE.MeshLambertMaterial({ color: 0xe53935 });
+      const cakeMat = Player.getCachedMaterial(0xfff0f5);
+      const icingMat = Player.getCachedMaterial(0xf06292);
+      const berryMat = Player.getCachedMaterial(0xe53935);
 
       const base = new THREE.Mesh(new THREE.CylinderGeometry(0.24, 0.24, 0.16, 12), cakeMat);
       base.castShadow = true;
@@ -375,7 +383,7 @@ class Player {
       group.add(strawberry);
 
     } else {
-      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), new THREE.MeshLambertMaterial({ color: def.color }));
+      const mesh = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 8), Player.getCachedMaterial(def.color));
       mesh.castShadow = true;
       addSketchLines(mesh, 0x111111);
       group.add(mesh);

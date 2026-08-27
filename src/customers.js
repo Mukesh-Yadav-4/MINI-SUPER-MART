@@ -585,9 +585,9 @@ class CustomerManager {
             cust.stuckTimer = 0;
           }
 
-          const distToFront = cust.position.distanceTo(shelfTargetPos);
-          const distToCenter = cust.position.distanceTo(targetStand.pos);
-          if (distToFront < 1.3 || distToCenter < 2.2) {
+          const distFrontSq = (cust.position.x - shelfFrontX) ** 2 + (cust.position.z - shelfFrontZ) ** 2;
+          const distCenterSq = (cust.position.x - targetStand.pos.x) ** 2 + (cust.position.z - targetStand.pos.z) ** 2;
+          if (distFrontSq < 1.69 || distCenterSq < 4.84) {
             if (targetStand.hasStock()) {
               const item = targetStand.takeItem();
               if (item) {
@@ -647,7 +647,9 @@ class CustomerManager {
         cust.targetPos.copy(cust.assignedRegister.customerCheckoutPos);
         cust.currentRotation = 0;
 
-        const isStandingAtCounter = cust.position.distanceTo(cust.assignedRegister.customerCheckoutPos) < 0.45;
+        const regCheckoutPos = cust.assignedRegister.customerCheckoutPos;
+        const distPaySq = (cust.position.x - regCheckoutPos.x) ** 2 + (cust.position.z - regCheckoutPos.z) ** 2;
+        const isStandingAtCounter = distPaySq < 0.25;
         const isReg2 = (cashRegisters.length > 1 && cust.assignedRegister === cashRegisters[1]);
         const isStaffed = isReg2 ? isCashier2Present : isCashier1Present;
 
@@ -710,7 +712,7 @@ class CustomerManager {
       }
     }
 
-    // 3. Mutual Soft Contact Separation (Disperses crowds without disrupting single-file doorway exits)
+    // 3. Mutual Soft Contact Separation with Fast Early-Rejection Bounding Box
     for (let i = 0; i < this.customers.length; i++) {
       for (let j = i + 1; j < this.customers.length; j++) {
         const c1 = this.customers[i];
@@ -721,10 +723,13 @@ class CustomerManager {
         if (c1.state === 'LEAVE' && c2.state === 'LEAVE') continue;
 
         const dx = c1.position.x - c2.position.x;
+        if (dx > 0.85 || dx < -0.85) continue;
         const dz = c1.position.z - c2.position.z;
+        if (dz > 0.85 || dz < -0.85) continue;
+
         const distSq = dx * dx + dz * dz;
         const minDist = 0.85;
-        const minDistSq = minDist * minDist;
+        const minDistSq = 0.7225; // 0.85 * 0.85
 
         if (distSq < minDistSq && distSq > 0.0001) {
           const dist = Math.sqrt(distSq);

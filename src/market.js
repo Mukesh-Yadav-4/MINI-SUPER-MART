@@ -435,6 +435,33 @@ class CashRegister {
     this.cashAnchor.position.set(-0.85, 0.97, 0);
     this.group.add(this.cashAnchor);
 
+    // Pre-allocate 16 cash bill stacks in pool for zero-GC transactions
+    this.cashMeshPool = [];
+    const cashMat = new THREE.MeshLambertMaterial({ color: CONFIG.COLORS.MONEY_GREEN });
+    const bandMat = new THREE.MeshLambertMaterial({ color: 0xffeb3b });
+    const billGeo = new THREE.BoxGeometry(0.42, 0.09, 0.24);
+    const bandGeo = new THREE.BoxGeometry(0.12, 0.1, 0.25);
+
+    for (let i = 0; i < 16; i++) {
+      const meshGroup = new THREE.Group();
+      const billStack = new THREE.Mesh(billGeo, cashMat);
+      billStack.castShadow = true;
+      addStructureOutline(billStack, 0x111111);
+      meshGroup.add(billStack);
+
+      const band = new THREE.Mesh(bandGeo, bandMat);
+      addStructureOutline(band, 0x111111);
+      meshGroup.add(band);
+
+      const col = i % 2;
+      const layer = Math.floor(i / 2);
+      meshGroup.position.set((col - 0.5) * 0.46, layer * 0.09, 0);
+      meshGroup.visible = false;
+
+      this.cashAnchor.add(meshGroup);
+      this.cashMeshPool.push(meshGroup);
+    }
+
     this.cashierZonePos = new THREE.Vector3(this.pos.x, 0, this.pos.z + 0.85);
     this.customerCheckoutPos = new THREE.Vector3(this.pos.x, 0, this.pos.z - 0.85);
     this.cashCollectPos = new THREE.Vector3(this.pos.x - 0.85, 0, this.pos.z + 0.85);
@@ -466,14 +493,9 @@ class CashRegister {
 
   addEarnedCash(amount) {
     this.uncollectedCash += amount;
-
-    if (this.moneyPiles.length < 16) {
-      const mesh = CashRegister.createCashMesh();
-      const col = this.moneyPiles.length % 2;
-      const layer = Math.floor(this.moneyPiles.length / 2);
-      mesh.position.set((col - 0.5) * 0.46, layer * 0.09, 0);
-      this.cashAnchor.add(mesh);
-      this.moneyPiles.push(mesh);
+    const visibleCount = Math.min(16, Math.max(1, Math.ceil(this.uncollectedCash / 12)));
+    for (let i = 0; i < this.cashMeshPool.length; i++) {
+      this.cashMeshPool[i].visible = (i < visibleCount);
     }
   }
 
@@ -482,8 +504,9 @@ class CashRegister {
     const collected = this.uncollectedCash;
     this.uncollectedCash = 0;
 
-    this.moneyPiles.forEach(mesh => this.cashAnchor.remove(mesh));
-    this.moneyPiles = [];
+    for (let i = 0; i < this.cashMeshPool.length; i++) {
+      this.cashMeshPool[i].visible = false;
+    }
 
     sounds.playCash();
     return collected;
