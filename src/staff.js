@@ -758,14 +758,20 @@ class HelperWorker {
       }
     }
 
-    // If holding any items, switch to deliver
-    if (this.stack.length > 0) {
+    // If holding full capacity, switch to deliver immediately
+    if (this.stack.length >= this.capacity) {
       this.isDelivering = true;
+      this.batchWaitTimer = 0;
       return;
     }
 
     // 2. GATHERING PHASE
     if (!this.farmer_task) {
+      if (this.stack.length > 0) {
+        this.isDelivering = true;
+        this.batchWaitTimer = 0;
+        return;
+      }
       this.setTarget(this.idlePos.x, this.idlePos.z);
       return;
     }
@@ -779,36 +785,48 @@ class HelperWorker {
           const egg = chickenPen.harvestProduce();
           if (!egg || !this.addItem(egg)) break;
         }
-        if (this.stack.length > 0) {
-          this.isDelivering = true;
-        }
+      }
+      if (this.stack.length >= this.capacity || (this.stack.length > 0 && chickenPen.produceStock === 0)) {
+        this.isDelivering = true;
+        this.batchWaitTimer = 0;
       }
       return;
     }
 
     // 2B. Wheat Gathering (for Chicken Feed, Cow Feed, or Wheat Shelf)
     if (this.farmer_task === 'CHICKEN_FEED' || this.farmer_task === 'COW_FEED' || this.farmer_task === 'WHEAT_SHELF') {
+      this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z);
       if (wheatPatch && wheatPatch.hasReadyCrops() && this.stack.length < this.capacity) {
-        this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z);
         if (this.position.distanceTo(wheatPatch.pos) < 3.2) {
           while (wheatPatch.hasReadyCrops() && this.stack.length < this.capacity) {
             const w = wheatPatch.harvestOne();
             if (!w || !this.addItem(w)) break;
           }
-          if (this.stack.length > 0) {
-            this.isDelivering = true;
-          }
         }
-        return;
       }
 
-      // If we harvested items, proceed to deliver
-      if (this.stack.length > 0) {
+      // If full stack, deliver immediately
+      if (this.stack.length >= this.capacity) {
         this.isDelivering = true;
+        this.batchWaitTimer = 0;
         return;
       }
 
-      // If wheat is still growing and we have no items, wait peacefully at idle spot
+      // If we have some wheat, wait briefly at patch for next crops to sprout
+      if (this.stack.length > 0) {
+        this.batchWaitTimer = (this.batchWaitTimer || 0) + dt;
+        // After waiting 2.5 seconds, deliver whatever we collected
+        if (this.batchWaitTimer > 2.5) {
+          this.isDelivering = true;
+          this.batchWaitTimer = 0;
+          return;
+        }
+        // Wait in front of wheat patch
+        this.setTarget(wheatPatch.config.pos.x, wheatPatch.config.pos.z - 1.2);
+        return;
+      }
+
+      // If no wheat is ready and stack is 0, wait at idle post
       this.setTarget(this.idlePos.x, this.idlePos.z);
       return;
     }
