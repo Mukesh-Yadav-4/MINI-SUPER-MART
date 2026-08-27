@@ -18,6 +18,10 @@ class SoundSystem {
         if (this.ctx && this.ctx.state === 'suspended') {
           this.ctx.resume();
         }
+        this.initBGM();
+        if (!this.bgmMuted && !this.bgmTimer) {
+          this.startBGM();
+        }
       } catch (e) {}
     };
 
@@ -348,6 +352,172 @@ class SoundSystem {
     this.ensureContext();
     this.muted = !this.muted;
     return this.muted;
+  }
+
+  // ============================================
+  // PROCEDURAL BACKGROUND MUSIC (BGM) ENGINE
+  // ============================================
+  initBGM() {
+    if (this.bgmInitialized) return;
+    this.bgmInitialized = true;
+    this.bgmMuted = false;
+    try {
+      const saved = localStorage.getItem('ofm_bgm_muted');
+      if (saved !== null) this.bgmMuted = (saved === 'true');
+    } catch (e) {}
+
+    this.bgmVolume = 0.07;
+    this.bgmStep = 0;
+    this.bgmTimer = null;
+    this.bgmTempo = 112; // BPM
+    this.bgmStepDuration = (60 / this.bgmTempo) / 2; // 8th note duration (~0.268s)
+
+    // Warm Pentatonic & Major scale frequencies
+    // C Major Chord progression: C - G - Am - F (4 bars x 8 steps = 32 steps)
+    this.bgmChords = [
+      { bass: 130.81, notes: [261.63, 329.63, 392.00, 523.25] }, // C4, E4, G4, C5
+      { bass: 98.00,  notes: [246.94, 293.66, 392.00, 493.88] }, // B3, D4, G4, B4
+      { bass: 110.00, notes: [220.00, 261.63, 329.63, 440.00] }, // A3, C4, E4, A4
+      { bass: 87.31,  notes: [220.00, 261.63, 349.23, 440.00] }, // A3, C4, F4, A4
+      { bass: 130.81, notes: [261.63, 329.63, 392.00, 523.25] }, // C4, E4, G4, C5
+      { bass: 98.00,  notes: [246.94, 293.66, 392.00, 493.88] }, // B3, D4, G4, B4
+      { bass: 87.31,  notes: [220.00, 261.63, 349.23, 440.00] }, // A3, C4, F4, A4
+      { bass: 98.00,  notes: [246.94, 293.66, 392.00, 587.33] }  // G3, D4, G4, D5
+    ];
+
+    // Cheerful Marimba Melody Pattern (8 steps per bar x 8 bars = 64 steps)
+    this.bgmMelody = [
+      523.25, 0, 659.25, 523.25, 783.99, 0, 659.25, 0,    // Bar 1 (C)
+      587.33, 0, 493.88, 0,      783.99, 659.25, 587.33, 0, // Bar 2 (G)
+      440.00, 0, 523.25, 0,      659.25, 0, 523.25, 440.00, // Bar 3 (Am)
+      349.23, 0, 440.00, 523.25, 659.25, 0, 587.33, 0,    // Bar 4 (F)
+      523.25, 659.25, 783.99, 0, 880.00, 783.99, 659.25, 0,// Bar 5 (C)
+      783.99, 0, 587.33, 0,      659.25, 587.33, 493.88, 0, // Bar 6 (G)
+      523.25, 0, 659.25, 0,      587.33, 0, 523.25, 0,      // Bar 7 (F)
+      587.33, 659.25, 783.99, 0, 587.33, 0, 493.88, 0     // Bar 8 (G)
+    ];
+  }
+
+  startBGM() {
+    this.initBGM();
+    if (this.bgmTimer) return;
+    this.ensureContext();
+
+    this.bgmTimer = setInterval(() => {
+      this.tickBGM();
+    }, this.bgmStepDuration * 1000);
+  }
+
+  stopBGM() {
+    if (this.bgmTimer) {
+      clearInterval(this.bgmTimer);
+      this.bgmTimer = null;
+    }
+  }
+
+  toggleBGM() {
+    this.initBGM();
+    this.bgmMuted = !this.bgmMuted;
+    try {
+      localStorage.setItem('ofm_bgm_muted', this.bgmMuted.toString());
+    } catch (e) {}
+
+    if (!this.bgmMuted && !this.bgmTimer) {
+      this.startBGM();
+    }
+    return !this.bgmMuted;
+  }
+
+  tickBGM() {
+    if (this.bgmMuted || this.muted) return;
+    this.ensureContext();
+    if (!this.ctx || this.ctx.state === 'suspended') return;
+
+    try {
+      const now = this.ctx.currentTime;
+      const step = this.bgmStep;
+      const bar = Math.floor(step / 8) % this.bgmChords.length;
+      const stepInBar = step % 8;
+      const chord = this.bgmChords[bar];
+
+      // 1. Acoustic Bouncy Bass (Plays on beats 0, 4, and syncopated 6)
+      if (stepInBar === 0 || stepInBar === 4 || stepInBar === 6) {
+        const bassFreq = (stepInBar === 4) ? chord.bass * 1.5 : chord.bass;
+        const bOsc = this.ctx.createOscillator();
+        const bGain = this.ctx.createGain();
+        bOsc.type = 'triangle';
+        bOsc.frequency.setValueAtTime(bassFreq, now);
+
+        const bVol = this.bgmVolume * 1.2;
+        bGain.gain.setValueAtTime(bVol, now);
+        bGain.gain.exponentialRampToValueAtTime(0.001, now + this.bgmStepDuration * 1.8);
+
+        bOsc.connect(bGain);
+        bGain.connect(this.ctx.destination);
+        bOsc.start(now);
+        bOsc.stop(now + this.bgmStepDuration * 1.8);
+      }
+
+      // 2. Soft Marimba / Kalimba Melody Note
+      const melodyFreq = this.bgmMelody[step % this.bgmMelody.length];
+      if (melodyFreq > 0) {
+        const mOsc = this.ctx.createOscillator();
+        const mGain = this.ctx.createGain();
+        mOsc.type = 'sine';
+        mOsc.frequency.setValueAtTime(melodyFreq, now);
+
+        const mVol = this.bgmVolume * 0.95;
+        mGain.gain.setValueAtTime(mVol, now);
+        mGain.gain.exponentialRampToValueAtTime(0.001, now + this.bgmStepDuration * 1.4);
+
+        mOsc.connect(mGain);
+        mGain.connect(this.ctx.destination);
+        mOsc.start(now);
+        mOsc.stop(now + this.bgmStepDuration * 1.4);
+      }
+
+      // 3. Warm Harmonic Chord Pad (Soft arpeggio / plucked harmony on 8th notes)
+      if (stepInBar === 1 || stepInBar === 3 || stepInBar === 5 || stepInBar === 7) {
+        const noteIdx = Math.floor(stepInBar / 2) % chord.notes.length;
+        const harmFreq = chord.notes[noteIdx];
+        const hOsc = this.ctx.createOscillator();
+        const hGain = this.ctx.createGain();
+        hOsc.type = 'triangle';
+        hOsc.frequency.setValueAtTime(harmFreq, now);
+
+        const hVol = this.bgmVolume * 0.45;
+        hGain.gain.setValueAtTime(hVol, now);
+        hGain.gain.exponentialRampToValueAtTime(0.001, now + this.bgmStepDuration * 0.9);
+
+        hOsc.connect(hGain);
+        hGain.connect(this.ctx.destination);
+        hOsc.start(now);
+        hOsc.stop(now + this.bgmStepDuration * 0.9);
+      }
+
+      // 4. Subtle Shaker / Off-beat Rhythm
+      if (stepInBar % 2 === 1) {
+        const bufLen = Math.floor(this.ctx.sampleRate * 0.025);
+        const buf = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
+        const data = buf.getChannelData(0);
+        for (let j = 0; j < bufLen; j++) data[j] = (Math.random() * 2 - 1) * 0.08;
+        const sSource = this.ctx.createBufferSource();
+        sSource.buffer = buf;
+        const sFilter = this.ctx.createBiquadFilter();
+        sFilter.type = 'highpass';
+        sFilter.frequency.setValueAtTime(6000, now);
+        const sGain = this.ctx.createGain();
+        sGain.gain.setValueAtTime(this.bgmVolume * 0.4, now);
+        sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+        sSource.connect(sFilter);
+        sFilter.connect(sGain);
+        sGain.connect(this.ctx.destination);
+        sSource.start(now);
+        sSource.stop(now + 0.025);
+      }
+
+      this.bgmStep = (this.bgmStep + 1) % 64;
+    } catch (e) {}
   }
 }
 

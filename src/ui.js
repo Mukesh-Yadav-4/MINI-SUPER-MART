@@ -158,24 +158,99 @@ class UIManager {
   initHUD() {
     const btnSound = document.getElementById('btn-sound');
     const btnSettingsSound = document.getElementById('btn-settings-sound');
+    const btnBgm = document.getElementById('btn-bgm');
+    const btnSettingsBgm = document.getElementById('btn-settings-bgm');
 
     const updateSoundUI = () => {
-      const on = sounds.enabled;
-      if (btnSound) btnSound.textContent = on ? '🔊' : '🔇';
-      if (btnSettingsSound) btnSettingsSound.textContent = on ? 'Sound: ON 🔊' : 'Sound: OFF 🔇';
+      const sfxOn = !sounds.muted;
+      if (btnSound) btnSound.textContent = sfxOn ? '🔊' : '🔇';
+      if (btnSettingsSound) btnSettingsSound.textContent = sfxOn ? 'SFX: ON 🔊' : 'SFX: OFF 🔇';
+
+      const bgmOn = !sounds.bgmMuted;
+      if (btnBgm) btnBgm.textContent = bgmOn ? '🎵' : '🔇';
+      if (btnSettingsBgm) btnSettingsBgm.textContent = bgmOn ? 'Music: ON 🎵' : 'Music: OFF 🔇';
     };
 
     if (btnSound) {
       btnSound.addEventListener('click', () => {
-        sounds.toggle();
+        sounds.toggleMute();
         updateSoundUI();
       });
     }
 
     if (btnSettingsSound) {
       btnSettingsSound.addEventListener('click', () => {
-        sounds.toggle();
+        sounds.toggleMute();
         updateSoundUI();
+      });
+    }
+
+    if (btnBgm) {
+      btnBgm.addEventListener('click', () => {
+        sounds.toggleBGM();
+        updateSoundUI();
+      });
+    }
+
+    if (btnSettingsBgm) {
+      btnSettingsBgm.addEventListener('click', () => {
+        sounds.toggleBGM();
+        updateSoundUI();
+      });
+    }
+
+    // Leaderboard Competitor Roster & High-Score Tracking
+    this.leaderboardCompetitors = [
+      { rank: 1, name: '👑 Royal Chateau Patisserie', score: 500000, tier: '👑 Grand Emporium' },
+      { rank: 2, name: '👑 Golden Valley Mega-Mart', score: 250000, tier: '👑 Mega Franchise' },
+      { rank: 3, name: '🥇 Sunnybrook Super Ranch', score: 100000, tier: '🥇 Super Mart' },
+      { rank: 4, name: '🥇 Emerald Harvest Agro', score: 50000, tier: '🥇 Master Mart' },
+      { rank: 5, name: '🥈 Sweet Strawberry Fields', score: 25000, tier: '🥈 Country Mart' },
+      { rank: 6, name: '🥈 Fresh Meadow Organic Farm', score: 10000, tier: '🥈 Local Mart' },
+      { rank: 7, name: '🥉 Sunrise Produce Corner', score: 3500, tier: '🥉 Farm Stand' },
+      { rank: 8, name: '🥉 Rustic Barnyard Stall', score: 1000, tier: '🥉 Starter Stall' }
+    ];
+
+    this.playerHighScore = 0;
+    try {
+      const savedPeak = localStorage.getItem('ofm_peak_balance');
+      if (savedPeak) this.playerHighScore = parseInt(savedPeak, 10) || 0;
+      const savedName = localStorage.getItem('ofm_farm_name');
+      this.playerFarmName = savedName || '🧑‍🌾 Green Acres Mart';
+      const savedRank = localStorage.getItem('ofm_last_rank');
+      this.lastAnnouncedRank = savedRank ? parseInt(savedRank, 10) : 9;
+    } catch (e) {
+      this.playerFarmName = '🧑‍🌾 Green Acres Mart';
+      this.lastAnnouncedRank = 9;
+    }
+
+    // Leaderboard Modal
+    const modalLeaderboard = document.getElementById('modal-leaderboard');
+    const btnLeaderboard = document.getElementById('btn-leaderboard');
+    const btnCloseLeaderboard = document.getElementById('btn-close-leaderboard');
+    const btnEditFarmName = document.getElementById('btn-edit-farm-name');
+
+    if (btnLeaderboard && modalLeaderboard) {
+      btnLeaderboard.addEventListener('click', () => {
+        this.renderLeaderboard();
+        modalLeaderboard.style.display = 'flex';
+      });
+    }
+
+    if (btnCloseLeaderboard && modalLeaderboard) {
+      btnCloseLeaderboard.addEventListener('click', () => {
+        modalLeaderboard.style.display = 'none';
+      });
+    }
+
+    if (btnEditFarmName) {
+      btnEditFarmName.addEventListener('click', () => {
+        const newName = prompt('Enter your Mart/Farm Name:', this.playerFarmName);
+        if (newName && newName.trim().length > 0) {
+          this.playerFarmName = newName.trim().substring(0, 24);
+          try { localStorage.setItem('ofm_farm_name', this.playerFarmName); } catch (e) {}
+          this.renderLeaderboard();
+        }
       });
     }
 
@@ -527,5 +602,124 @@ class UIManager {
       }
       this.showNotification(tipMsg);
     }
+
+    // High Score tracking on frame update
+    if (this.game) {
+      this.updateHighScore(this.game.money);
+    }
+  }
+
+  // High-Score Leaderboard Management
+  updateHighScore(currentMoney) {
+    if (currentMoney > this.playerHighScore) {
+      this.playerHighScore = currentMoney;
+      try {
+        localStorage.setItem('ofm_peak_balance', this.playerHighScore.toString());
+      } catch (e) {}
+    }
+
+    const currentRank = this.calculatePlayerRank(this.playerHighScore);
+    if (currentRank < this.lastAnnouncedRank) {
+      const surpassed = this.leaderboardCompetitors.find(c => c.rank === currentRank);
+      const passedName = surpassed ? surpassed.name : 'Competitor';
+      this.showNotification(`🏆 LEADERBOARD RANK UP! You reached #${currentRank} (passed ${passedName})! 🎉`);
+      this.lastAnnouncedRank = currentRank;
+      try {
+        localStorage.setItem('ofm_last_rank', currentRank.toString());
+      } catch (e) {}
+      if (this.game && this.game.spawnConfetti && this.game.player) {
+        this.game.spawnConfetti(this.game.player.position);
+      }
+      sounds.playUpgrade();
+    }
+  }
+
+  calculatePlayerRank(score) {
+    let rank = 1;
+    for (let c of this.leaderboardCompetitors) {
+      if (score < c.score) {
+        rank = c.rank + 1;
+      }
+    }
+    return rank;
+  }
+
+  getPlayerTier(score) {
+    if (score >= 500000) return '👑 Grand Tycoon';
+    if (score >= 250000) return '👑 Mega Franchise';
+    if (score >= 100000) return '🥇 Super Mart';
+    if (score >= 50000) return '🥇 Master Mart';
+    if (score >= 25000) return '🥈 Country Mart';
+    if (score >= 10000) return '🥈 Local Mart';
+    if (score >= 3500) return '🥉 Farm Stand';
+    if (score >= 1000) return '🥉 Starter Stall';
+    return '🌱 Fresh Start';
+  }
+
+  renderLeaderboard() {
+    this.updateHighScore(this.game ? this.game.money : 0);
+
+    const rank = this.calculatePlayerRank(this.playerHighScore);
+    const tier = this.getPlayerTier(this.playerHighScore);
+
+    const spotlightRank = document.getElementById('spotlight-player-rank');
+    const spotlightName = document.getElementById('spotlight-player-name');
+    const spotlightTier = document.getElementById('spotlight-player-tier');
+    const spotlightScore = document.getElementById('spotlight-player-score');
+
+    if (spotlightRank) spotlightRank.textContent = `#${rank}`;
+    if (spotlightName) spotlightName.textContent = this.playerFarmName;
+    if (spotlightTier) spotlightTier.textContent = tier;
+    if (spotlightScore) {
+      spotlightScore.textContent = this.playerHighScore >= 100000 
+        ? `$${(this.playerHighScore / 1000).toFixed(1)}K` 
+        : `$${this.playerHighScore.toLocaleString()}`;
+    }
+
+    const list = document.getElementById('leaderboard-list');
+    if (!list) return;
+    list.innerHTML = '';
+
+    // Merge competitors + player
+    const playerEntry = {
+      rank: rank,
+      name: this.playerFarmName,
+      score: this.playerHighScore,
+      tier: tier,
+      isPlayer: true
+    };
+
+    const combined = [...this.leaderboardCompetitors, playerEntry].sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      return a.isPlayer ? -1 : 1;
+    });
+
+    // Re-assign sorted visual ranks
+    combined.forEach((entry, idx) => {
+      const visualRank = idx + 1;
+      const row = document.createElement('div');
+      row.className = `leaderboard-row ${entry.isPlayer ? 'player-row' : ''}`;
+
+      let medal = `#${visualRank}`;
+      let rankClass = '';
+      if (visualRank === 1) { medal = '🥇 #1'; rankClass = 'rank-1'; }
+      else if (visualRank === 2) { medal = '🥈 #2'; rankClass = 'rank-2'; }
+      else if (visualRank === 3) { medal = '🥉 #3'; rankClass = 'rank-3'; }
+
+      const formattedScore = entry.score >= 100000 
+        ? `$${(entry.score / 1000).toFixed(1)}K` 
+        : `$${entry.score.toLocaleString()}`;
+
+      row.innerHTML = `
+        <div class="lb-rank ${rankClass}">${medal}</div>
+        <div class="lb-info">
+          <div class="lb-name">${entry.isPlayer ? `⭐️ ${entry.name} (YOU)` : entry.name}</div>
+          <div class="lb-tier">${entry.tier}</div>
+        </div>
+        <div class="lb-score">${formattedScore}</div>
+      `;
+
+      list.appendChild(row);
+    });
   }
 }
