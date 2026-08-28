@@ -15,6 +15,11 @@ class GameEngine {
     this.photoAngle = 0;
     this.photoTarget = new THREE.Vector3(5.0, 0.8, -2.0);
 
+    // AFK Inactivity Economy Protection (5 minutes threshold)
+    this.afkTimer = 0;
+    this.economyIncomePaused = false;
+    this.afkThreshold = 300;
+
     this.initThree();
     this.initEnvironment();
     this.initGameObjects();
@@ -1475,9 +1480,11 @@ class GameEngine {
       if (distToDesk < 2.4 && reg.uncollectedCash > 0) {
         const earned = reg.collectAllCash();
         if (earned > 0) {
-          this.money += earned;
-          sounds.playCash();
-          this.ui.spawnFloatingText(`+$${earned} 💵`, window.innerWidth / 2, window.innerHeight / 2 - 50, true);
+          if (!this.economyIncomePaused) {
+            this.money += earned;
+            sounds.playCash();
+            this.ui.spawnFloatingText(`+$${earned} 💵`, window.innerWidth / 2, window.innerHeight / 2 - 50, true);
+          }
         }
       }
     });
@@ -1485,6 +1492,7 @@ class GameEngine {
     // 6. Dustbins
     this.dustbins.forEach(bin => {
       bin.update(dt, this.player, (trashedItem, binPos) => {
+        this.recordPlayerActivity();
         this.spawnTrashPuff(binPos);
         this.ui.spawnFloatingText(`-1 🗑️`, window.innerWidth / 2, window.innerHeight / 2 - 30, false);
       });
@@ -1495,6 +1503,7 @@ class GameEngine {
       if (!zone.visible || zone.unlocked) return;
       const dist = playerPos.distanceTo(zone.pos);
       if (dist < (zone.config.radius || 1.6) && this.money > 0) {
+        this.recordPlayerActivity();
         const spendAmount = Math.ceil(90 * dt);
         const actualSpent = zone.spendMoney(Math.min(this.money, spendAmount));
         this.money -= actualSpent;
@@ -1609,6 +1618,13 @@ class GameEngine {
     }
     if (this.decorNeonSignGroup) {
       this.decorNeonSignGroup.visible = this.isDecorationActive('decor_neon_sign');
+    }
+  }
+
+  recordPlayerActivity() {
+    this.afkTimer = 0;
+    if (this.economyIncomePaused) {
+      this.economyIncomePaused = false;
     }
   }
 
@@ -1733,6 +1749,17 @@ class GameEngine {
     const inputVec = this.ui.getInputVector();
     this.player.update(dt, inputVec);
 
+    const isPlayerInputting = inputVec && (Math.abs(inputVec.x || 0) > 0.05 || Math.abs(inputVec.z || inputVec.y || 0) > 0.05);
+    if (isPlayerInputting) {
+      this.recordPlayerActivity();
+    }
+
+    // AFK Inactivity Economy Protection (5 minutes / 300 seconds)
+    this.afkTimer += dt;
+    if (this.afkTimer >= this.afkThreshold) {
+      this.economyIncomePaused = true;
+    }
+
     const isPlayerAtReg1 = this.player.position.distanceTo(this.cashRegisters[0].pos) < 2.2 ||
                            this.player.position.distanceTo(this.cashRegisters[0].cashierZonePos) < 2.2;
     const isPlayerAtReg2 = this.cashRegisters.length > 1 && (
@@ -1790,7 +1817,7 @@ class GameEngine {
       if (isPlayerAtCustReg) {
         // If player is present at that register counter, instantly credit cash to balance!
         const earned = cust.assignedRegister.collectAllCash();
-        if (earned > 0) {
+        if (earned > 0 && !this.economyIncomePaused) {
           this.money += earned;
           sounds.playCash();
           this.ui.spawnFloatingText(`+$${earned} 💵`, window.innerWidth / 2, window.innerHeight / 2 - 50, true);

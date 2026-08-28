@@ -13,15 +13,27 @@ class UIManager {
   }
 
   initInputs() {
+    const triggerActivity = () => {
+      if (this.game && this.game.recordPlayerActivity) {
+        this.game.recordPlayerActivity();
+      }
+    };
+
     window.addEventListener('keydown', (e) => {
+      triggerActivity();
       this.keys[e.key.toLowerCase()] = true;
       if (e.code) this.keys[e.code.toLowerCase()] = true;
-    });
+    }, { passive: true });
 
     window.addEventListener('keyup', (e) => {
+      triggerActivity();
       this.keys[e.key.toLowerCase()] = false;
       if (e.code) this.keys[e.code.toLowerCase()] = false;
-    });
+    }, { passive: true });
+
+    window.addEventListener('mousedown', triggerActivity, { passive: true });
+    window.addEventListener('touchstart', triggerActivity, { passive: true });
+    window.addEventListener('pointerdown', triggerActivity, { passive: true });
 
     window.addEventListener('blur', () => {
       this.keys = {};
@@ -33,6 +45,7 @@ class UIManager {
     const maxRadius = 50;
 
     const handleStart = (clientX, clientY) => {
+      triggerActivity();
       this.isTouchActive = true;
       this.joystickCenter = { x: clientX, y: clientY };
 
