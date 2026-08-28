@@ -614,16 +614,30 @@ class SoundSystem {
       523.25, 0, 659.25, 0,      587.33, 0, 523.25, 0,      // Bar 7 (F)
       587.33, 659.25, 783.99, 0, 587.33, 0, 493.88, 0     // Bar 8 (G)
     ];
+
+    // Pre-create reusable shaker noise buffer (zero GC during playback)
+    if (this.ctx) {
+      try {
+        const bufLen = Math.floor(this.ctx.sampleRate * 0.025);
+        this.shakerBuffer = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
+        const data = this.shakerBuffer.getChannelData(0);
+        for (let j = 0; j < bufLen; j++) data[j] = (Math.random() * 2 - 1) * 0.08;
+      } catch (e) {}
+    }
   }
 
   startBGM() {
     this.initBGM();
     if (this.bgmTimer) return;
     this.ensureContext();
+    if (!this.ctx) return;
 
+    this.nextNoteTime = this.ctx.currentTime + 0.05;
+
+    // Precision Lookahead Scheduler running every 25ms with 120ms buffer
     this.bgmTimer = setInterval(() => {
-      this.tickBGM();
-    }, this.bgmStepDuration * 1000);
+      this.scheduleBGM();
+    }, 25);
   }
 
   stopBGM() {
@@ -687,7 +701,7 @@ class SoundSystem {
     return !this.bgmMuted;
   }
 
-  tickBGM() {
+  scheduleBGM() {
     if (this.bgmMuted || this.muted) return;
     this.ensureContext();
     if (!this.ctx || this.ctx.state === 'suspended') return;
@@ -698,8 +712,23 @@ class SoundSystem {
       this.bgmMasterGain.connect(this.masterGain || this.ctx.destination);
     }
 
+    // If time fell behind (e.g. tab suspend), re-sync to current time smoothly
+    if (this.nextNoteTime < this.ctx.currentTime) {
+      this.nextNoteTime = this.ctx.currentTime + 0.02;
+    }
+
+    // Schedule all notes within the lookahead window (120ms) using hardware clock
+    while (this.nextNoteTime < this.ctx.currentTime + 0.12) {
+      this.playBGMStep(this.nextNoteTime);
+      this.nextNoteTime += this.bgmStepDuration;
+      this.bgmStep = (this.bgmStep + 1) % 64;
+    }
+  }
+
+  playBGMStep(time) {
+    if (!this.ctx || !this.bgmMasterGain) return;
+
     try {
-      const now = this.ctx.currentTime;
       const step = this.bgmStep;
       const bar = Math.floor(step / 8) % this.bgmChords.length;
       const stepInBar = step % 8;
@@ -711,16 +740,16 @@ class SoundSystem {
         const bOsc = this.ctx.createOscillator();
         const bGain = this.ctx.createGain();
         bOsc.type = 'triangle';
-        bOsc.frequency.setValueAtTime(bassFreq, now);
+        bOsc.frequency.setValueAtTime(bassFreq, time);
 
         const bVol = this.bgmVolume * 1.35;
-        bGain.gain.setValueAtTime(bVol, now);
-        bGain.gain.exponentialRampToValueAtTime(0.001, now + this.bgmStepDuration * 1.8);
+        bGain.gain.setValueAtTime(bVol, time);
+        bGain.gain.exponentialRampToValueAtTime(0.001, time + this.bgmStepDuration * 1.8);
 
         bOsc.connect(bGain);
         bGain.connect(this.bgmMasterGain);
-        bOsc.start(now);
-        bOsc.stop(now + this.bgmStepDuration * 1.8);
+        bOsc.start(time);
+        bOsc.stop(time + this.bgmStepDuration * 1.8);
       }
 
       // 2. Rich Marimba / Kalimba Melody Note
@@ -729,16 +758,16 @@ class SoundSystem {
         const mOsc = this.ctx.createOscillator();
         const mGain = this.ctx.createGain();
         mOsc.type = 'sine';
-        mOsc.frequency.setValueAtTime(melodyFreq, now);
+        mOsc.frequency.setValueAtTime(melodyFreq, time);
 
         const mVol = this.bgmVolume * 1.1;
-        mGain.gain.setValueAtTime(mVol, now);
-        mGain.gain.exponentialRampToValueAtTime(0.001, now + this.bgmStepDuration * 1.4);
+        mGain.gain.setValueAtTime(mVol, time);
+        mGain.gain.exponentialRampToValueAtTime(0.001, time + this.bgmStepDuration * 1.4);
 
         mOsc.connect(mGain);
         mGain.connect(this.bgmMasterGain);
-        mOsc.start(now);
-        mOsc.stop(now + this.bgmStepDuration * 1.4);
+        mOsc.start(time);
+        mOsc.stop(time + this.bgmStepDuration * 1.4);
       }
 
       // 3. Warm Harmonic Chord Pad (Soft arpeggio / plucked harmony on 8th notes)
@@ -748,41 +777,46 @@ class SoundSystem {
         const hOsc = this.ctx.createOscillator();
         const hGain = this.ctx.createGain();
         hOsc.type = 'triangle';
-        hOsc.frequency.setValueAtTime(harmFreq, now);
+        hOsc.frequency.setValueAtTime(harmFreq, time);
 
         const hVol = this.bgmVolume * 0.55;
-        hGain.gain.setValueAtTime(hVol, now);
-        hGain.gain.exponentialRampToValueAtTime(0.001, now + this.bgmStepDuration * 0.9);
+        hGain.gain.setValueAtTime(hVol, time);
+        hGain.gain.exponentialRampToValueAtTime(0.001, time + this.bgmStepDuration * 0.9);
 
         hOsc.connect(hGain);
         hGain.connect(this.bgmMasterGain);
-        hOsc.start(now);
-        hOsc.stop(now + this.bgmStepDuration * 0.9);
+        hOsc.start(time);
+        hOsc.stop(time + this.bgmStepDuration * 0.9);
       }
 
       // 4. Subtle Shaker / Off-beat Rhythm
       if (stepInBar % 2 === 1) {
-        const bufLen = Math.floor(this.ctx.sampleRate * 0.025);
-        const buf = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
-        const data = buf.getChannelData(0);
-        for (let j = 0; j < bufLen; j++) data[j] = (Math.random() * 2 - 1) * 0.08;
+        if (!this.shakerBuffer) {
+          const bufLen = Math.floor(this.ctx.sampleRate * 0.025);
+          this.shakerBuffer = this.ctx.createBuffer(1, bufLen, this.ctx.sampleRate);
+          const data = this.shakerBuffer.getChannelData(0);
+          for (let j = 0; j < bufLen; j++) data[j] = (Math.random() * 2 - 1) * 0.08;
+        }
+
         const sSource = this.ctx.createBufferSource();
-        sSource.buffer = buf;
+        sSource.buffer = this.shakerBuffer;
         const sFilter = this.ctx.createBiquadFilter();
         sFilter.type = 'highpass';
-        sFilter.frequency.setValueAtTime(6000, now);
+        sFilter.frequency.setValueAtTime(6000, time);
         const sGain = this.ctx.createGain();
-        sGain.gain.setValueAtTime(this.bgmVolume * 0.45, now);
-        sGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025);
+        sGain.gain.setValueAtTime(this.bgmVolume * 0.45, time);
+        sGain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
         sSource.connect(sFilter);
         sFilter.connect(sGain);
         sGain.connect(this.bgmMasterGain);
-        sSource.start(now);
-        sSource.stop(now + 0.025);
+        sSource.start(time);
+        sSource.stop(time + 0.025);
       }
-
-      this.bgmStep = (this.bgmStep + 1) % 64;
     } catch (e) {}
+  }
+
+  tickBGM() {
+    this.scheduleBGM();
   }
 
   setMuted(isMuted) {
