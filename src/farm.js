@@ -1196,3 +1196,495 @@ class ProcessingMachine {
     }
   }
 }
+
+// Future Expansion Area — Grand Café Visual & Progression Teaser
+class CafeTeaser {
+  constructor(scene, pos = { x: 28.0, z: -8.5 }) {
+    this.scene = scene;
+    this.pos = new THREE.Vector3(pos.x, 0, pos.z);
+    this.isTransformed = false;
+    this.hintTimer = 15;
+    this.animTimer = 0;
+
+    this.group = new THREE.Group();
+    this.group.position.set(pos.x, 0, pos.z);
+
+    this.constructionGroup = new THREE.Group();
+    this.transformedGroup = new THREE.Group();
+
+    this.initConstructionMesh();
+    this.initTransformedMesh();
+
+    this.group.add(this.constructionGroup);
+    this.group.add(this.transformedGroup);
+
+    this.setTransformed(false);
+    this.scene.add(this.group);
+  }
+
+  initConstructionMesh() {
+    const darkWoodMat = new THREE.MeshLambertMaterial({ color: 0x5d4037 });
+    const plankMat = new THREE.MeshLambertMaterial({ color: 0x8d6e63 });
+    const canvasTarpMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
+    const crateMat = new THREE.MeshLambertMaterial({ color: 0xbcaaa4 });
+
+    // 1. Excavation / Gravel Foundation Ground Decal
+    const gravelMat = new THREE.MeshLambertMaterial({ color: 0xc4b5a0 });
+    const ground = new THREE.Mesh(new THREE.PlaneGeometry(8.5, 6.8), gravelMat);
+    ground.rotation.x = -Math.PI / 2;
+    ground.position.y = 0.012;
+    ground.receiveShadow = true;
+    addSketchLines(ground, 0x333333);
+    this.constructionGroup.add(ground);
+
+    // 2. Wooden Perimeter Construction Safety Fence
+    const fencePosts = [
+      [-3.8, -3.0], [3.8, -3.0], [-3.8, 3.0], [3.8, 3.0],
+      [-3.8, 0], [3.8, 0], [0, -3.0], [0, 3.0]
+    ];
+    fencePosts.forEach(fp => {
+      const post = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.09, 1.2, 6), darkWoodMat);
+      post.position.set(fp[0], 0.6, fp[1]);
+      post.castShadow = true;
+      addSketchLines(post, 0x111111);
+      this.constructionGroup.add(post);
+    });
+
+    // Cross Rails
+    const rails = [
+      { w: 7.6, h: 0.1, d: 0.06, x: 0, y: 0.9, z: -3.0 },
+      { w: 7.6, h: 0.1, d: 0.06, x: 0, y: 0.45, z: -3.0 },
+      { w: 0.06, h: 0.1, d: 6.0, x: -3.8, y: 0.9, z: 0 },
+      { w: 0.06, h: 0.1, d: 6.0, x: -3.8, y: 0.45, z: 0 },
+      { w: 0.06, h: 0.1, d: 6.0, x: 3.8, y: 0.9, z: 0 },
+      { w: 0.06, h: 0.1, d: 6.0, x: 3.8, y: 0.45, z: 0 }
+    ];
+    rails.forEach(r => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(r.w, r.h, r.d), plankMat);
+      rail.position.set(r.x, r.y, r.z);
+      rail.castShadow = true;
+      addSketchLines(rail, 0x111111);
+      this.constructionGroup.add(rail);
+    });
+
+    // 3. Stacked Lumber & Tarped Materials Structure
+    const lumber1 = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.35, 1.2), plankMat);
+    lumber1.position.set(-1.2, 0.18, -1.2);
+    lumber1.castShadow = true;
+    addSketchLines(lumber1, 0x111111);
+    this.constructionGroup.add(lumber1);
+
+    const lumber2 = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.3, 0.9), plankMat);
+    lumber2.position.set(-1.1, 0.48, -1.2);
+    lumber2.rotation.y = 0.08;
+    lumber2.castShadow = true;
+    addSketchLines(lumber2, 0x111111);
+    this.constructionGroup.add(lumber2);
+
+    const tarpedFrame = new THREE.Mesh(new THREE.BoxGeometry(2.2, 1.6, 1.8), canvasTarpMat);
+    tarpedFrame.position.set(1.5, 0.8, -1.0);
+    tarpedFrame.castShadow = true;
+    addSketchLines(tarpedFrame, 0x111111);
+    this.constructionGroup.add(tarpedFrame);
+
+    const crate1 = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7), crateMat);
+    crate1.position.set(2.4, 0.35, 0.8);
+    crate1.rotation.y = 0.25;
+    crate1.castShadow = true;
+    addSketchLines(crate1, 0x111111);
+    this.constructionGroup.add(crate1);
+
+    // 4. Architectural Drafting Easel with Blueprint
+    const easelGroup = new THREE.Group();
+    easelGroup.position.set(-1.8, 0, 1.2);
+    easelGroup.rotation.y = -0.35;
+
+    const leg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.5, 5), darkWoodMat);
+    leg1.position.set(-0.35, 0.75, -0.1);
+    leg1.rotation.z = -0.12;
+    easelGroup.add(leg1);
+
+    const leg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.5, 5), darkWoodMat);
+    leg2.position.set(0.35, 0.75, -0.1);
+    leg2.rotation.z = 0.12;
+    easelGroup.add(leg2);
+
+    const legBack = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 5), darkWoodMat);
+    legBack.position.set(0, 0.7, 0.35);
+    legBack.rotation.x = 0.28;
+    easelGroup.add(legBack);
+
+    // Blueprint Board
+    const createBlueprintTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 384;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#1e3a8a'; // Deep Blueprint Blue
+      ctx.fillRect(0, 0, 512, 384);
+
+      // White grid lines
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = 1;
+      for (let x = 0; x < 512; x += 32) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 384); ctx.stroke();
+      }
+      for (let y = 0; y < 384; y += 32) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+      }
+
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(30, 30, 452, 324);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 26px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('☕ GRAND CAFÉ BLUEPRINT', 256, 75);
+
+      ctx.font = '18px sans-serif';
+      ctx.fillText('• BISTRO PATIO & ESPRESSO BAR', 256, 125);
+      ctx.fillText('• ARTISAN PASTRY SHOWCASE', 256, 160);
+      ctx.fillText('• CHEF JEAN\'S SECRET RECIPES', 256, 195);
+
+      ctx.strokeStyle = '#93c5fd';
+      ctx.strokeRect(100, 220, 312, 90);
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillStyle = '#fef08a';
+      ctx.fillText('✨ EXPANSION COMING SOON ✨', 256, 275);
+
+      return new THREE.CanvasTexture(canvas);
+    };
+
+    const board = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.05), new THREE.MeshLambertMaterial({ map: createBlueprintTexture() }));
+    board.position.set(0, 0.95, -0.05);
+    board.rotation.x = -0.15;
+    board.castShadow = true;
+    addSketchLines(board, 0x111111);
+    easelGroup.add(board);
+    this.constructionGroup.add(easelGroup);
+
+    // 5. Main Handcrafted Wooden Teaser Signpost
+    const signGroup = new THREE.Group();
+    signGroup.position.set(0.5, 0, 2.2);
+
+    const signPostL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 2.2, 6), darkWoodMat);
+    signPostL.position.set(-1.1, 1.1, 0);
+    signPostL.castShadow = true;
+    addSketchLines(signPostL, 0x111111);
+    signGroup.add(signPostL);
+
+    const signPostR = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 2.2, 6), darkWoodMat);
+    signPostR.position.set(1.1, 1.1, 0);
+    signPostR.castShadow = true;
+    addSketchLines(signPostR, 0x111111);
+    signGroup.add(signPostR);
+
+    const createTeaserSignTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 256;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#3e2723'; // Dark Walnut
+      ctx.fillRect(0, 0, 512, 256);
+
+      ctx.strokeStyle = '#f59e0b'; // Gold border
+      ctx.lineWidth = 8;
+      ctx.strokeRect(16, 16, 480, 224);
+
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = 'bold 44px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('☕ GRAND CAFÉ', 256, 80);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 32px sans-serif';
+      ctx.fillText('COMING SOON', 256, 140);
+
+      ctx.fillStyle = '#e2e8f0';
+      ctx.font = 'italic 20px sans-serif';
+      ctx.fillText('"Something delicious is brewing..."', 256, 195);
+
+      return new THREE.CanvasTexture(canvas);
+    };
+
+    const mainSign = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 0.12), new THREE.MeshLambertMaterial({ map: createTeaserSignTexture() }));
+    mainSign.position.set(0, 1.4, 0);
+    mainSign.castShadow = true;
+    addSketchLines(mainSign, 0x111111);
+    signGroup.add(mainSign);
+
+    // Warm construction lantern
+    const lanternMat = new THREE.MeshLambertMaterial({ color: 0xffecb3, emissive: 0xffb300, emissiveIntensity: 0.75 });
+    const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.3, 0.22), lanternMat);
+    lantern.position.set(1.1, 1.9, 0.2);
+    addSketchLines(lantern, 0x111111);
+    signGroup.add(lantern);
+
+    this.constructionGroup.add(signGroup);
+  }
+
+  initTransformedMesh() {
+    const woodMat = new THREE.MeshLambertMaterial({ color: 0x5d4037 });
+    const darkWoodMat = new THREE.MeshLambertMaterial({ color: 0x3e2723 });
+    const facadeMat = new THREE.MeshLambertMaterial({ color: 0xfaf5ee });
+    const roofTrimMat = new THREE.MeshLambertMaterial({ color: 0x8d5b32 });
+    const goldMat = new THREE.MeshLambertMaterial({ color: 0xffd54f });
+
+    // 1. Terracotta Flagstone Patio Floor
+    const patioMat = new THREE.MeshLambertMaterial({ color: 0xc2714f });
+    const patio = new THREE.Mesh(new THREE.PlaneGeometry(9.2, 7.2), patioMat);
+    patio.rotation.x = -Math.PI / 2;
+    patio.position.y = 0.015;
+    patio.receiveShadow = true;
+    addSketchLines(patio, 0x111111);
+    this.transformedGroup.add(patio);
+
+    // Dark wood border trim
+    const border = new THREE.Mesh(new THREE.PlaneGeometry(9.4, 7.4), woodMat);
+    border.rotation.x = -Math.PI / 2;
+    border.position.y = 0.008;
+    this.transformedGroup.add(border);
+
+    // 2. Charming Café Pavilion Facade
+    const facade = new THREE.Mesh(new THREE.BoxGeometry(5.6, 3.2, 1.4), facadeMat);
+    facade.position.set(0, 1.6, -2.4);
+    facade.castShadow = true;
+    addSketchLines(facade, 0x111111);
+    this.transformedGroup.add(facade);
+
+    // Corner timber pillars
+    const p1 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.3, 0.3), woodMat);
+    p1.position.set(-2.8, 1.65, -1.7);
+    addSketchLines(p1, 0x111111);
+    this.transformedGroup.add(p1);
+
+    const p2 = new THREE.Mesh(new THREE.BoxGeometry(0.3, 3.3, 0.3), woodMat);
+    p2.position.set(2.8, 1.65, -1.7);
+    addSketchLines(p2, 0x111111);
+    this.transformedGroup.add(p2);
+
+    // Frosted French Double Doors
+    const doorMat = new THREE.MeshLambertMaterial({ color: 0x4a3b32 });
+    const doorGlassMat = new THREE.MeshLambertMaterial({ color: 0xbae6fd, transparent: true, opacity: 0.75 });
+
+    const doorsFrame = new THREE.Mesh(new THREE.BoxGeometry(2.0, 2.2, 0.1), doorMat);
+    doorsFrame.position.set(0, 1.1, -1.65);
+    addSketchLines(doorsFrame, 0x111111);
+    this.transformedGroup.add(doorsFrame);
+
+    const doorGlassL = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.8), doorGlassMat);
+    doorGlassL.position.set(-0.45, 1.1, -1.59);
+    this.transformedGroup.add(doorGlassL);
+
+    const doorGlassR = new THREE.Mesh(new THREE.PlaneGeometry(0.7, 1.8), doorGlassMat);
+    doorGlassR.position.set(0.45, 1.1, -1.59);
+    this.transformedGroup.add(doorGlassR);
+
+    // Side Warm Glowing Windows
+    const winGlassMat = new THREE.MeshLambertMaterial({ color: 0xfef08a, emissive: 0xffb74d, emissiveIntensity: 0.6 });
+    const winL = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.2, 0.08), winGlassMat);
+    winL.position.set(-1.8, 1.6, -1.68);
+    addSketchLines(winL, 0x111111);
+    this.transformedGroup.add(winL);
+
+    const winR = new THREE.Mesh(new THREE.BoxGeometry(1.0, 1.2, 0.08), winGlassMat);
+    winR.position.set(1.8, 1.6, -1.68);
+    addSketchLines(winR, 0x111111);
+    this.transformedGroup.add(winR);
+
+    // 3. Striped Café Awning
+    const awningGroup = new THREE.Group();
+    awningGroup.position.set(0, 2.7, -1.7);
+    const stripeCount = 10;
+    const stripeW = 0.58;
+    for (let i = 0; i < stripeCount; i++) {
+      const isRed = i % 2 === 0;
+      const stripeMat = new THREE.MeshLambertMaterial({ color: isRed ? 0x991b1b : 0xfef3c7 });
+      const stripe = new THREE.Mesh(new THREE.BoxGeometry(stripeW, 0.08, 1.4), stripeMat);
+      stripe.position.set((i - stripeCount / 2 + 0.5) * stripeW, 0, 0.6);
+      stripe.rotation.x = 0.32;
+      stripe.castShadow = true;
+      addSketchLines(stripe, 0x111111);
+      awningGroup.add(stripe);
+    }
+    this.transformedGroup.add(awningGroup);
+
+    // 4. Polished Grand Café Header Sign
+    const createGrandCafeSignTexture = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 160;
+      const ctx = canvas.getContext('2d');
+
+      ctx.fillStyle = '#271810'; // Deep Espresso Walnut
+      ctx.fillRect(0, 0, 512, 160);
+
+      ctx.strokeStyle = '#f59e0b'; // Gold trim
+      ctx.lineWidth = 6;
+      ctx.strokeRect(10, 10, 492, 140);
+
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = 'bold 42px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('☕ GRAND CAFÉ ☕', 256, 65);
+
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 24px sans-serif';
+      ctx.fillText('✨ GRAND OPENING SOON ✨', 256, 115);
+
+      return new THREE.CanvasTexture(canvas);
+    };
+
+    const headerSign = new THREE.Mesh(new THREE.BoxGeometry(4.8, 1.1, 0.12), new THREE.MeshLambertMaterial({ map: createGrandCafeSignTexture() }));
+    headerSign.position.set(0, 3.4, -1.65);
+    headerSign.castShadow = true;
+    addSketchLines(headerSign, 0x111111);
+    this.transformedGroup.add(headerSign);
+
+    // 5. Outdoor Bistro Patio Furniture (2 Round Tables, Parasols, Chairs & Treats)
+    const createBistroSet = (x, z, parasolColorHex = 0x991b1b) => {
+      const setGroup = new THREE.Group();
+      setGroup.position.set(x, 0, z);
+
+      // Table Top
+      const table = new THREE.Mesh(new THREE.CylinderGeometry(0.65, 0.65, 0.08, 16), woodMat);
+      table.position.y = 0.75;
+      table.castShadow = true;
+      addSketchLines(table, 0x111111);
+      setGroup.add(table);
+
+      // Pedestal Stem & Base
+      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.12, 0.75, 8), darkWoodMat);
+      stem.position.y = 0.375;
+      setGroup.add(stem);
+
+      // Striped Parasol Umbrella
+      const umbrellaPole = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.2, 6), woodMat);
+      umbrellaPole.position.y = 1.1;
+      setGroup.add(umbrellaPole);
+
+      const umbrellaCone = new THREE.Mesh(new THREE.ConeGeometry(1.2, 0.5, 8), new THREE.MeshLambertMaterial({ color: parasolColorHex }));
+      umbrellaCone.position.y = 2.1;
+      umbrellaCone.castShadow = true;
+      addSketchLines(umbrellaCone, 0x111111);
+      setGroup.add(umbrellaCone);
+
+      // 2 Chairs with pastel cushions
+      const createChair = (cx, cz, rotY) => {
+        const chairGroup = new THREE.Group();
+        chairGroup.position.set(cx, 0, cz);
+        chairGroup.rotation.y = rotY;
+
+        const seat = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.06, 0.42), new THREE.MeshLambertMaterial({ color: 0xfbcfe8 }));
+        seat.position.y = 0.44;
+        chairGroup.add(seat);
+
+        const legGeo = new THREE.CylinderGeometry(0.025, 0.025, 0.44, 4);
+        [[-0.17, -0.17], [0.17, -0.17], [-0.17, 0.17], [0.17, 0.17]].forEach(lp => {
+          const l = new THREE.Mesh(legGeo, darkWoodMat);
+          l.position.set(lp[0], 0.22, lp[1]);
+          chairGroup.add(l);
+        });
+
+        const back = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.42, 0.05), woodMat);
+        back.position.set(0, 0.68, -0.18);
+        chairGroup.add(back);
+
+        return chairGroup;
+      };
+
+      setGroup.add(createChair(0, -0.75, 0));
+      setGroup.add(createChair(0, 0.75, Math.PI));
+
+      return setGroup;
+    };
+
+    const table1 = createBistroSet(-1.8, 0.8, 0x991b1b);
+    const table2 = createBistroSet(1.8, 0.8, 0x0284c7);
+    this.transformedGroup.add(table1);
+    this.transformedGroup.add(table2);
+
+    // Coffee cups on Table 1
+    const cupMat = new THREE.MeshLambertMaterial({ color: 0xffffff });
+    const cup = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.06, 0.1, 8), cupMat);
+    cup.position.set(-1.8, 0.84, 0.8);
+    this.transformedGroup.add(cup);
+
+    // Decorative Pastry Cloche on Table 2
+    const clocheTray = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.04, 8), goldMat);
+    clocheTray.position.set(1.8, 0.81, 0.8);
+    this.transformedGroup.add(clocheTray);
+
+    const clocheGlass = new THREE.Mesh(new THREE.SphereGeometry(0.15, 8, 8, 0, Math.PI * 2, 0, Math.PI / 2), new THREE.MeshLambertMaterial({ color: 0xe0f2fe, transparent: true, opacity: 0.6 }));
+    clocheGlass.position.set(1.8, 0.83, 0.8);
+    this.transformedGroup.add(clocheGlass);
+
+    // 6. Burlap Coffee Sacks & Delivery Crates
+    const sackMat = new THREE.MeshLambertMaterial({ color: 0xd7ccc8 });
+    const sack1 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.65, 8), sackMat);
+    sack1.position.set(-3.2, 0.325, 1.8);
+    sack1.rotation.z = 0.15;
+    sack1.castShadow = true;
+    addSketchLines(sack1, 0x111111);
+    this.transformedGroup.add(sack1);
+
+    const sack2 = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.32, 0.6, 8), sackMat);
+    sack2.position.set(-3.1, 0.3, 2.4);
+    sack2.castShadow = true;
+    addSketchLines(sack2, 0x111111);
+    this.transformedGroup.add(sack2);
+
+    // 7. Potted Flowering Plants at Entrance
+    const planterMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
+    const plantMat = new THREE.MeshLambertMaterial({ color: 0xa855f7 }); // Lavender purple
+
+    [-3.8, 3.8].forEach(px => {
+      const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.22, 0.6, 8), planterMat);
+      pot.position.set(px, 0.3, 2.6);
+      pot.castShadow = true;
+      addSketchLines(pot, 0x111111);
+      this.transformedGroup.add(pot);
+
+      const bush = new THREE.Mesh(new THREE.SphereGeometry(0.35, 6, 6), plantMat);
+      bush.position.set(px, 0.75, 2.6);
+      this.transformedGroup.add(bush);
+    });
+
+    // 8. Festoon String Lights Ambient Point Light
+    this.fairyLight = new THREE.PointLight(0xffedd5, 1.0, 8);
+    this.fairyLight.position.set(0, 2.4, 0.5);
+    this.transformedGroup.add(this.fairyLight);
+  }
+
+  update(dt, playerPos, ui) {
+    this.animTimer += dt;
+    this.hintTimer += dt;
+
+    // Subtle gentle fairy lights micro-pulse
+    if (this.fairyLight) {
+      this.fairyLight.intensity = 0.9 + Math.sin(this.animTimer * 2.5) * 0.12;
+    }
+
+    // Informational Proximity Hint when player walks near teaser sign
+    if (playerPos && ui) {
+      const dist = this.pos.distanceTo(playerPos);
+      if (dist < 2.8 && this.hintTimer > 25) {
+        this.hintTimer = 0;
+        if (this.isTransformed) {
+          ui.showNotification(`☕ GRAND CAFÉ — COMING SOON! ✨ Chef Jean's secret coffee & dessert menu is in the works!`);
+        } else {
+          ui.showNotification(`☕ Future Grand Café Site — Construction in planning!`);
+        }
+      }
+    }
+  }
+
+  setTransformed(transformed) {
+    this.isTransformed = transformed;
+    this.constructionGroup.visible = !transformed;
+    this.transformedGroup.visible = transformed;
+  }
+}

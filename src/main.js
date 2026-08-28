@@ -1046,7 +1046,16 @@ class GameEngine {
       }
     });
 
+    // Future Expansion Area — Grand Café Visual & Progression Teaser
+    this.cafeTeaser = new CafeTeaser(this.scene, { x: 28.0, z: -8.5 });
+    this.cafeTeaser.setTransformed(this.isFinalProgressionUnlocked());
+
     this.refreshUnlockZoneVisibility();
+  }
+
+  isFinalProgressionUnlocked() {
+    const cakeStand = this.marketStands && this.marketStands.find(ms => ms.config.id === 'stand_cake');
+    return !!(this.staffChef && this.staffChef.unlocked && cakeStand && cakeStand.unlocked);
   }
 
   refreshAllUpgrades() {
@@ -1355,6 +1364,16 @@ class GameEngine {
       questManager.recordEvent('staffUpgraded', 1);
     }
 
+    // Grand Café Final Progression Reveal Trigger
+    if (zoneId === 'helper_chef' || zoneId === 'stand_cake') {
+      if (this.isFinalProgressionUnlocked() && this.cafeTeaser && !this.cafeTeaser.isTransformed) {
+        this.cafeTeaser.setTransformed(true);
+        this.spawnConfetti(this.cafeTeaser.pos);
+        if (typeof sounds !== 'undefined') sounds.playUnlock();
+        this.ui.showNotification('✨ GRAND CAFÉ SITE EXPANDED! Exciting future expansion is in the works! ☕');
+      }
+    }
+
     this.refreshUnlockZoneVisibility();
     sdk.showMidgameAd();
   }
@@ -1584,6 +1603,10 @@ class GameEngine {
           }
         }
       });
+    }
+
+    if (this.cafeTeaser) {
+      this.cafeTeaser.setTransformed(this.isFinalProgressionUnlocked());
     }
 
     this.refreshUnlockZoneVisibility();
@@ -1891,6 +1914,10 @@ class GameEngine {
         b.group.position.y = b.basePos.y + Math.sin(bTime * 1.5 + b.seed) * 0.15;
         b.group.position.z = b.basePos.z + Math.cos(bTime + b.seed) * 0.35;
       });
+    }
+
+    if (this.cafeTeaser) {
+      this.cafeTeaser.update(dt, this.player.position, this.ui);
     }
 
     this.updateParticles(dt);
