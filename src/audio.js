@@ -750,6 +750,17 @@ class SoundSystem {
       this.bgmStep = (this.bgmStep + 1) % 64;
     } catch (e) {}
   }
+
+  setMuted(isMuted) {
+    this.muted = !!isMuted;
+    this.bgmMuted = !!isMuted;
+    this.ambientMuted = !!isMuted;
+    if (this.bgmMasterGain && this.ctx) {
+      try {
+        this.bgmMasterGain.gain.setValueAtTime(isMuted ? 0 : this.bgmVolume, this.ctx.currentTime);
+      } catch (e) {}
+    }
+  }
 }
 
 // Fallback proxy to ensure missing sound method never crashes the game

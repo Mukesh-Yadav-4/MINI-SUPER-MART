@@ -16,6 +16,19 @@ class CrazySDKWrapper {
         await window.CrazyGames.SDK.init();
         this.isInitialized = true;
         console.log('[CrazyGames SDK] Initialized successfully');
+
+        // CrazyGames Global Portal Audio Muting Listener
+        try {
+          if (window.CrazyGames.SDK.game && window.CrazyGames.SDK.game.addSettingsChangeListener) {
+            window.CrazyGames.SDK.game.addSettingsChangeListener((settings) => {
+              if (settings && typeof settings.mute !== 'undefined') {
+                if (typeof sounds !== 'undefined' && typeof sounds.setMuted === 'function') {
+                  sounds.setMuted(settings.mute);
+                }
+              }
+            });
+          }
+        } catch (e) {}
       } else {
         console.log('[CrazyGames SDK] Running in local/test mode');
       }
