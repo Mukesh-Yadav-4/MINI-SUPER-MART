@@ -8,6 +8,22 @@ class UIManager {
     this.joystickCenter = { x: 0, y: 0 };
     this.displayMoney = 0;
 
+    // Cached DOM elements & dirty-check trackers (Zero redundant DOM layout writes)
+    this.elMoneyCount = null;
+    this.elCapacityText = null;
+    this.elCapacityFill = null;
+    this.elBoostBadge = null;
+    this.elBoostTimer = null;
+    this.elBtnUpgrade = null;
+    this.elFloatingTexts = null;
+
+    this._lastRenderedCapacity = -1;
+    this._lastRenderedMaxCap = -1;
+    this._lastRenderedMoneyText = '';
+    this._lastBoostActive = null;
+    this._lastBoostSecs = -1;
+    this._lastPulseUpgrade = null;
+
     this.initInputs();
     this.initHUD();
   }
@@ -1217,8 +1233,10 @@ class UIManager {
   }
 
   spawnFloatingText(text, screenX, screenY, isMoney = false) {
-    const container = document.getElementById('floating-texts');
-    if (!container) return;
+    if (!this.elFloatingTexts) {
+      this.elFloatingTexts = document.getElementById('floating-texts');
+    }
+    if (!this.elFloatingTexts) return;
 
     const el = document.createElement('div');
     el.className = `floating-text ${isMoney ? 'money' : ''}`;
@@ -1226,13 +1244,14 @@ class UIManager {
     el.style.left = `${screenX}px`;
     el.style.top = `${screenY}px`;
 
-    container.appendChild(el);
+    this.elFloatingTexts.appendChild(el);
     setTimeout(() => {
       if (el.parentNode) el.parentNode.removeChild(el);
     }, 1000);
   }
 
   update(dt) {
+    // 1. Money Counter Animation (Only update DOM when formatted text changes)
     if (this.displayMoney !== this.game.money) {
       const diff = this.game.money - this.displayMoney;
       if (Math.abs(diff) < 2) {
@@ -1240,49 +1259,67 @@ class UIManager {
       } else {
         this.displayMoney += Math.round(diff * Math.min(1.0, 18 * dt));
       }
-      const moneyCountEl = document.getElementById('money-count');
-      if (moneyCountEl) {
+      if (!this.elMoneyCount) this.elMoneyCount = document.getElementById('money-count');
+      if (this.elMoneyCount) {
         const formatted = this.displayMoney >= 100000 
-          ? `${(this.displayMoney / 1000).toFixed(1)}K` 
-          : (this.displayMoney >= 1000 ? `${this.displayMoney.toLocaleString()}` : `${this.displayMoney}`);
-        moneyCountEl.textContent = formatted;
+          ? `$${(this.displayMoney / 1000).toFixed(1)}K` 
+          : (this.displayMoney >= 1000 ? `$${this.displayMoney.toLocaleString()}` : `$${this.displayMoney}`);
+        if (formatted !== this._lastRenderedMoneyText) {
+          this._lastRenderedMoneyText = formatted;
+          this.elMoneyCount.textContent = formatted;
+        }
       }
     }
 
-    const capacityText = document.getElementById('capacity-text');
-    const capacityFill = document.getElementById('capacity-fill');
+    // 2. Capacity HUD (Only update DOM when stack length or capacity changes)
+    if (!this.elCapacityText) this.elCapacityText = document.getElementById('capacity-text');
+    if (!this.elCapacityFill) this.elCapacityFill = document.getElementById('capacity-fill');
 
-    if (capacityText && capacityFill && this.game.player) {
+    if (this.elCapacityText && this.elCapacityFill && this.game.player) {
       const current = this.game.player.stack.length;
       const max = this.game.player.capacity;
-      capacityText.textContent = `${current} / ${max}`;
-      
-      const pct = Math.min(100, (current / max) * 100);
-      capacityFill.style.width = `${pct}%`;
-      
-      if (current >= max) {
-        capacityFill.classList.add('full');
-      } else {
-        capacityFill.classList.remove('full');
+      if (current !== this._lastRenderedCapacity || max !== this._lastRenderedMaxCap) {
+        this._lastRenderedCapacity = current;
+        this._lastRenderedMaxCap = max;
+        this.elCapacityText.textContent = `${current} / ${max}`;
+        
+        const pct = Math.min(100, (current / max) * 100);
+        this.elCapacityFill.style.width = `${pct}%`;
+        
+        if (current >= max) {
+          this.elCapacityFill.classList.add('full');
+        } else {
+          this.elCapacityFill.classList.remove('full');
+        }
       }
     }
 
-    const boostBadge = document.getElementById('boost-indicator');
-    const boostTimerEl = document.getElementById('boost-timer');
-    if (boostBadge && boostTimerEl) {
+    // 3. Boost Indicator (Only update DOM on state/timer second changes)
+    if (!this.elBoostBadge) this.elBoostBadge = document.getElementById('boost-indicator');
+    if (!this.elBoostTimer) this.elBoostTimer = document.getElementById('boost-timer');
+
+    if (this.elBoostBadge && this.elBoostTimer) {
       if (sdk.boostActive) {
-        boostBadge.style.display = 'flex';
-        const mins = Math.floor(sdk.boostTimer / 60);
-        const secs = Math.floor(sdk.boostTimer % 60);
-        boostTimerEl.textContent = `2X CASH (${mins}:${secs.toString().padStart(2, '0')})`;
-      } else {
-        boostBadge.style.display = 'none';
+        if (this._lastBoostActive !== true) {
+          this._lastBoostActive = true;
+          this.elBoostBadge.style.display = 'flex';
+        }
+        const totalSecs = Math.floor(sdk.boostTimer);
+        if (totalSecs !== this._lastBoostSecs) {
+          this._lastBoostSecs = totalSecs;
+          const mins = Math.floor(totalSecs / 60);
+          const secs = Math.floor(totalSecs % 60);
+          this.elBoostTimer.textContent = `2X CASH (${mins}:${secs.toString().padStart(2, '0')})`;
+        }
+      } else if (this._lastBoostActive !== false) {
+        this._lastBoostActive = false;
+        this.elBoostBadge.style.display = 'none';
       }
     }
 
     // Upgrade Availability & Recommendation Watchdog
     this.upgradeTipTimer = (this.upgradeTipTimer || 0) + dt;
-    const btnUpgrade = document.getElementById('btn-upgrade');
+    if (!this.elBtnUpgrade) this.elBtnUpgrade = document.getElementById('btn-upgrade');
     
     // Check which impactful upgrades can be afforded
     const affordableUpgrades = [];
@@ -1295,11 +1332,15 @@ class UIManager {
       }
     }
 
-    if (btnUpgrade) {
-      if (affordableUpgrades.length > 0) {
-        btnUpgrade.classList.add('pulse-upgrade');
-      } else {
-        btnUpgrade.classList.remove('pulse-upgrade');
+    if (this.elBtnUpgrade) {
+      const shouldPulse = affordableUpgrades.length > 0;
+      if (shouldPulse !== this._lastPulseUpgrade) {
+        this._lastPulseUpgrade = shouldPulse;
+        if (shouldPulse) {
+          this.elBtnUpgrade.classList.add('pulse-upgrade');
+        } else {
+          this.elBtnUpgrade.classList.remove('pulse-upgrade');
+        }
       }
     }
 
