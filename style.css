@@ -653,6 +653,325 @@ html, body {
   margin-top: 0;
 }
 
+/* =========================================================
+   PLAYER & WORKER PRESENTATION UPGRADE STYLES
+   ========================================================= */
+
+/* Hero Player / Owner Card */
+.player-hero-card {
+  background: linear-gradient(135deg, #064e3b 0%, #0f172a 100%);
+  border: 1.5px solid #059669;
+  border-radius: 20px;
+  padding: 16px 14px;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 16px rgba(5, 150, 105, 0.25);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+}
+
+.player-hero-portrait-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 4px;
+}
+
+.player-avatar-ring {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(180deg, #10b981 0%, #047857 100%);
+  border: 3px solid #facc15;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 16px rgba(250, 204, 21, 0.4), 0 4px 10px rgba(0, 0, 0, 0.4);
+  position: relative;
+}
+
+.player-avatar-emoji {
+  font-size: 38px;
+}
+
+.player-avatar-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: #facc15;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid #1e293b;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.player-hero-identity {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  align-items: center;
+}
+
+.player-hero-tag {
+  background: rgba(250, 204, 21, 0.15);
+  color: #facc15;
+  font-size: 10px;
+  font-weight: 900;
+  padding: 2px 8px;
+  border-radius: 6px;
+  letter-spacing: 0.5px;
+}
+
+.player-hero-name {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 900;
+  color: #ffffff;
+  letter-spacing: 0.5px;
+}
+
+.player-hero-role {
+  font-size: 12px;
+  font-weight: 700;
+  color: #a7f3d0;
+}
+
+.player-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin-top: 4px;
+}
+
+.player-stat-box {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+}
+
+.player-stat-icon {
+  font-size: 20px;
+}
+
+.player-stat-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  flex: 1;
+}
+
+.player-stat-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  white-space: nowrap;
+}
+
+.player-stat-val {
+  font-size: 13.5px;
+  font-weight: 900;
+  color: #38bdf8;
+}
+
+.player-stat-level {
+  font-size: 9.5px;
+  font-weight: 800;
+  color: #facc15;
+  background: rgba(234, 179, 8, 0.15);
+  padding: 1px 5px;
+  border-radius: 4px;
+  align-self: flex-start;
+}
+
+/* Worker Management Roster Card */
+.worker-roster-card {
+  background: #1e293b;
+  border-radius: 16px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border: 1.5px solid #334155;
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.worker-roster-card.worker-hired {
+  border-color: #059669;
+  background: linear-gradient(180deg, #1e293b 0%, #064e3b 100%);
+}
+
+.worker-roster-card.worker-locked {
+  opacity: 0.82;
+  background: #0f172a;
+}
+
+.worker-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.worker-avatar-box {
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  border-radius: 14px;
+  background: #0f172a;
+  border: 2.5px solid #38bdf8;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.worker-avatar-icon {
+  font-size: 26px;
+}
+
+.worker-header-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.worker-name-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.worker-name {
+  font-size: 15px;
+  font-weight: 900;
+  color: #ffffff;
+}
+
+.worker-status-badge {
+  font-size: 9.5px;
+  font-weight: 900;
+  padding: 2px 7px;
+  border-radius: 6px;
+  white-space: nowrap;
+}
+
+.worker-status-badge.status-hired {
+  background: #059669;
+  color: #ffffff;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.worker-status-badge.status-locked {
+  background: #334155;
+  color: #94a3b8;
+}
+
+.worker-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #facc15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.worker-specialty {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.worker-outfit-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(15, 23, 42, 0.6);
+  border-radius: 8px;
+  padding: 4px 8px;
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+
+.outfit-icon {
+  font-size: 13px;
+}
+
+.outfit-text {
+  font-size: 11px;
+  color: #e2e8f0;
+}
+
+.worker-tasks-section {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  background: rgba(15, 23, 42, 0.4);
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+.worker-section-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  color: #86efac;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.worker-tasks-list {
+  margin: 0;
+  padding-left: 14px;
+  list-style-type: disc;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.worker-tasks-list li {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #cbd5e1;
+  line-height: 1.3;
+}
+
+.worker-stats-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 2px;
+}
+
+.worker-stat-pill {
+  font-size: 11px;
+  color: #94a3b8;
+  background: rgba(15, 23, 42, 0.7);
+  padding: 3px 8px;
+  border-radius: 6px;
+}
+
+.worker-stat-pill strong {
+  color: #38bdf8;
+}
+
 /* Modern Clean Dark Upgrade Row Card */
 .upgrade-item {
   display: flex;
@@ -1611,11 +1930,38 @@ html, body {
   .boost-title {
     font-size: 11px;
   }
-  #joystick-zone {
-    bottom: 20px;
-    left: 20px;
-    width: 120px;
-    height: 120px;
+  .upgrade-tabs {
+    gap: 3px;
+  }
+  .tab-btn {
+    padding: 7px 2px;
+    font-size: 10px;
+    border-radius: 10px;
+  }
+  .player-hero-card {
+    padding: 12px 10px;
+  }
+  .player-avatar-ring {
+    width: 62px;
+    height: 62px;
+  }
+  .player-avatar-emoji {
+    font-size: 32px;
+  }
+  .player-stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .worker-roster-card {
+    padding: 10px 10px;
+  }
+  .worker-avatar-box {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+  }
+  .worker-avatar-icon {
+    font-size: 22px;
   }
 }
 
@@ -1645,5 +1991,12 @@ html, body {
     height: 33px;
     min-width: 34px;
     max-width: 34px;
+  }
+  .tab-btn {
+    font-size: 9px;
+    padding: 6px 1px;
+  }
+  .player-stats-grid {
+    grid-template-columns: 1fr;
   }
 }

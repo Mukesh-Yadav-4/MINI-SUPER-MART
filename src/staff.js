@@ -142,37 +142,40 @@ class HelperWorker {
   createMesh() {
     this.mesh = new THREE.Group();
 
-    let shirtColor = 0x2e7d32;
-    let capColor = 0x1b5e20;
+    let shirtColor = 0xe53935; // Tomato red default for STOCKER
+    let apronColor = 0x1e88e5; // Denim blue
+    let pantsColor = 0x0d47a1; // Navy blue
     let hairColor = 0x451a03;
 
     if (this.type === 'FARMER') {
-      shirtColor = 0x0288d1;
-      capColor = 0x01579b;
+      shirtColor = 0xffffff; // Cow white
+      apronColor = 0x37474f; // Dark cowhide overalls
+      pantsColor = 0x263238;
       hairColor = 0x78350f;
     } else if (this.type === 'HARVESTER') {
-      shirtColor = 0xf97316;
-      capColor = 0xc2410c;
+      shirtColor = 0xfbc02d; // Sweetcorn yellow
+      apronColor = 0x2e7d32; // Harvest green
+      pantsColor = 0x1b5e20;
       hairColor = 0x1c1917;
     } else if (this.type === 'BAKER') {
-      shirtColor = 0xfff8e1;
-      capColor = 0xffe082;
+      shirtColor = 0xfff8e1; // Flour cream
+      apronColor = 0x8d6e63; // Warm cocoa tan
+      pantsColor = 0x4e342e;
       hairColor = 0x5d4037;
     } else if (this.type === 'CHEF') {
-      shirtColor = 0xffffff;
-      capColor = 0xffffff;
+      shirtColor = 0xffffff; // Pristine chef white
+      apronColor = 0x0288d1; // Royal blue
+      pantsColor = 0x1e293b;
       hairColor = 0x3e2723;
     }
 
     const skinMat = new THREE.MeshLambertMaterial({ color: 0xffd180 });
     const shirtMat = new THREE.MeshLambertMaterial({ color: shirtColor });
-    const apronMat = new THREE.MeshLambertMaterial({ color: this.type === 'CHEF' ? 0x0288d1 : (this.type === 'BAKER' ? 0xffffff : 0x334155) });
-    const capMat = new THREE.MeshLambertMaterial({ color: capColor });
+    const apronMat = new THREE.MeshLambertMaterial({ color: apronColor });
     const hairMat = new THREE.MeshLambertMaterial({ color: hairColor });
-    const pantsMat = new THREE.MeshLambertMaterial({ color: this.type === 'BAKER' ? 0x475569 : 0x1e293b });
+    const pantsMat = new THREE.MeshLambertMaterial({ color: pantsColor });
     const bootMat = new THREE.MeshLambertMaterial({ color: 0x5d4037 });
     const darkEyeMat = new THREE.MeshLambertMaterial({ color: 0x0f172a });
-    const toolMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
     const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28 });
 
     const shadow = new THREE.Mesh(new THREE.CircleGeometry(0.44, 14), shadowMat);
@@ -204,39 +207,116 @@ class HelperWorker {
     hair.position.set(0, 1.56, -0.04);
     this.mesh.add(hair);
 
-    if (this.type === 'CHEF' || this.type === 'BAKER') {
-      const toquePuff = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.28, 0.32, 16), capMat);
+    // --- THEMATIC 3D HATS FOR EACH WORKER SPECIALTY ---
+    if (this.type === 'STOCKER') {
+      // 🍅 WORKER 1: THEMATIC TOMATO HAT
+      const tomatoDome = new THREE.Mesh(new THREE.SphereGeometry(0.31, 14, 10), new THREE.MeshLambertMaterial({ color: 0xe53935 }));
+      tomatoDome.scale.set(1.05, 0.68, 1.05);
+      tomatoDome.position.y = 1.76;
+      tomatoDome.castShadow = true;
+      addSketchLines(tomatoDome, 0x111111);
+      this.mesh.add(tomatoDome);
+
+      // Green star calyx & stem
+      const calyx = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.01, 0.03, 5), new THREE.MeshLambertMaterial({ color: 0x43a047 }));
+      calyx.position.y = 1.94;
+      this.mesh.add(calyx);
+
+      const stem = new THREE.Mesh(new THREE.TorusGeometry(0.045, 0.016, 4, 8, Math.PI), new THREE.MeshLambertMaterial({ color: 0x2e7d32 }));
+      stem.rotation.z = 0.4;
+      stem.position.set(0.02, 1.98, 0);
+      this.mesh.add(stem);
+
+    } else if (this.type === 'FARMER') {
+      // 🥚 FARMER: THEMATIC EGG FARM HAT
+      const eggDome = new THREE.Mesh(new THREE.SphereGeometry(0.30, 14, 12), new THREE.MeshLambertMaterial({ color: 0xffffff }));
+      eggDome.scale.set(0.95, 1.18, 0.95);
+      eggDome.position.y = 1.80;
+      eggDome.castShadow = true;
+      addSketchLines(eggDome, 0x111111);
+      this.mesh.add(eggDome);
+
+      // Sunny yellow yolk badge
+      const yolk = new THREE.Mesh(new THREE.SphereGeometry(0.11, 8, 8), new THREE.MeshLambertMaterial({ color: 0xffd600 }));
+      yolk.scale.set(1.0, 0.35, 0.7);
+      yolk.position.set(0, 1.84, 0.20);
+      this.mesh.add(yolk);
+
+      // Straw band at base
+      const eggBrim = new THREE.Mesh(new THREE.TorusGeometry(0.28, 0.035, 6, 16), new THREE.MeshLambertMaterial({ color: 0xd7a15c }));
+      eggBrim.rotation.x = Math.PI / 2;
+      eggBrim.position.set(0, 1.66, 0);
+      this.mesh.add(eggBrim);
+
+    } else if (this.type === 'HARVESTER') {
+      // 🌽 FIELD HARVESTER: THEMATIC SWEETCORN HAT
+      const cornCob = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.29, 0.34, 14), new THREE.MeshLambertMaterial({ color: 0xffb300 }));
+      cornCob.position.y = 1.78;
+      cornCob.castShadow = true;
+      addSketchLines(cornCob, 0x111111);
+      this.mesh.add(cornCob);
+
+      const cornTip = new THREE.Mesh(new THREE.SphereGeometry(0.25, 10, 8), new THREE.MeshLambertMaterial({ color: 0xffca28 }));
+      cornTip.scale.set(1.0, 0.4, 1.0);
+      cornTip.position.y = 1.95;
+      this.mesh.add(cornTip);
+
+      // Green husk leaves flanking hat
+      const huskL = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.30, 0.16), new THREE.MeshLambertMaterial({ color: 0x43a047 }));
+      huskL.rotation.z = 0.3;
+      huskL.position.set(-0.24, 1.76, 0);
+      this.mesh.add(huskL);
+
+      const huskR = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.30, 0.16), new THREE.MeshLambertMaterial({ color: 0x43a047 }));
+      huskR.rotation.z = -0.3;
+      huskR.position.set(0.24, 1.76, 0);
+      this.mesh.add(huskR);
+
+    } else if (this.type === 'BAKER') {
+      // 🍞 BREAD BAKER: THEMATIC ARTISAN BREAD LOAF HAT
+      const breadDome = new THREE.Mesh(new THREE.SphereGeometry(0.34, 14, 10), new THREE.MeshLambertMaterial({ color: 0xd79a55 }));
+      breadDome.scale.set(1.18, 0.62, 0.88);
+      breadDome.position.y = 1.78;
+      breadDome.castShadow = true;
+      addSketchLines(breadDome, 0x111111);
+      this.mesh.add(breadDome);
+
+      // Scoring crust cuts
+      [-0.10, 0.0, 0.10].forEach((ox, i) => {
+        const score = new THREE.Mesh(new THREE.BoxGeometry(0.035, 0.02, 0.16), new THREE.MeshLambertMaterial({ color: 0xffe082 }));
+        score.rotation.y = (i - 1) * 0.25;
+        score.position.set(ox, 1.94, 0);
+        this.mesh.add(score);
+      });
+
+      const bakerBand = new THREE.Mesh(new THREE.TorusGeometry(0.29, 0.03, 6, 16), new THREE.MeshLambertMaterial({ color: 0x8d6e63 }));
+      bakerBand.rotation.x = Math.PI / 2;
+      bakerBand.position.set(0, 1.66, 0);
+      this.mesh.add(bakerBand);
+
+    } else if (this.type === 'CHEF') {
+      // 👨‍🍳 MASTER PATISSIER: ICONIC CHEF JEAN TOQUE & ASCOT
+      const toquePuff = new THREE.Mesh(new THREE.CylinderGeometry(0.34, 0.28, 0.32, 16), new THREE.MeshLambertMaterial({ color: 0xffffff }));
       toquePuff.position.y = 1.90;
       addSketchLines(toquePuff, 0x111111);
       this.mesh.add(toquePuff);
 
-      const toqueTop = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 8), capMat);
+      const toqueTop = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 8), new THREE.MeshLambertMaterial({ color: 0xffffff }));
       toqueTop.scale.set(1.0, 0.35, 1.0);
       toqueTop.position.y = 2.06;
       this.mesh.add(toqueTop);
 
-      if (this.type === 'CHEF') {
-        // Ruby Red French Ascot / Neckerchief
-        const neckerchief = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.045, 6, 12), new THREE.MeshLambertMaterial({ color: 0xc62828 }));
-        neckerchief.rotation.x = Math.PI / 2;
-        neckerchief.position.set(0, 1.34, 0);
-        this.mesh.add(neckerchief);
+      // Ruby Red French Ascot / Neckerchief
+      const neckerchief = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.045, 6, 12), new THREE.MeshLambertMaterial({ color: 0xc62828 }));
+      neckerchief.rotation.x = Math.PI / 2;
+      neckerchief.position.set(0, 1.34, 0);
+      this.mesh.add(neckerchief);
 
-        // French Curly Mustache
-        const mustache = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.016, 4, 8, Math.PI), new THREE.MeshLambertMaterial({ color: 0x3e2723 }));
-        mustache.rotation.x = Math.PI;
-        mustache.position.set(0, 1.51, 0.24);
-        this.mesh.add(mustache);
-      }
-    } else {
-      const capCrown = new THREE.Mesh(new THREE.CylinderGeometry(0.28, 0.30, 0.16, 14), capMat);
-      capCrown.position.y = 1.70;
-      this.mesh.add(capCrown);
-
-      const visor = new THREE.Mesh(new THREE.BoxGeometry(0.32, 0.04, 0.22), capMat);
-      visor.position.set(0, 1.66, 0.26);
-      visor.rotation.x = 0.15;
-      this.mesh.add(visor);
+      // French Curly Mustache
+      const mustache = new THREE.Mesh(new THREE.TorusGeometry(0.055, 0.016, 4, 8, Math.PI), new THREE.MeshLambertMaterial({ color: 0x3e2723 }));
+      mustache.rotation.x = Math.PI;
+      mustache.position.set(0, 1.51, 0.24);
+      this.mesh.add(mustache);
     }
 
     // 4. Human Torso & Worker Apron / Uniform
@@ -244,6 +324,18 @@ class HelperWorker {
     torso.position.y = 1.0;
     torso.castShadow = true;
     this.mesh.add(torso);
+
+    if (this.type === 'FARMER') {
+      // Cowhide Spots on Farmer's shirt
+      const spotMat = new THREE.MeshLambertMaterial({ color: 0x212121 });
+      const spot1 = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.12, 0.04), spotMat);
+      spot1.position.set(-0.12, 1.15, 0.27);
+      this.mesh.add(spot1);
+
+      const spot2 = new THREE.Mesh(new THREE.BoxGeometry(0.16, 0.14, 0.04), spotMat);
+      spot2.position.set(0.10, 1.25, 0.26);
+      this.mesh.add(spot2);
+    }
 
     // Work Utility Apron
     const apron = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.52, 0.44), apronMat);
@@ -258,6 +350,7 @@ class HelperWorker {
       this.mesh.add(rollingPin);
     } else {
       // Mini Garden Trowel in Pocket
+      const toolMat = new THREE.MeshLambertMaterial({ color: 0x94a3b8 });
       const trowelBlade = new THREE.Mesh(new THREE.ConeGeometry(0.04, 0.14, 4), toolMat);
       trowelBlade.rotation.x = 0.3;
       trowelBlade.position.set(0.14, 1.05, 0.25);

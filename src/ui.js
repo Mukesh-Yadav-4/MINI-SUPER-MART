@@ -444,7 +444,7 @@ class UIManager {
     }
 
     // Upgrade Modal & Category Tabs
-    this.activeUpgradeTab = 'all';
+    this.activeUpgradeTab = 'player';
     const modal = document.getElementById('modal-upgrade');
     const btnUpgrade = document.getElementById('btn-upgrade');
     const btnClose = document.getElementById('btn-close-upgrade');
@@ -454,7 +454,7 @@ class UIManager {
       btn.addEventListener('click', () => {
         tabButtons.forEach(b => b.classList.remove('active'));
         btn.classList.add('active');
-        this.activeUpgradeTab = btn.getAttribute('data-tab') || 'all';
+        this.activeUpgradeTab = btn.getAttribute('data-tab') || 'player';
         this.renderUpgradeModal();
       });
     });
@@ -522,17 +522,334 @@ class UIManager {
 
     list.innerHTML = '';
 
-    const allUpgrades = Object.values(CONFIG.UPGRADES);
-    const groups = [
-      { id: 'production', title: '🌾 Farm Speed & Livestock' },
-      { id: 'quality', title: '✨ Product Sell Value' },
-      { id: 'machinery', title: '⚙️ Machine Hoppers & Shelves' },
-      { id: 'worker_player', title: '👤 Player Mobility & Backpack' }
-    ];
+    const currentTab = this.activeUpgradeTab || 'player';
 
-    const currentTab = this.activeUpgradeTab || 'all';
+    // Helper: Execute and refresh upgrade purchase
+    const buyUpgrade = (upg) => {
+      if (upg.currentLevel >= upg.costs.length) return;
+      const cost = upg.costs[upg.currentLevel];
+      if (this.game.money < cost) return;
 
-    // 1. Special Tab: Store Decorations & Ambience
+      this.game.money -= cost;
+      upg.currentLevel++;
+      if (typeof sounds !== 'undefined') sounds.playUpgrade();
+
+      if (typeof questManager !== 'undefined' && (upg.group === 'worker_player' || upg.id.includes('staff'))) {
+        questManager.recordEvent('staffUpgraded', 1);
+      }
+
+      this.game.refreshAllUpgrades();
+      this.renderUpgradeModal();
+      this.showNotification(`⭐ ${upg.title} Upgraded to Lv ${upg.currentLevel + 1}! (${upg.levels[upg.currentLevel]} ${upg.unit || ''})`);
+    };
+
+    // Helper: Render Standard Upgrade Card
+    const createUpgradeCard = (upg) => {
+      const isMax = upg.currentLevel >= upg.costs.length;
+      const rawCost = upg.costs[upg.currentLevel];
+      const formattedCost = isMax 
+        ? 'MAX' 
+        : (rawCost >= 10000 ? `${(rawCost / 1000).toFixed(1)}K` : (rawCost >= 1000 ? `${rawCost.toLocaleString()}` : `${rawCost}`));
+
+      const canAfford = !isMax && this.game.money >= rawCost;
+      const curVal = upg.levels[upg.currentLevel];
+      const nextVal = isMax ? curVal : upg.levels[upg.currentLevel + 1];
+      const unit = upg.unit || '';
+      const isQuality = upg.group === 'quality';
+
+      let benefitHTML = '';
+      if (isMax) {
+        benefitHTML = `<span class="benefit-max">⭐ MAX LEVEL (${isQuality ? '$' : ''}${curVal} ${unit})</span>`;
+      } else {
+        benefitHTML = `
+          <span class="benefit-cur">${isQuality ? '$' : ''}${curVal}</span>
+          <span class="benefit-arrow">➔</span>
+          <span class="benefit-next">${isQuality ? '$' : ''}${nextVal}</span>
+          <span class="benefit-unit">${unit}</span>
+        `;
+      }
+
+      const itemDiv = document.createElement('div');
+      itemDiv.className = `upgrade-item ${canAfford ? 'affordable-card' : ''} ${isMax ? 'maxed-card' : ''}`;
+      itemDiv.innerHTML = `
+        <div class="upgrade-icon-box">
+          <span class="upgrade-emoji">${upg.icon}</span>
+        </div>
+        <div class="upgrade-info-col">
+          <div class="upgrade-title-row">
+            <span class="upgrade-title-text">${upg.title}</span>
+            <span class="upgrade-level-pill ${isMax ? 'max-pill' : ''}">Lv ${upg.currentLevel + 1}</span>
+          </div>
+          <div class="upgrade-benefit-row">
+            ${benefitHTML}
+          </div>
+        </div>
+        <div class="upgrade-btn-col">
+          <button class="upgrade-buy-btn ${isMax ? 'btn-max' : (canAfford ? 'btn-can-buy' : 'btn-cant-buy')}" ${canAfford ? '' : 'disabled'}>
+            ${isMax ? '⭐ MAX' : `💵 ${formattedCost}`}
+          </button>
+        </div>
+      `;
+
+      const buyBtn = itemDiv.querySelector('.upgrade-buy-btn');
+      if (buyBtn && canAfford) {
+        buyBtn.addEventListener('click', () => buyUpgrade(upg));
+      }
+      return itemDiv;
+    };
+
+    // ==========================================
+    // TAB 1: 🧑‍🌾 MAIN PLAYER (FARM MART OWNER)
+    // ==========================================
+    if (currentTab === 'player') {
+      const speedUpg = CONFIG.UPGRADES.speed;
+      const capUpg = CONFIG.UPGRADES.capacity;
+      const curSpeed = speedUpg.levels[speedUpg.currentLevel];
+      const curCap = capUpg.levels[capUpg.currentLevel];
+
+      // Hero Character Portrait Card
+      const heroCard = document.createElement('div');
+      heroCard.className = 'player-hero-card';
+      heroCard.innerHTML = `
+        <div class="player-hero-portrait-wrap">
+          <div class="player-avatar-ring">
+            <span class="player-avatar-emoji">🧑‍🌾</span>
+            <span class="player-avatar-badge">👑</span>
+          </div>
+        </div>
+        <div class="player-hero-identity">
+          <div class="player-hero-tag">🌟 TYCOON LEADER</div>
+          <h3 class="player-hero-name">FARM MART OWNER</h3>
+          <span class="player-hero-role">Store Founder & General Manager</span>
+        </div>
+        <div class="player-stats-grid">
+          <div class="player-stat-box">
+            <span class="player-stat-icon">⚡</span>
+            <div class="player-stat-info">
+              <span class="player-stat-label">Movement Speed</span>
+              <span class="player-stat-val">${curSpeed} m/s</span>
+            </div>
+            <span class="player-stat-level">Lv ${speedUpg.currentLevel + 1}/${speedUpg.levels.length}</span>
+          </div>
+          <div class="player-stat-box">
+            <span class="player-stat-icon">🎒</span>
+            <div class="player-stat-info">
+              <span class="player-stat-label">Carry Capacity</span>
+              <span class="player-stat-val">${curCap} Items</span>
+            </div>
+            <span class="player-stat-level">Lv ${capUpg.currentLevel + 1}/${capUpg.levels.length}</span>
+          </div>
+        </div>
+      `;
+      list.appendChild(heroCard);
+
+      // Section Header: Player Upgrades
+      const sectionHeader = document.createElement('div');
+      sectionHeader.className = 'upgrade-group-header';
+      sectionHeader.textContent = '⚡ Owner Skills & Mobility Upgrades';
+      list.appendChild(sectionHeader);
+
+      // Only Player Upgrades!
+      list.appendChild(createUpgradeCard(capUpg));
+      list.appendChild(createUpgradeCard(speedUpg));
+      return;
+    }
+
+    // ==========================================
+    // TAB 2: 👥 WORKERS (YOUR SPECIALIZED TEAM)
+    // ==========================================
+    if (currentTab === 'workers') {
+      const staffUpg = CONFIG.UPGRADES.staff;
+      const staffSpeedMult = staffUpg.levels[staffUpg.currentLevel];
+      const staffCapVal = staffUpg.capacityLevels ? staffUpg.capacityLevels[staffUpg.currentLevel] : (3 + staffUpg.currentLevel * 2);
+
+      // Team Header
+      const teamHeader = document.createElement('div');
+      teamHeader.className = 'upgrade-group-header';
+      teamHeader.textContent = '👥 Team Capabilities & Collective Training';
+      list.appendChild(teamHeader);
+
+      // Collective Staff Upgrade Card
+      list.appendChild(createUpgradeCard(staffUpg));
+
+      // Worker Roster Section
+      const rosterHeader = document.createElement('div');
+      rosterHeader.className = 'upgrade-group-header';
+      rosterHeader.textContent = '📋 Specialized Workforce Roster';
+      list.appendChild(rosterHeader);
+
+      const workersRoster = [
+        {
+          id: 'helper_farmer',
+          name: 'Barnaby',
+          title: 'Livestock & Grain Farm Hand',
+          specialty: '🐮 Cow & 🥚 Egg Specialist',
+          avatar: '🥚',
+          hatTheme: 'Egg Shell Hat & Cowhide Pattern',
+          badgeColor: '#0288d1',
+          tasks: [
+            'Harvests Golden Wheat from agricultural fields',
+            'Transports feed to replenish Chicken Coop',
+            'Collects fresh eggs & feeds Dairy Cows',
+            'Milks cows & restocks Whole Milk refrigerator shelf'
+          ]
+        },
+        {
+          id: 'helper_stocker',
+          name: 'Toby',
+          title: 'Tomato Specialist & Canning Stocker',
+          specialty: '🍅 Tomato Harvester & Canning Stacker',
+          avatar: '🍅',
+          hatTheme: 'Tomato Cap with Green Leaf & Stem',
+          badgeColor: '#e53935',
+          tasks: [
+            'Harvests ripe Organic Tomatoes from troughs',
+            'Restocks fresh tomatoes directly onto Tomato Stand',
+            'Supplies tomato ingredients into Sauce Press hopper',
+            'Collects Canned Sauce/Jam and stacks onto shelves'
+          ]
+        },
+        {
+          id: 'helper_harvester',
+          name: 'Cooper',
+          title: 'Agricultural Field Harvester',
+          specialty: '🌽 Sweetcorn & 🌾 Grain Harvester',
+          avatar: '🌽',
+          hatTheme: 'Sweetcorn Husk Cap & Golden Crown',
+          badgeColor: '#f57f17',
+          tasks: [
+            'Harvests Golden Sweetcorn & Wheat from outer fields',
+            'Transports and restocks Sweetcorn onto market stands',
+            'Restocks Golden Grain stands with freshly harvested wheat',
+            'Maintains non-stop field harvesting efficiency'
+          ]
+        },
+        {
+          id: 'helper_baker',
+          name: 'Pierre',
+          title: 'Artisan Bread Baker',
+          specialty: '🍞 Bakery Oven & Batch Stacker',
+          avatar: '🍞',
+          hatTheme: 'Golden Brioche Loaf Baker Beret',
+          badgeColor: '#8d6e63',
+          tasks: [
+            'Collects 12 Eggs & 12 Wheat batches from farm storage',
+            'Loads bakery oven hopper with baking ingredients',
+            'Bakes 12 golden Artisan Bread loaves per batch',
+            'Stacks 12 fresh bread loaves onto Warm Bakery Showcase'
+          ]
+        },
+        {
+          id: 'helper_chef',
+          name: 'Chef Jean',
+          title: 'Master Patissier',
+          specialty: '🎂 Royal Strawberry Cake Creator',
+          avatar: '👨‍🍳',
+          hatTheme: 'Iconic Tall Pleated Toque & French Ascot',
+          badgeColor: '#c62828',
+          tasks: [
+            'Gathers Milk, Eggs, and Bread from market shelves',
+            'Supplies Pastry Cake Mixer machine in 6-item batches',
+            'Crafts gourmet Royal Strawberry Cakes',
+            'Restocks Royal Cakes onto Royal Pedestal Stand'
+          ]
+        },
+        {
+          id: 'helper_cashier',
+          name: 'Penny & Sam',
+          title: 'Express Checkout Cashiers',
+          specialty: '💵 Front Desk & Cash Register',
+          avatar: '👩‍💼',
+          hatTheme: 'Store Uniform & Cashier Sun Visor',
+          badgeColor: '#8e24aa',
+          tasks: [
+            'Operates checkout counters with zero customer wait time',
+            'Automatically scans customer shopping baskets',
+            'Bags customer groceries and vaults revenue securely'
+          ]
+        }
+      ];
+
+      workersRoster.forEach(w => {
+        const isHired = (CONFIG.UNLOCKS[w.id] && CONFIG.UNLOCKS[w.id].unlocked);
+        const card = document.createElement('div');
+        card.className = `worker-roster-card ${isHired ? 'worker-hired' : 'worker-locked'}`;
+        card.innerHTML = `
+          <div class="worker-card-header">
+            <div class="worker-avatar-box" style="border-color: ${w.badgeColor};">
+              <span class="worker-avatar-icon">${w.avatar}</span>
+            </div>
+            <div class="worker-header-info">
+              <div class="worker-name-row">
+                <span class="worker-name">${w.name}</span>
+                <span class="worker-status-badge ${isHired ? 'status-hired' : 'status-locked'}">
+                  ${isHired ? '🟢 HIRED & ACTIVE' : '🔒 LOCKED'}
+                </span>
+              </div>
+              <span class="worker-title">${w.title}</span>
+              <span class="worker-specialty">${w.specialty}</span>
+            </div>
+          </div>
+
+          <div class="worker-outfit-pill">
+            <span class="outfit-icon">👒</span>
+            <span class="outfit-text"><strong>Outfit:</strong> ${w.hatTheme}</span>
+          </div>
+
+          <div class="worker-tasks-section">
+            <span class="worker-section-title">⚡ Assigned AI Responsibilities:</span>
+            <ul class="worker-tasks-list">
+              ${w.tasks.map(t => `<li>${t}</li>`).join('')}
+            </ul>
+          </div>
+
+          <div class="worker-stats-footer">
+            <div class="worker-stat-pill">
+              <span>⚡ Speed:</span> <strong>${staffSpeedMult}x</strong>
+            </div>
+            <div class="worker-stat-pill">
+              <span>🎒 Capacity:</span> <strong>${staffCapVal} Items</strong>
+            </div>
+          </div>
+        `;
+        list.appendChild(card);
+      });
+      return;
+    }
+
+    // ==========================================
+    // TAB 3: 🌾 FARM & GEAR (PRODUCTION & MACHINERY)
+    // ==========================================
+    if (currentTab === 'production') {
+      const prodUpgs = Object.values(CONFIG.UPGRADES).filter(u => u.group === 'production' || u.group === 'machinery');
+      
+      const prodHeader = document.createElement('div');
+      prodHeader.className = 'upgrade-group-header';
+      prodHeader.textContent = '🌾 Farm Fertility, Livestock & Machinery';
+      list.appendChild(prodHeader);
+
+      prodUpgs.forEach(upg => list.appendChild(createUpgradeCard(upg)));
+      return;
+    }
+
+    // ==========================================
+    // TAB 4: ✨ VALUE (PRODUCT QUALITY RECIPES)
+    // ==========================================
+    if (currentTab === 'quality') {
+      const qualityUpgs = Object.values(CONFIG.UPGRADES).filter(u => u.group === 'quality');
+      
+      const qualHeader = document.createElement('div');
+      qualHeader.className = 'upgrade-group-header';
+      qualHeader.textContent = '✨ Gourmet Product Quality & Higher Sell Prices';
+      list.appendChild(qualHeader);
+
+      qualityUpgs.forEach(upg => list.appendChild(createUpgradeCard(upg)));
+      return;
+    }
+
+    // ==========================================
+    // TAB 5: 🌺 DECOR (STORE DECORATIONS)
+    // ==========================================
     if (currentTab === 'decor') {
       const header = document.createElement('div');
       header.className = 'upgrade-group-header';
@@ -584,90 +901,6 @@ class UIManager {
       });
       return;
     }
-
-    groups.forEach(grp => {
-      if (currentTab !== 'all' && currentTab !== grp.id) return;
-
-      const upgradesInGroup = allUpgrades.filter(u => u.group === grp.id);
-      if (upgradesInGroup.length === 0) return;
-
-      if (currentTab === 'all') {
-        const header = document.createElement('div');
-        header.className = 'upgrade-group-header';
-        header.textContent = grp.title;
-        list.appendChild(header);
-      }
-
-      upgradesInGroup.forEach(upg => {
-        const isMax = upg.currentLevel >= upg.costs.length;
-        const rawCost = upg.costs[upg.currentLevel];
-        const formattedCost = isMax 
-          ? 'MAX' 
-          : (rawCost >= 10000 ? `${(rawCost / 1000).toFixed(1)}K` : (rawCost >= 1000 ? `${rawCost.toLocaleString()}` : `${rawCost}`));
-
-        const canAfford = !isMax && this.game.money >= rawCost;
-        const curVal = upg.levels[upg.currentLevel];
-        const nextVal = isMax ? curVal : upg.levels[upg.currentLevel + 1];
-        const unit = upg.unit || '';
-        const isQuality = upg.group === 'quality';
-
-        let benefitHTML = '';
-        if (isMax) {
-          benefitHTML = `<span class="benefit-max">⭐ MAX LEVEL (${isQuality ? '$' : ''}${curVal} ${unit})</span>`;
-        } else {
-          benefitHTML = `
-            <span class="benefit-cur">${isQuality ? '$' : ''}${curVal}</span>
-            <span class="benefit-arrow">➔</span>
-            <span class="benefit-next">${isQuality ? '$' : ''}${nextVal}</span>
-            <span class="benefit-unit">${unit}</span>
-          `;
-        }
-
-        const itemDiv = document.createElement('div');
-        itemDiv.className = `upgrade-item ${canAfford ? 'affordable-card' : ''} ${isMax ? 'maxed-card' : ''}`;
-        itemDiv.innerHTML = `
-          <div class="upgrade-icon-box">
-            <span class="upgrade-emoji">${upg.icon}</span>
-          </div>
-          <div class="upgrade-info-col">
-            <div class="upgrade-title-row">
-              <span class="upgrade-title-text">${upg.title}</span>
-              <span class="upgrade-level-pill ${isMax ? 'max-pill' : ''}">Lv ${upg.currentLevel + 1}</span>
-            </div>
-            <div class="upgrade-benefit-row">
-              ${benefitHTML}
-            </div>
-          </div>
-          <div class="upgrade-btn-col">
-            <button class="upgrade-buy-btn ${isMax ? 'btn-max' : (canAfford ? 'btn-can-buy' : 'btn-cant-buy')}" ${canAfford ? '' : 'disabled'}>
-              ${isMax ? '⭐ MAX' : `💵 ${formattedCost}`}
-            </button>
-          </div>
-        `;
-
-        const buyBtn = itemDiv.querySelector('.upgrade-buy-btn');
-        if (buyBtn && canAfford) {
-          buyBtn.addEventListener('click', () => {
-            const cost = upg.costs[upg.currentLevel];
-            this.game.money -= cost;
-            upg.currentLevel++;
-            sounds.playUpgrade();
-
-            if (typeof questManager !== 'undefined' && (upg.group === 'worker_player' || upg.id.includes('staff'))) {
-              questManager.recordEvent('staffUpgraded', 1);
-            }
-
-            // Refresh all game subsystems
-            this.game.refreshAllUpgrades();
-
-            this.renderUpgradeModal();
-            this.showNotification(`⭐ ${upg.title} Upgraded to Lv ${upg.currentLevel + 1}! (${upg.levels[upg.currentLevel]} ${upg.unit || ''})`);
-          });
-        }
-
-        list.appendChild(itemDiv);
-      });
-    });
   }
 
   showNotification(msg) {
