@@ -512,87 +512,268 @@ class UIManager {
     if (!this.portraitCache) this.portraitCache = {};
     if (this.portraitCache[type]) return this.portraitCache[type];
 
-    if (typeof THREE === 'undefined' || typeof document === 'undefined') return null;
+    const svgMap = {
+      FARMER: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+        <defs>
+          <radialGradient id="bgFarmer" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#38bdf8" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+          </radialGradient>
+          <linearGradient id="eggYolk" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fde047"/>
+            <stop offset="100%" stop-color="#eab308"/>
+          </linearGradient>
+          <linearGradient id="strawBrim" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#d97706"/>
+            <stop offset="50%" stop-color="#f59e0b"/>
+            <stop offset="100%" stop-color="#b45309"/>
+          </linearGradient>
+        </defs>
+        <rect width="160" height="160" rx="20" fill="url(#bgFarmer)"/>
+        <path d="M 32 160 Q 32 118 80 118 Q 128 118 128 160 Z" fill="#ffffff" stroke="#111827" stroke-width="2.5"/>
+        <path d="M 44 130 Q 56 122 62 136 Q 52 148 40 142 Z" fill="#1e293b"/>
+        <path d="M 104 126 Q 118 132 112 148 Q 98 152 100 134 Z" fill="#1e293b"/>
+        <path d="M 54 135 L 106 135 L 112 160 L 48 160 Z" fill="#334155" stroke="#111827" stroke-width="2"/>
+        <rect x="52" y="132" width="10" height="28" fill="#1e293b"/>
+        <rect x="98" y="132" width="10" height="28" fill="#1e293b"/>
+        <rect x="70" y="102" width="20" height="18" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="80" cy="80" rx="34" ry="34" fill="#ffd180" stroke="#111827" stroke-width="2.5"/>
+        <circle cx="45" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <circle cx="115" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="68" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="66.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="92" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="90.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="58" cy="88" rx="6" ry="3.5" fill="#f472b6" opacity="0.6"/>
+        <ellipse cx="102" cy="88" rx="6" ry="3.5" fill="#f472b6" opacity="0.6"/>
+        <path d="M 70 91 Q 80 101 90 91" fill="none" stroke="#b45309" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 47 62 Q 80 50 113 62 Q 106 72 100 66 Q 80 72 60 66 Q 54 72 47 62 Z" fill="#78350f"/>
+        <path d="M 44 60 C 44 24, 116 24, 116 60 Z" fill="#ffffff" stroke="#111827" stroke-width="3"/>
+        <path d="M 48 58 C 50 30, 80 26, 80 58 Z" fill="#f8fafc" opacity="0.7"/>
+        <ellipse cx="80" cy="60" rx="40" ry="8" fill="url(#strawBrim)" stroke="#111827" stroke-width="2.5"/>
+        <circle cx="80" cy="42" r="11" fill="url(#eggYolk)" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="77" cy="38" rx="3.5" ry="2" fill="#ffffff" opacity="0.8"/>
+      </svg>`,
 
-    try {
-      const canvas = document.createElement('canvas');
-      canvas.width = 180;
-      canvas.height = 180;
+      STOCKER: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+        <defs>
+          <radialGradient id="bgTomato" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#ef4444" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+          </radialGradient>
+          <linearGradient id="tomatoRed" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f87171"/>
+            <stop offset="50%" stop-color="#ef4444"/>
+            <stop offset="100%" stop-color="#b91c1c"/>
+          </linearGradient>
+        </defs>
+        <rect width="160" height="160" rx="20" fill="url(#bgTomato)"/>
+        <path d="M 32 160 Q 32 118 80 118 Q 128 118 128 160 Z" fill="#dc2626" stroke="#111827" stroke-width="2.5"/>
+        <path d="M 52 134 L 108 134 L 114 160 L 46 160 Z" fill="#2563eb" stroke="#111827" stroke-width="2"/>
+        <rect x="52" y="130" width="10" height="30" fill="#1d4ed8"/>
+        <rect x="98" y="130" width="10" height="30" fill="#1d4ed8"/>
+        <rect x="70" y="102" width="20" height="18" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="80" cy="80" rx="34" ry="34" fill="#ffd180" stroke="#111827" stroke-width="2.5"/>
+        <circle cx="45" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <circle cx="115" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="68" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="66.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="92" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="90.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="58" cy="88" rx="6" ry="3.5" fill="#f87171" opacity="0.6"/>
+        <ellipse cx="102" cy="88" rx="6" ry="3.5" fill="#f87171" opacity="0.6"/>
+        <path d="M 70 91 Q 80 101 90 91" fill="none" stroke="#b91c1c" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 47 62 Q 80 50 113 62 Q 106 72 100 66 Q 80 72 60 66 Q 54 72 47 62 Z" fill="#451a03"/>
+        <ellipse cx="80" cy="48" rx="42" ry="26" fill="url(#tomatoRed)" stroke="#111827" stroke-width="3"/>
+        <ellipse cx="64" cy="38" rx="10" ry="4" fill="#ffffff" opacity="0.4" transform="rotate(-15 64 38)"/>
+        <polygon points="80,24 86,34 98,30 90,38 96,48 84,42 80,50 76,42 64,48 70,38 62,30 74,34" fill="#22c55e" stroke="#111827" stroke-width="2"/>
+        <path d="M 80 28 Q 86 16 94 18" fill="none" stroke="#15803d" stroke-width="4.5" stroke-linecap="round"/>
+      </svg>`,
 
-      const renderer = new THREE.WebGLRenderer({
-        canvas: canvas,
-        alpha: true,
-        antialias: true,
-        preserveDrawingBuffer: true
-      });
-      if (!renderer || !renderer.render) return null;
+      HARVESTER: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+        <defs>
+          <radialGradient id="bgCorn" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+          </radialGradient>
+          <linearGradient id="cornGold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fef08a"/>
+            <stop offset="50%" stop-color="#facc15"/>
+            <stop offset="100%" stop-color="#ca8a04"/>
+          </linearGradient>
+        </defs>
+        <rect width="160" height="160" rx="20" fill="url(#bgCorn)"/>
+        <path d="M 32 160 Q 32 118 80 118 Q 128 118 128 160 Z" fill="#eab308" stroke="#111827" stroke-width="2.5"/>
+        <path d="M 52 134 L 108 134 L 114 160 L 46 160 Z" fill="#15803d" stroke="#111827" stroke-width="2"/>
+        <rect x="52" y="130" width="10" height="30" fill="#166534"/>
+        <rect x="98" y="130" width="10" height="30" fill="#166534"/>
+        <rect x="70" y="102" width="20" height="18" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="80" cy="80" rx="34" ry="34" fill="#ffd180" stroke="#111827" stroke-width="2.5"/>
+        <circle cx="45" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <circle cx="115" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="68" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="66.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="92" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="90.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="58" cy="88" rx="6" ry="3.5" fill="#f59e0b" opacity="0.6"/>
+        <ellipse cx="102" cy="88" rx="6" ry="3.5" fill="#f59e0b" opacity="0.6"/>
+        <path d="M 70 91 Q 80 101 90 91" fill="none" stroke="#a16207" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 47 62 Q 80 50 113 62 Q 106 72 100 66 Q 80 72 60 66 Q 54 72 47 62 Z" fill="#1c1917"/>
+        <path d="M 48 58 C 48 24, 112 24, 112 58 Z" fill="url(#cornGold)" stroke="#111827" stroke-width="3"/>
+        <circle cx="68" cy="40" r="3.5" fill="#eab308" stroke="#ca8a04" stroke-width="1"/>
+        <circle cx="80" cy="38" r="3.5" fill="#eab308" stroke="#ca8a04" stroke-width="1"/>
+        <circle cx="92" cy="40" r="3.5" fill="#eab308" stroke="#ca8a04" stroke-width="1"/>
+        <circle cx="62" cy="49" r="3.5" fill="#eab308" stroke="#ca8a04" stroke-width="1"/>
+        <circle cx="74" cy="47" r="3.5" fill="#eab308" stroke="#ca8a04" stroke-width="1"/>
+        <circle cx="86" cy="47" r="3.5" fill="#eab308" stroke="#ca8a04" stroke-width="1"/>
+        <circle cx="98" cy="49" r="3.5" fill="#eab308" stroke="#ca8a04" stroke-width="1"/>
+        <path d="M 42 62 C 34 40, 52 28, 56 46 Z" fill="#22c55e" stroke="#111827" stroke-width="2"/>
+        <path d="M 118 62 C 126 40, 108 28, 104 46 Z" fill="#22c55e" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="80" cy="60" rx="38" ry="6" fill="#16a34a" stroke="#111827" stroke-width="2"/>
+      </svg>`,
 
-      renderer.setSize(180, 180, false);
-      renderer.setPixelRatio(1);
-      renderer.setClearColor(0x000000, 0);
+      BAKER: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+        <defs>
+          <radialGradient id="bgBread" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#d97706" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+          </radialGradient>
+          <linearGradient id="breadCrust" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#f59e0b"/>
+            <stop offset="50%" stop-color="#d97706"/>
+            <stop offset="100%" stop-color="#92400e"/>
+          </linearGradient>
+        </defs>
+        <rect width="160" height="160" rx="20" fill="url(#bgBread)"/>
+        <path d="M 32 160 Q 32 118 80 118 Q 128 118 128 160 Z" fill="#fef3c7" stroke="#111827" stroke-width="2.5"/>
+        <path d="M 52 134 L 108 134 L 114 160 L 46 160 Z" fill="#8d6e63" stroke="#111827" stroke-width="2"/>
+        <rect x="52" y="130" width="10" height="30" fill="#5d4037"/>
+        <rect x="98" y="130" width="10" height="30" fill="#5d4037"/>
+        <rect x="70" y="102" width="20" height="18" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="80" cy="80" rx="34" ry="34" fill="#ffd180" stroke="#111827" stroke-width="2.5"/>
+        <circle cx="45" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <circle cx="115" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="68" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="66.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="92" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="90.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="58" cy="88" rx="6" ry="3.5" fill="#f472b6" opacity="0.6"/>
+        <ellipse cx="102" cy="88" rx="6" ry="3.5" fill="#f472b6" opacity="0.6"/>
+        <path d="M 70 91 Q 80 101 90 91" fill="none" stroke="#78350f" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 47 62 Q 80 50 113 62 Q 106 72 100 66 Q 80 72 60 66 Q 54 72 47 62 Z" fill="#5d4037"/>
+        <ellipse cx="80" cy="46" rx="44" ry="24" fill="url(#breadCrust)" stroke="#111827" stroke-width="3"/>
+        <path d="M 60 42 Q 65 48 68 44" fill="none" stroke="#fef08a" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M 77 40 Q 80 46 83 40" fill="none" stroke="#fef08a" stroke-width="3.5" stroke-linecap="round"/>
+        <path d="M 92 44 Q 95 48 100 42" fill="none" stroke="#fef08a" stroke-width="3.5" stroke-linecap="round"/>
+        <ellipse cx="80" cy="58" rx="39" ry="7" fill="#6d4c41" stroke="#111827" stroke-width="2"/>
+      </svg>`,
 
-      const scene = new THREE.Scene();
-      const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 20);
+      CHEF: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+        <defs>
+          <radialGradient id="bgChef" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#ef4444" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+          </radialGradient>
+          <linearGradient id="toqueShade" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="100%" stop-color="#e2e8f0"/>
+          </linearGradient>
+        </defs>
+        <rect width="160" height="160" rx="20" fill="url(#bgChef)"/>
+        <path d="M 32 160 Q 32 118 80 118 Q 128 118 128 160 Z" fill="#ffffff" stroke="#111827" stroke-width="2.5"/>
+        <path d="M 54 135 L 106 135 L 112 160 L 48 160 Z" fill="#0288d1" stroke="#111827" stroke-width="2"/>
+        <path d="M 66 112 Q 80 126 94 112 Q 80 106 66 112 Z" fill="#dc2626" stroke="#111827" stroke-width="2"/>
+        <circle cx="80" cy="116" r="4.5" fill="#b91c1c"/>
+        <rect x="70" y="100" width="20" height="15" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="80" cy="78" rx="34" ry="34" fill="#ffd180" stroke="#111827" stroke-width="2.5"/>
+        <circle cx="45" cy="80" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <circle cx="115" cy="80" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="68" cy="75" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="66.5" cy="73" r="1.5" fill="#ffffff"/>
+        <ellipse cx="92" cy="75" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="90.5" cy="73" r="1.5" fill="#ffffff"/>
+        <ellipse cx="58" cy="84" rx="6" ry="3.5" fill="#f472b6" opacity="0.6"/>
+        <ellipse cx="102" cy="84" rx="6" ry="3.5" fill="#f472b6" opacity="0.6"/>
+        <path d="M 64 88 Q 72 84 80 88 Q 88 84 96 88 Q 92 94 80 90 Q 68 94 64 88 Z" fill="#3e2723" stroke="#111827" stroke-width="1.5"/>
+        <path d="M 64 88 Q 58 84 62 80" fill="none" stroke="#3e2723" stroke-width="2" stroke-linecap="round"/>
+        <path d="M 96 88 Q 102 84 98 80" fill="none" stroke="#3e2723" stroke-width="2" stroke-linecap="round"/>
+        <path d="M 47 58 Q 80 48 113 58" fill="none" stroke="#3e2723" stroke-width="4"/>
+        <path d="M 50 56 L 52 30 Q 52 14 80 14 Q 108 14 108 30 L 110 56 Z" fill="url(#toqueShade)" stroke="#111827" stroke-width="3"/>
+        <line x1="64" y1="20" x2="64" y2="54" stroke="#cbd5e1" stroke-width="2"/>
+        <line x1="80" y1="16" x2="80" y2="54" stroke="#cbd5e1" stroke-width="2"/>
+        <line x1="96" y1="20" x2="96" y2="54" stroke="#cbd5e1" stroke-width="2"/>
+        <ellipse cx="80" cy="56" rx="34" ry="6" fill="#f1f5f9" stroke="#111827" stroke-width="2"/>
+      </svg>`,
 
-      // Studio three-point lighting
-      const ambLight = new THREE.AmbientLight(0xffffff, 0.95);
-      scene.add(ambLight);
+      CASHIER: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+        <defs>
+          <radialGradient id="bgCashier" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#a855f7" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+          </radialGradient>
+        </defs>
+        <rect width="160" height="160" rx="20" fill="url(#bgCashier)"/>
+        <path d="M 32 160 Q 32 118 80 118 Q 128 118 128 160 Z" fill="#8e24aa" stroke="#111827" stroke-width="2.5"/>
+        <path d="M 54 135 L 106 135 L 112 160 L 48 160 Z" fill="#ab47bc" stroke="#111827" stroke-width="2"/>
+        <rect x="94" y="136" width="16" height="8" rx="2" fill="#facc15" stroke="#ca8a04" stroke-width="1"/>
+        <rect x="70" y="102" width="20" height="18" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="80" cy="80" rx="34" ry="34" fill="#ffd180" stroke="#111827" stroke-width="2.5"/>
+        <circle cx="45" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <circle cx="115" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="68" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="66.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="92" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="90.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="58" cy="88" rx="6" ry="3.5" fill="#f472b6" opacity="0.6"/>
+        <ellipse cx="102" cy="88" rx="6" ry="3.5" fill="#f472b6" opacity="0.6"/>
+        <path d="M 70 91 Q 80 101 90 91" fill="none" stroke="#ad1457" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 47 62 Q 80 50 113 62 Q 106 72 100 66 Q 80 72 60 66 Q 54 72 47 62 Z" fill="#4e342e"/>
+        <path d="M 46 56 Q 80 44 114 56 L 118 64 Q 80 54 42 64 Z" fill="#6a1b9a" stroke="#111827" stroke-width="2.5"/>
+        <ellipse cx="80" cy="58" rx="38" ry="6" fill="#4a148c"/>
+      </svg>`,
 
-      const keyLight = new THREE.DirectionalLight(0xfff8e7, 1.25);
-      keyLight.position.set(1.5, 3.2, 2.2);
-      scene.add(keyLight);
+      PLAYER: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="160" height="160">
+        <defs>
+          <radialGradient id="bgPlayer" cx="50%" cy="40%" r="60%">
+            <stop offset="0%" stop-color="#10b981" stop-opacity="0.35"/>
+            <stop offset="100%" stop-color="#0f172a" stop-opacity="0.95"/>
+          </radialGradient>
+          <linearGradient id="strawGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#fde047"/>
+            <stop offset="50%" stop-color="#facc15"/>
+            <stop offset="100%" stop-color="#d97706"/>
+          </linearGradient>
+        </defs>
+        <rect width="160" height="160" rx="20" fill="url(#bgPlayer)"/>
+        <path d="M 32 160 Q 32 118 80 118 Q 128 118 128 160 Z" fill="#e53935" stroke="#111827" stroke-width="2.5"/>
+        <path d="M 52 134 L 108 134 L 114 160 L 46 160 Z" fill="#1e88e5" stroke="#111827" stroke-width="2"/>
+        <rect x="52" y="130" width="10" height="30" fill="#1565c0"/>
+        <rect x="98" y="130" width="10" height="30" fill="#1565c0"/>
+        <rect x="70" y="102" width="20" height="18" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="80" cy="80" rx="34" ry="34" fill="#ffd180" stroke="#111827" stroke-width="2.5"/>
+        <circle cx="45" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <circle cx="115" cy="82" r="7" fill="#ffd180" stroke="#111827" stroke-width="2"/>
+        <ellipse cx="68" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="66.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="92" cy="78" rx="4.5" ry="6" fill="#0f172a"/>
+        <circle cx="90.5" cy="76" r="1.5" fill="#ffffff"/>
+        <ellipse cx="58" cy="88" rx="6" ry="3.5" fill="#f472b6" opacity="0.6"/>
+        <ellipse cx="102" cy="88" rx="6" ry="3.5" fill="#f472b6" opacity="0.6"/>
+        <path d="M 70 91 Q 80 101 90 91" fill="none" stroke="#b71c1c" stroke-width="2.5" stroke-linecap="round"/>
+        <path d="M 47 62 Q 80 50 113 62 Q 106 72 100 66 Q 80 72 60 66 Q 54 72 47 62 Z" fill="#451a03"/>
+        <ellipse cx="80" cy="54" rx="46" ry="12" fill="url(#strawGrad)" stroke="#111827" stroke-width="2.5"/>
+        <path d="M 54 54 C 54 28, 106 28, 106 54 Z" fill="url(#strawGrad)" stroke="#111827" stroke-width="3"/>
+        <ellipse cx="80" cy="53" rx="27" ry="5.5" fill="#b71c1c"/>
+        <path d="M 72 38 L 75 44 L 80 34 L 85 44 L 88 38 L 88 46 L 72 46 Z" fill="#facc15" stroke="#854d0e" stroke-width="1"/>
+      </svg>`
+    };
 
-      const rimLight = new THREE.DirectionalLight(0x93c5fd, 0.65);
-      rimLight.position.set(-2.0, 2.0, -1.5);
-      scene.add(rimLight);
-
-      let charMesh = null;
-
-      if (type === 'PLAYER') {
-        camera.position.set(0.24, 1.62, 1.10);
-        camera.lookAt(0, 1.50, 0);
-        if (typeof Player !== 'undefined') {
-          const playerObj = new Player(scene);
-          if (playerObj.applyEquippedHat) playerObj.applyEquippedHat();
-          charMesh = playerObj.mesh;
-          scene.add(charMesh);
-        }
-      } else if (type === 'CASHIER') {
-        camera.position.set(0.22, 1.62, 1.10);
-        camera.lookAt(0, 1.50, 0);
-        if (typeof HelperCashier !== 'undefined') {
-          const cashierObj = new HelperCashier(scene, { x: 0, z: 0 });
-          cashierObj.mesh.rotation.y = Math.PI; // Face camera (+Z)
-          charMesh = cashierObj.mesh;
-          scene.add(charMesh);
-        }
-      } else {
-        // STOCKER, FARMER, HARVESTER, BAKER, CHEF
-        if (type === 'CHEF') {
-          camera.position.set(0.26, 1.68, 1.22);
-          camera.lookAt(0, 1.55, 0);
-        } else {
-          camera.position.set(0.24, 1.62, 1.12);
-          camera.lookAt(0, 1.51, 0);
-        }
-        if (typeof HelperWorker !== 'undefined') {
-          const workerObj = new HelperWorker(scene, type, { x: 0, z: 0 });
-          charMesh = workerObj.mesh;
-          scene.add(charMesh);
-        }
-      }
-
-      if (charMesh) {
-        renderer.render(scene, camera);
-        const dataUrl = canvas.toDataURL ? canvas.toDataURL('image/png') : null;
-        if (renderer.dispose) renderer.dispose();
-        if (dataUrl && dataUrl.length > 50) {
-          this.portraitCache[type] = dataUrl;
-          return dataUrl;
-        }
-      }
-    } catch (e) {
-      // Fallback gracefully if WebGL context not available
+    const rawSvg = svgMap[type];
+    if (rawSvg) {
+      const cleanSvg = rawSvg.replace(/\s+/g, ' ').trim();
+      const dataUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(cleanSvg);
+      this.portraitCache[type] = dataUrl;
+      return dataUrl;
     }
     return null;
   }
