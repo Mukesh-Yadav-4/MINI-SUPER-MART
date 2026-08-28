@@ -755,13 +755,19 @@ class UnlockZone {
     if (visible && !this.unlocked) this.updateCardBadge();
   }
 
-  spendMoney(amount) {
+  spendMoney(amount, dt = 0.016) {
     if (this.remainingCost <= 0 || this.unlocked) return 0;
 
     const actual = Math.min(amount, this.remainingCost);
     this.remainingCost -= actual;
 
     this.updateCardBadge();
+
+    this.soundCooldown = (this.soundCooldown || 0) - dt;
+    if (actual > 0 && this.soundCooldown <= 0) {
+      this.soundCooldown = 0.11; // Gentle, rhythmic low-thud pulse (~9 per sec)
+      sounds.playMoneyDrop();
+    }
 
     if (this.remainingCost <= 0) {
       this.unlocked = true;

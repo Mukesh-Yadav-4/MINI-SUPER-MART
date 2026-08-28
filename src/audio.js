@@ -247,8 +247,42 @@ class SoundSystem {
     } catch (e) {}
   }
 
+  // Warm, soft money drop / paper flutter sound (mellow low-mid tone, ZERO high pitch)
+  playMoneyDrop() {
+    if (this.muted) return;
+    this.ensureContext();
+    if (!this.ctx) return;
+
+    try {
+      const t = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      const filter = this.ctx.createBiquadFilter();
+
+      // Warm low-mid triangle tone (240Hz -> 170Hz)
+      osc.type = 'triangle';
+      const baseFreq = 230 + (Math.random() * 24 - 12);
+      osc.frequency.setValueAtTime(baseFreq, t);
+      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.72, t + 0.045);
+
+      // Lowpass filter to cut all high-pitched frequencies
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(550, t);
+
+      gain.gain.setValueAtTime(0.18, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain || this.ctx.destination);
+
+      osc.start(t);
+      osc.stop(t + 0.045);
+    } catch (e) {}
+  }
+
   playCoin() {
-    // Silenced per user request
+    this.playMoneyDrop();
   }
 
   playPlace() {

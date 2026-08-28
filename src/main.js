@@ -1562,7 +1562,7 @@ class GameEngine {
       if (dist < (zone.config.radius || 1.6) && this.money > 0) {
         this.recordPlayerActivity();
         const spendAmount = Math.ceil(90 * dt);
-        const actualSpent = zone.spendMoney(Math.min(this.money, spendAmount));
+        const actualSpent = zone.spendMoney(Math.min(this.money, spendAmount), dt);
         this.money -= actualSpent;
       }
     });
