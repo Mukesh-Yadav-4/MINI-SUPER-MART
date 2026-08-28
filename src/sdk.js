@@ -17,6 +17,14 @@ class CrazySDKWrapper {
         this.isInitialized = true;
         console.log('[CrazyGames SDK] Initialized successfully');
 
+        // Call loadingStop & gameplayStart immediately on game launch
+        if (window.CrazyGames.SDK.game) {
+          try {
+            if (window.CrazyGames.SDK.game.loadingStop) window.CrazyGames.SDK.game.loadingStop();
+            if (window.CrazyGames.SDK.game.gameplayStart) window.CrazyGames.SDK.game.gameplayStart();
+          } catch (e) {}
+        }
+
         // CrazyGames Global Portal Audio Muting Listener
         try {
           if (window.CrazyGames.SDK.game && window.CrazyGames.SDK.game.addSettingsChangeListener) {
