@@ -1222,6 +1222,146 @@ class CafeTeaser {
     this.scene.add(this.group);
   }
 
+  drawBadge(ctx, x, y, w, h, r) {
+    if (ctx.roundRect) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, r);
+      ctx.fill();
+      ctx.stroke();
+    } else {
+      if (ctx.fillRect) ctx.fillRect(x, y, w, h);
+      if (ctx.strokeRect) ctx.strokeRect(x, y, w, h);
+    }
+  }
+
+  createMasterComingSoonTexture(isBuildingHeader = false) {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (isBuildingHeader) {
+      canvas.width = 512;
+      canvas.height = 160;
+
+      // Dark Espresso Walnut Background
+      ctx.fillStyle = '#1e1008';
+      ctx.fillRect(0, 0, 512, 160);
+
+      // Gold Trim
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 6;
+      ctx.strokeRect(8, 8, 496, 144);
+
+      // Header: GRAND CAFE
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = 'bold 36px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('☕ GRAND CAFÉ ☕', 256, 54);
+
+      // DOMINANT BADGE: COMING SOON
+      ctx.fillStyle = '#b91c1c'; // Vivid Crimson
+      ctx.strokeStyle = '#fde047';
+      ctx.lineWidth = 3.5;
+      this.drawBadge(ctx, 50, 72, 412, 64, 10);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 40px sans-serif';
+      ctx.shadowColor = 'rgba(0,0,0,0.85)';
+      ctx.shadowBlur = 6;
+      ctx.fillText('★ COMING SOON ★', 256, 118);
+    } else {
+      canvas.width = 512;
+      canvas.height = 320;
+
+      // Deep Walnut Sign Board
+      ctx.fillStyle = '#2b160c';
+      ctx.fillRect(0, 0, 512, 320);
+
+      // Outer & Inner Gold Bevel Borders
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth = 8;
+      ctx.strokeRect(10, 10, 492, 300);
+      ctx.strokeStyle = '#d97706';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(18, 18, 476, 284);
+
+      // Header: GRAND CAFE
+      ctx.fillStyle = '#fef3c7';
+      ctx.font = 'bold 38px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('☕ GRAND CAFÉ', 256, 68);
+
+      // PRIMARY DOMINANT MESSAGE: COMING SOON BANNER
+      ctx.fillStyle = '#991b1b'; // Deep Crimson Plaque
+      ctx.strokeStyle = '#facc15';
+      ctx.lineWidth = 4.5;
+      this.drawBadge(ctx, 32, 92, 448, 102, 12);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '900 58px sans-serif';
+      ctx.shadowColor = 'rgba(0,0,0,0.9)';
+      ctx.shadowBlur = 10;
+      ctx.fillText('COMING SOON', 256, 164);
+      ctx.shadowBlur = 0;
+
+      // Subtitle
+      ctx.fillStyle = '#fef08a';
+      ctx.font = 'bold 23px sans-serif';
+      ctx.fillText('✨ Something delicious is brewing... ✨', 256, 238);
+
+      // Future update note
+      ctx.fillStyle = '#cbd5e1';
+      ctx.font = 'italic 18px sans-serif';
+      ctx.fillText('Under Preparation for Future Expansion', 256, 282);
+    }
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
+  createBlueprintTexture() {
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 384;
+    const ctx = canvas.getContext('2d');
+
+    ctx.fillStyle = '#1e3a8a'; // Deep Blueprint Blue
+    ctx.fillRect(0, 0, 512, 384);
+
+    // White grid lines
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+    ctx.lineWidth = 1;
+    for (let x = 0; x < 512; x += 32) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 384); ctx.stroke();
+    }
+    for (let y = 0; y < 384; y += 32) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
+    }
+
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(24, 24, 464, 336);
+
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('☕ GRAND CAFÉ BLUEPRINT', 256, 68);
+
+    ctx.font = '18px sans-serif';
+    ctx.fillText('• BISTRO PATIO & ESPRESSO BAR', 256, 115);
+    ctx.fillText('• ARTISAN PASTRY SHOWCASE', 256, 150);
+    ctx.fillText('• CHEF JEAN\'S SECRET RECIPES', 256, 185);
+
+    ctx.fillStyle = '#ef4444';
+    ctx.strokeStyle = '#fef08a';
+    ctx.lineWidth = 3;
+    this.drawBadge(ctx, 70, 225, 372, 85, 8);
+
+    ctx.font = '900 32px sans-serif';
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText('COMING SOON', 256, 278);
+
+    return new THREE.CanvasTexture(canvas);
+  }
+
   initConstructionMesh() {
     const darkWoodMat = new THREE.MeshLambertMaterial({ color: 0x5d4037 });
     const plankMat = new THREE.MeshLambertMaterial({ color: 0x8d6e63 });
@@ -1314,50 +1454,7 @@ class CafeTeaser {
     legBack.rotation.x = 0.28;
     easelGroup.add(legBack);
 
-    // Blueprint Board
-    const createBlueprintTexture = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 384;
-      const ctx = canvas.getContext('2d');
-
-      ctx.fillStyle = '#1e3a8a'; // Deep Blueprint Blue
-      ctx.fillRect(0, 0, 512, 384);
-
-      // White grid lines
-      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
-      ctx.lineWidth = 1;
-      for (let x = 0; x < 512; x += 32) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 384); ctx.stroke();
-      }
-      for (let y = 0; y < 384; y += 32) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
-      }
-
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 3;
-      ctx.strokeRect(30, 30, 452, 324);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 26px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('☕ GRAND CAFÉ BLUEPRINT', 256, 75);
-
-      ctx.font = '18px sans-serif';
-      ctx.fillText('• BISTRO PATIO & ESPRESSO BAR', 256, 125);
-      ctx.fillText('• ARTISAN PASTRY SHOWCASE', 256, 160);
-      ctx.fillText('• CHEF JEAN\'S SECRET RECIPES', 256, 195);
-
-      ctx.strokeStyle = '#93c5fd';
-      ctx.strokeRect(100, 220, 312, 90);
-      ctx.font = 'bold 22px sans-serif';
-      ctx.fillStyle = '#fef08a';
-      ctx.fillText('✨ EXPANSION COMING SOON ✨', 256, 275);
-
-      return new THREE.CanvasTexture(canvas);
-    };
-
-    const board = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.05), new THREE.MeshLambertMaterial({ map: createBlueprintTexture() }));
+    const board = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.05), new THREE.MeshLambertMaterial({ map: this.createBlueprintTexture() }));
     board.position.set(0, 0.95, -0.05);
     board.rotation.x = -0.15;
     board.castShadow = true;
@@ -1365,53 +1462,24 @@ class CafeTeaser {
     easelGroup.add(board);
     this.constructionGroup.add(easelGroup);
 
-    // 5. Main Handcrafted Wooden Teaser Signpost
+    // 5. Main Handcrafted Wooden Teaser Signpost (Prominent COMING SOON)
     const signGroup = new THREE.Group();
     signGroup.position.set(0.5, 0, 2.2);
 
-    const signPostL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 2.2, 6), darkWoodMat);
-    signPostL.position.set(-1.1, 1.1, 0);
+    const signPostL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 2.4, 6), darkWoodMat);
+    signPostL.position.set(-1.3, 1.2, 0);
     signPostL.castShadow = true;
     addSketchLines(signPostL, 0x111111);
     signGroup.add(signPostL);
 
-    const signPostR = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 2.2, 6), darkWoodMat);
-    signPostR.position.set(1.1, 1.1, 0);
+    const signPostR = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 2.4, 6), darkWoodMat);
+    signPostR.position.set(1.3, 1.2, 0);
     signPostR.castShadow = true;
     addSketchLines(signPostR, 0x111111);
     signGroup.add(signPostR);
 
-    const createTeaserSignTexture = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 256;
-      const ctx = canvas.getContext('2d');
-
-      ctx.fillStyle = '#3e2723'; // Dark Walnut
-      ctx.fillRect(0, 0, 512, 256);
-
-      ctx.strokeStyle = '#f59e0b'; // Gold border
-      ctx.lineWidth = 8;
-      ctx.strokeRect(16, 16, 480, 224);
-
-      ctx.fillStyle = '#fef3c7';
-      ctx.font = 'bold 44px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('☕ GRAND CAFÉ', 256, 80);
-
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 32px sans-serif';
-      ctx.fillText('COMING SOON', 256, 140);
-
-      ctx.fillStyle = '#e2e8f0';
-      ctx.font = 'italic 20px sans-serif';
-      ctx.fillText('"Something delicious is brewing..."', 256, 195);
-
-      return new THREE.CanvasTexture(canvas);
-    };
-
-    const mainSign = new THREE.Mesh(new THREE.BoxGeometry(2.4, 1.2, 0.12), new THREE.MeshLambertMaterial({ map: createTeaserSignTexture() }));
-    mainSign.position.set(0, 1.4, 0);
+    const mainSign = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.6, 0.14), new THREE.MeshLambertMaterial({ map: this.createMasterComingSoonTexture(false) }));
+    mainSign.position.set(0, 1.5, 0);
     mainSign.castShadow = true;
     addSketchLines(mainSign, 0x111111);
     signGroup.add(mainSign);
@@ -1419,7 +1487,7 @@ class CafeTeaser {
     // Warm construction lantern
     const lanternMat = new THREE.MeshLambertMaterial({ color: 0xffecb3, emissive: 0xffb300, emissiveIntensity: 0.75 });
     const lantern = new THREE.Mesh(new THREE.BoxGeometry(0.22, 0.3, 0.22), lanternMat);
-    lantern.position.set(1.1, 1.9, 0.2);
+    lantern.position.set(1.3, 2.1, 0.2);
     addSketchLines(lantern, 0x111111);
     signGroup.add(lantern);
 
@@ -1430,8 +1498,9 @@ class CafeTeaser {
     const woodMat = new THREE.MeshLambertMaterial({ color: 0x5d4037 });
     const darkWoodMat = new THREE.MeshLambertMaterial({ color: 0x3e2723 });
     const facadeMat = new THREE.MeshLambertMaterial({ color: 0xfaf5ee });
-    const roofTrimMat = new THREE.MeshLambertMaterial({ color: 0x8d5b32 });
     const goldMat = new THREE.MeshLambertMaterial({ color: 0xffd54f });
+    const brassMat = new THREE.MeshLambertMaterial({ color: 0xeab308 });
+    const velvetRedMat = new THREE.MeshLambertMaterial({ color: 0x991b1b });
 
     // 1. Terracotta Flagstone Patio Floor
     const patioMat = new THREE.MeshLambertMaterial({ color: 0xc2714f });
@@ -1512,34 +1581,9 @@ class CafeTeaser {
     }
     this.transformedGroup.add(awningGroup);
 
-    // 4. Polished Grand Café Header Sign
-    const createGrandCafeSignTexture = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 160;
-      const ctx = canvas.getContext('2d');
-
-      ctx.fillStyle = '#271810'; // Deep Espresso Walnut
-      ctx.fillRect(0, 0, 512, 160);
-
-      ctx.strokeStyle = '#f59e0b'; // Gold trim
-      ctx.lineWidth = 6;
-      ctx.strokeRect(10, 10, 492, 140);
-
-      ctx.fillStyle = '#fef3c7';
-      ctx.font = 'bold 42px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.fillText('☕ GRAND CAFÉ ☕', 256, 65);
-
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 24px sans-serif';
-      ctx.fillText('✨ GRAND OPENING SOON ✨', 256, 115);
-
-      return new THREE.CanvasTexture(canvas);
-    };
-
-    const headerSign = new THREE.Mesh(new THREE.BoxGeometry(4.8, 1.1, 0.12), new THREE.MeshLambertMaterial({ map: createGrandCafeSignTexture() }));
-    headerSign.position.set(0, 3.4, -1.65);
+    // 4. Polished Grand Café Header Sign (With Dominant ★ COMING SOON ★)
+    const headerSign = new THREE.Mesh(new THREE.BoxGeometry(5.0, 1.3, 0.14), new THREE.MeshLambertMaterial({ map: this.createMasterComingSoonTexture(true) }));
+    headerSign.position.set(0, 3.45, -1.65);
     headerSign.castShadow = true;
     addSketchLines(headerSign, 0x111111);
     this.transformedGroup.add(headerSign);
@@ -1622,7 +1666,43 @@ class CafeTeaser {
     clocheGlass.position.set(1.8, 0.83, 0.8);
     this.transformedGroup.add(clocheGlass);
 
-    // 6. Burlap Coffee Sacks & Delivery Crates
+    // 6. Architectural Blueprint Drafting Easel on Left Terrace
+    const easelGroup = new THREE.Group();
+    easelGroup.position.set(-3.2, 0, 0.4);
+    easelGroup.rotation.y = 0.45;
+
+    const leg1 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.5, 5), darkWoodMat);
+    leg1.position.set(-0.35, 0.75, -0.1);
+    leg1.rotation.z = -0.12;
+    easelGroup.add(leg1);
+
+    const leg2 = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.5, 5), darkWoodMat);
+    leg2.position.set(0.35, 0.75, -0.1);
+    leg2.rotation.z = 0.12;
+    easelGroup.add(leg2);
+
+    const legBack = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.4, 5), darkWoodMat);
+    legBack.position.set(0, 0.7, 0.35);
+    legBack.rotation.x = 0.28;
+    easelGroup.add(legBack);
+
+    const board = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.9, 0.05), new THREE.MeshLambertMaterial({ map: this.createBlueprintTexture() }));
+    board.position.set(0, 0.95, -0.05);
+    board.rotation.x = -0.15;
+    board.castShadow = true;
+    addSketchLines(board, 0x111111);
+    easelGroup.add(board);
+    this.transformedGroup.add(easelGroup);
+
+    // 7. Covered Espresso Bar Equipment under Canvas Dust Tarp
+    const coveredCounter = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.0, 0.9), new THREE.MeshLambertMaterial({ color: 0x94a3b8 }));
+    coveredCounter.position.set(3.2, 0.5, 0.4);
+    coveredCounter.rotation.y = -0.35;
+    coveredCounter.castShadow = true;
+    addSketchLines(coveredCounter, 0x111111);
+    this.transformedGroup.add(coveredCounter);
+
+    // 8. Burlap Coffee Sacks & Delivery Crates
     const sackMat = new THREE.MeshLambertMaterial({ color: 0xd7ccc8 });
     const sack1 = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.34, 0.65, 8), sackMat);
     sack1.position.set(-3.2, 0.325, 1.8);
@@ -1637,7 +1717,62 @@ class CafeTeaser {
     addSketchLines(sack2, 0x111111);
     this.transformedGroup.add(sack2);
 
-    // 7. Potted Flowering Plants at Entrance
+    // 9. Elegant Velvet Entrance Barrier (Brass Stanchions + Draped Velvet Rope)
+    const stanchionL = new THREE.Group();
+    stanchionL.position.set(-1.2, 0, 2.2);
+    const postL = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.1, 0.9, 8), brassMat);
+    postL.position.y = 0.45;
+    postL.castShadow = true;
+    stanchionL.add(postL);
+    const ballL = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), brassMat);
+    ballL.position.y = 0.95;
+    stanchionL.add(ballL);
+    this.transformedGroup.add(stanchionL);
+
+    const stanchionR = new THREE.Group();
+    stanchionR.position.set(1.2, 0, 2.2);
+    const postR = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.1, 0.9, 8), brassMat);
+    postR.position.y = 0.45;
+    postR.castShadow = true;
+    stanchionR.add(postR);
+    const ballR = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), brassMat);
+    ballR.position.y = 0.95;
+    stanchionR.add(ballR);
+    this.transformedGroup.add(stanchionR);
+
+    // Draped Velvet Rope
+    const rope = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 2.4, 6), velvetRedMat);
+    rope.rotation.z = Math.PI / 2;
+    rope.position.set(0, 0.72, 2.2);
+    rope.castShadow = true;
+    addSketchLines(rope, 0x111111);
+    this.transformedGroup.add(rope);
+
+    // 10. Front Freestanding Grand Billboard Sign (Dominant COMING SOON)
+    const grandSignGroup = new THREE.Group();
+    grandSignGroup.position.set(0, 0, 3.4);
+
+    const gPostL = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 2.4, 6), darkWoodMat);
+    gPostL.position.set(-1.3, 1.2, 0);
+    gPostL.castShadow = true;
+    addSketchLines(gPostL, 0x111111);
+    grandSignGroup.add(gPostL);
+
+    const gPostR = new THREE.Mesh(new THREE.CylinderGeometry(0.09, 0.1, 2.4, 6), darkWoodMat);
+    gPostR.position.set(1.3, 1.2, 0);
+    gPostR.castShadow = true;
+    addSketchLines(gPostR, 0x111111);
+    grandSignGroup.add(gPostR);
+
+    const grandSignBoard = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.6, 0.14), new THREE.MeshLambertMaterial({ map: this.createMasterComingSoonTexture(false) }));
+    grandSignBoard.position.set(0, 1.5, 0);
+    grandSignBoard.castShadow = true;
+    addSketchLines(grandSignBoard, 0x111111);
+    grandSignGroup.add(grandSignBoard);
+
+    this.transformedGroup.add(grandSignGroup);
+
+    // 11. Potted Flowering Plants at Entrance
     const planterMat = new THREE.MeshLambertMaterial({ color: 0x475569 });
     const plantMat = new THREE.MeshLambertMaterial({ color: 0xa855f7 }); // Lavender purple
 
@@ -1653,7 +1788,7 @@ class CafeTeaser {
       this.transformedGroup.add(bush);
     });
 
-    // 8. Festoon String Lights Ambient Point Light
+    // 12. Festoon String Lights Ambient Point Light
     this.fairyLight = new THREE.PointLight(0xffedd5, 1.0, 8);
     this.fairyLight.position.set(0, 2.4, 0.5);
     this.transformedGroup.add(this.fairyLight);
@@ -1671,12 +1806,12 @@ class CafeTeaser {
     // Informational Proximity Hint when player walks near teaser sign
     if (playerPos && ui) {
       const dist = this.pos.distanceTo(playerPos);
-      if (dist < 2.8 && this.hintTimer > 25) {
+      if (dist < 3.2 && this.hintTimer > 25) {
         this.hintTimer = 0;
         if (this.isTransformed) {
-          ui.showNotification(`☕ GRAND CAFÉ — COMING SOON! ✨ Chef Jean's secret coffee & dessert menu is in the works!`);
+          ui.showNotification(`☕ GRAND CAFÉ — COMING SOON! ✨ "Something delicious is brewing..."`);
         } else {
-          ui.showNotification(`☕ Future Grand Café Site — Construction in planning!`);
+          ui.showNotification(`☕ GRAND CAFÉ — COMING SOON! ✨ Construction in planning!`);
         }
       }
     }

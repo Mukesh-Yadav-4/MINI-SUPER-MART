@@ -1241,6 +1241,11 @@ class GameEngine {
       this.resolveBoxCollision(entityPos, { x: 19.5, z: -13.5 }, 1.9, 0.2, radius);
       this.resolveBoxCollision(entityPos, { x: 22.0, z: -4.5 }, 0.2, 2.5, radius);
     }
+
+    // Future Grand Café Closed Facade Collision
+    if (this.cafeTeaser) {
+      this.resolveBoxCollision(entityPos, { x: 28.0, z: -10.9 }, 2.8, 0.8, radius);
+    }
   }
 
   resolveBoxCollision(entityPos, boxCenter, halfW, halfD, radius) {
