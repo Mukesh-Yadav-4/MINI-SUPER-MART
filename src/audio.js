@@ -258,16 +258,16 @@ class SoundSystem {
       const gain = this.ctx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(1046, t);
-      osc.frequency.setValueAtTime(1396, t + 0.04);
+      osc.frequency.setValueAtTime(784, t);
+      osc.frequency.setValueAtTime(1046, t + 0.04);
 
-      gain.gain.setValueAtTime(0.28, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
+      gain.gain.setValueAtTime(0.24, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.13);
 
       osc.connect(gain);
       gain.connect(this.masterGain || this.ctx.destination);
       osc.start(t);
-      osc.stop(t + 0.14);
+      osc.stop(t + 0.13);
     } catch (e) {}
   }
 
