@@ -1395,7 +1395,10 @@ class GameEngine {
       const dist = playerPos.distanceTo(patch.group.position);
       if (dist < 2.5 && !this.player.isFull() && patch.hasReadyCrops()) {
         const crop = patch.harvestOne();
-        if (crop) this.player.addItem(crop);
+        if (crop) {
+          this.recordPlayerActivity();
+          this.player.addItem(crop);
+        }
       }
     });
 
@@ -1405,12 +1408,18 @@ class GameEngine {
 
       if (playerPos.distanceTo(pen.feederPos) < 2.0 && this.player.hasItem('WHEAT') && pen.feedStock < pen.feedCapacity) {
         const wheat = this.player.popItem('WHEAT');
-        if (wheat) pen.addFeed(1);
+        if (wheat) {
+          this.recordPlayerActivity();
+          pen.addFeed(1);
+        }
       }
 
       if (playerPos.distanceTo(pen.pickupPos) < 2.0 && !this.player.isFull() && pen.produceStock > 0) {
         const prod = pen.harvestProduce();
-        if (prod) this.player.addItem(prod);
+        if (prod) {
+          this.recordPlayerActivity();
+          this.player.addItem(prod);
+        }
       }
     });
 
@@ -1423,7 +1432,10 @@ class GameEngine {
         // A. Collect Ready Processed Output
         if (!this.player.isFull() && machine.outputStock > 0) {
           const out = machine.harvestOutput();
-          if (out) this.player.addItem(out);
+          if (out) {
+            this.recordPlayerActivity();
+            this.player.addItem(out);
+          }
         }
 
         // B. Deposit Input Ingredients
@@ -1431,26 +1443,44 @@ class GameEngine {
           if (machine.config.type === 'JUICER') {
             if (this.player.hasItem('TOMATO') && machine.canAcceptIngredient('TOMATO')) {
               const tomato = this.player.popItem('TOMATO');
-              if (tomato) machine.addIngredient(tomato);
+              if (tomato) {
+                this.recordPlayerActivity();
+                machine.addIngredient(tomato);
+              }
             }
           } else if (machine.config.type === 'BAKERY') {
             if (this.player.hasItem('WHEAT') && machine.canAcceptIngredient('WHEAT')) {
               const wheat = this.player.popItem('WHEAT');
-              if (wheat) machine.addIngredient(wheat);
+              if (wheat) {
+                this.recordPlayerActivity();
+                machine.addIngredient(wheat);
+              }
             } else if (this.player.hasItem('EGG') && machine.canAcceptIngredient('EGG')) {
               const egg = this.player.popItem('EGG');
-              if (egg) machine.addIngredient(egg);
+              if (egg) {
+                this.recordPlayerActivity();
+                machine.addIngredient(egg);
+              }
             }
           } else if (machine.config.type === 'CAKERY') {
             if (this.player.hasItem('MILK') && machine.canAcceptIngredient('MILK')) {
               const milk = this.player.popItem('MILK');
-              if (milk) machine.addIngredient(milk);
+              if (milk) {
+                this.recordPlayerActivity();
+                machine.addIngredient(milk);
+              }
             } else if (this.player.hasItem('EGG') && machine.canAcceptIngredient('EGG')) {
               const egg = this.player.popItem('EGG');
-              if (egg) machine.addIngredient(egg);
+              if (egg) {
+                this.recordPlayerActivity();
+                machine.addIngredient(egg);
+              }
             } else if (this.player.hasItem('BREAD') && machine.canAcceptIngredient('BREAD')) {
               const bread = this.player.popItem('BREAD');
-              if (bread) machine.addIngredient(bread);
+              if (bread) {
+                this.recordPlayerActivity();
+                machine.addIngredient(bread);
+              }
             }
           }
         }
@@ -1464,7 +1494,10 @@ class GameEngine {
       const distFront = Math.hypot(playerPos.x - stand.pos.x, playerPos.z - (stand.pos.z + 0.8));
       if ((distCenter < 2.8 || distFront < 2.2) && !stand.isFull() && this.player.hasItem(stand.config.itemId)) {
         const item = this.player.popItem(stand.config.itemId);
-        if (item) stand.addItem();
+        if (item) {
+          this.recordPlayerActivity();
+          stand.addItem();
+        }
       }
     });
 
