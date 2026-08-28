@@ -59,7 +59,12 @@ class SoundSystem {
     try {
       if (!this.ctx) {
         const AudioContextClass = (typeof window !== 'undefined' && (window.AudioContext || window.webkitAudioContext)) || (typeof AudioContext !== 'undefined' ? AudioContext : null);
-        if (AudioContextClass) this.ctx = new AudioContextClass();
+        if (AudioContextClass) {
+          this.ctx = new AudioContextClass();
+          this.masterGain = this.ctx.createGain();
+          this.masterGain.gain.setValueAtTime(this.muted ? 0 : 1.0, this.ctx.currentTime);
+          this.masterGain.connect(this.ctx.destination);
+        }
       }
       if (this.ctx && this.ctx.state === 'suspended') {
         this.ctx.resume();
@@ -755,9 +760,17 @@ class SoundSystem {
     this.muted = !!isMuted;
     this.bgmMuted = !!isMuted;
     this.ambientMuted = !!isMuted;
-    if (this.bgmMasterGain && this.ctx) {
+    if (this.ctx) {
       try {
-        this.bgmMasterGain.gain.setValueAtTime(isMuted ? 0 : this.bgmVolume, this.ctx.currentTime);
+        if (this.masterGain && this.masterGain.gain) {
+          this.masterGain.gain.setValueAtTime(isMuted ? 0 : 1.0, this.ctx.currentTime);
+        }
+        if (this.bgmMasterGain && this.bgmMasterGain.gain) {
+          this.bgmMasterGain.gain.setValueAtTime(isMuted ? 0 : this.bgmVolume, this.ctx.currentTime);
+        }
+        if (this.ambientMasterGain && this.ambientMasterGain.gain) {
+          this.ambientMasterGain.gain.setValueAtTime(isMuted ? 0 : this.ambientVolume, this.ctx.currentTime);
+        }
       } catch (e) {}
     }
   }

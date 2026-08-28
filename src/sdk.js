@@ -21,10 +21,13 @@ class CrazySDKWrapper {
         try {
           if (window.CrazyGames.SDK.game && window.CrazyGames.SDK.game.addSettingsChangeListener) {
             window.CrazyGames.SDK.game.addSettingsChangeListener((settings) => {
-              if (settings && typeof settings.mute !== 'undefined') {
-                if (typeof sounds !== 'undefined' && typeof sounds.setMuted === 'function') {
-                  sounds.setMuted(settings.mute);
-                }
+              const isMuted = (typeof settings === 'boolean') ? settings :
+                              (typeof settings?.mute === 'boolean') ? settings.mute :
+                              (typeof settings?.isMuted === 'boolean') ? settings.isMuted :
+                              (typeof settings?.muted === 'boolean') ? settings.muted :
+                              (typeof settings?.volume === 'number') ? (settings.volume === 0) : false;
+              if (typeof sounds !== 'undefined' && typeof sounds.setMuted === 'function') {
+                sounds.setMuted(isMuted);
               }
             });
           }
