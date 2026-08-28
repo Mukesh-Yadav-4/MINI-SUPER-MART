@@ -1635,7 +1635,7 @@ class GameEngine {
   exitPhotoMode() {
     this.isPhotoMode = false;
     const uiLayer = document.getElementById('ui-layer');
-    if (uiLayer) uiLayer.style.display = 'block';
+    if (uiLayer) uiLayer.style.display = '';
 
     const photoOverlay = document.getElementById('photo-mode-overlay');
     if (photoOverlay) photoOverlay.style.display = 'none';
