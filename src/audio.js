@@ -247,8 +247,7 @@ class SoundSystem {
     } catch (e) {}
   }
 
-  // Warm, soft money drop / paper flutter sound (mellow low-mid tone, ZERO high pitch)
-  playMoneyDrop() {
+  playCoin() {
     if (this.muted) return;
     this.ensureContext();
     if (!this.ctx) return;
@@ -257,32 +256,23 @@ class SoundSystem {
       const t = this.ctx.currentTime;
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-      const filter = this.ctx.createBiquadFilter();
 
-      // Warm low-mid triangle tone (240Hz -> 170Hz)
-      osc.type = 'triangle';
-      const baseFreq = 230 + (Math.random() * 24 - 12);
-      osc.frequency.setValueAtTime(baseFreq, t);
-      osc.frequency.exponentialRampToValueAtTime(baseFreq * 0.72, t + 0.045);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1046, t);
+      osc.frequency.setValueAtTime(1396, t + 0.04);
 
-      // Lowpass filter to cut all high-pitched frequencies
-      filter.type = 'lowpass';
-      filter.frequency.setValueAtTime(550, t);
+      gain.gain.setValueAtTime(0.28, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.14);
 
-      gain.gain.setValueAtTime(0.18, t);
-      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.045);
-
-      osc.connect(filter);
-      filter.connect(gain);
+      osc.connect(gain);
       gain.connect(this.masterGain || this.ctx.destination);
-
       osc.start(t);
-      osc.stop(t + 0.045);
+      osc.stop(t + 0.14);
     } catch (e) {}
   }
 
-  playCoin() {
-    this.playMoneyDrop();
+  playMoneyDrop() {
+    this.playCoin();
   }
 
   playPlace() {
