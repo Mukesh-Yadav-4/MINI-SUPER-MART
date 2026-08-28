@@ -1317,29 +1317,33 @@ class UIManager {
       }
     }
 
-    // Upgrade Availability & Recommendation Watchdog
+    // Upgrade Availability & Recommendation Watchdog (Throttled to 0.35s / on balance change)
     this.upgradeTipTimer = (this.upgradeTipTimer || 0) + dt;
-    if (!this.elBtnUpgrade) this.elBtnUpgrade = document.getElementById('btn-upgrade');
-    
-    // Check which impactful upgrades can be afforded
-    const affordableUpgrades = [];
-    const playerMoney = this.game.money;
-    const priorityKeys = ['capacity', 'speed', 'growth', 'stand_capacity', 'quality_tomato', 'quality_wheat', 'egg_speed'];
-    for (let k of priorityKeys) {
-      const u = CONFIG.UPGRADES[k];
-      if (u && u.currentLevel < u.costs.length && playerMoney >= u.costs[u.currentLevel]) {
-        affordableUpgrades.push(u);
-      }
-    }
+    this.affordCheckTimer = (this.affordCheckTimer || 0) + dt;
 
-    if (this.elBtnUpgrade) {
-      const shouldPulse = affordableUpgrades.length > 0;
-      if (shouldPulse !== this._lastPulseUpgrade) {
-        this._lastPulseUpgrade = shouldPulse;
-        if (shouldPulse) {
-          this.elBtnUpgrade.classList.add('pulse-upgrade');
-        } else {
-          this.elBtnUpgrade.classList.remove('pulse-upgrade');
+    if (this.affordCheckTimer >= 0.35 || this.game.money !== this._lastCheckedMoney) {
+      this.affordCheckTimer = 0;
+      this._lastCheckedMoney = this.game.money;
+      this._affordableUpgrades = [];
+      const playerMoney = this.game.money;
+      const priorityKeys = ['capacity', 'speed', 'growth', 'stand_capacity', 'quality_tomato', 'quality_wheat', 'egg_speed'];
+      for (let k of priorityKeys) {
+        const u = CONFIG.UPGRADES[k];
+        if (u && u.currentLevel < u.costs.length && playerMoney >= u.costs[u.currentLevel]) {
+          this._affordableUpgrades.push(u);
+        }
+      }
+
+      if (!this.elBtnUpgrade) this.elBtnUpgrade = document.getElementById('btn-upgrade');
+      if (this.elBtnUpgrade) {
+        const shouldPulse = this._affordableUpgrades.length > 0;
+        if (shouldPulse !== this._lastPulseUpgrade) {
+          this._lastPulseUpgrade = shouldPulse;
+          if (shouldPulse) {
+            this.elBtnUpgrade.classList.add('pulse-upgrade');
+          } else {
+            this.elBtnUpgrade.classList.remove('pulse-upgrade');
+          }
         }
       }
     }
@@ -1347,7 +1351,7 @@ class UIManager {
     // 1. Backpack Full trigger: if backpack hits capacity and player can afford capacity upgrade
     if (this.game.player && this.game.player.isFull() && this.upgradeTipTimer > 15) {
       const capUpg = CONFIG.UPGRADES.capacity;
-      if (capUpg && capUpg.currentLevel < capUpg.costs.length && playerMoney >= capUpg.costs[capUpg.currentLevel]) {
+      if (capUpg && capUpg.currentLevel < capUpg.costs.length && this.game.money >= capUpg.costs[capUpg.currentLevel]) {
         const nextCap = capUpg.levels[capUpg.currentLevel + 1] || (capUpg.levels[capUpg.currentLevel] + 2);
         const cost = capUpg.costs[capUpg.currentLevel];
         this.showNotification(`🎒 Backpack Full! Tap ⭐ Upgrades to carry ${nextCap} items ($${cost})!`);
@@ -1356,9 +1360,9 @@ class UIManager {
     }
 
     // 2. Periodic recommendation tip (every 40s) for the most impactful affordable upgrade
-    if (this.upgradeTipTimer > 40 && affordableUpgrades.length > 0) {
+    if (this.upgradeTipTimer > 40 && this._affordableUpgrades && this._affordableUpgrades.length > 0) {
       this.upgradeTipTimer = 0;
-      const topUpg = affordableUpgrades[0];
+      const topUpg = this._affordableUpgrades[0];
       const nextVal = `${topUpg.levels[topUpg.currentLevel + 1]} ${topUpg.unit || ''}`;
       const cost = topUpg.costs[topUpg.currentLevel];
       
