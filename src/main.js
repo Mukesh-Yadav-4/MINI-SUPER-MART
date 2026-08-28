@@ -1364,6 +1364,7 @@ class GameEngine {
     };
 
     if (names[zoneId]) this.ui.showNotification(names[zoneId]);
+    if (typeof sdk !== 'undefined') sdk.happytime();
 
     if (typeof questManager !== 'undefined' && zoneId.startsWith('helper_')) {
       questManager.recordEvent('staffUpgraded', 1);
@@ -1977,6 +1978,10 @@ function initGame() {
   if (!window.game) {
     try {
       window.game = new GameEngine();
+      if (typeof sdk !== 'undefined') {
+        sdk.loadingStop();
+        sdk.gameplayStart();
+      }
     } catch (e) {
       console.error('Failed to initialize GameEngine:', e);
     }

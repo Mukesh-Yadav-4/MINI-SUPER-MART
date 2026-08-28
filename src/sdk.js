@@ -40,8 +40,24 @@ class CrazySDKWrapper {
     }
   }
 
+  loadingStart() {
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.game) {
+      try {
+        window.CrazyGames.SDK.game.loadingStart();
+      } catch (e) {}
+    }
+  }
+
+  loadingStop() {
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.game) {
+      try {
+        window.CrazyGames.SDK.game.loadingStop();
+      } catch (e) {}
+    }
+  }
+
   gameplayStart() {
-    if (this.isInitialized && window.CrazyGames.SDK.game) {
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.game) {
       try {
         window.CrazyGames.SDK.game.gameplayStart();
       } catch (e) {}
@@ -49,9 +65,17 @@ class CrazySDKWrapper {
   }
 
   gameplayStop() {
-    if (this.isInitialized && window.CrazyGames.SDK.game) {
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.game) {
       try {
         window.CrazyGames.SDK.game.gameplayStop();
+      } catch (e) {}
+    }
+  }
+
+  happytime() {
+    if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.game) {
+      try {
+        window.CrazyGames.SDK.game.happytime();
       } catch (e) {}
     }
   }
