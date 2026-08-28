@@ -30,12 +30,7 @@ class SoundSystem {
   initAudio() {
     const unlock = () => {
       try {
-        if (!this.ctx) {
-          const AudioContext = window.AudioContext || window.webkitAudioContext;
-          if (AudioContext) {
-            this.ctx = new AudioContext();
-          }
-        }
+        this.ensureContext();
         if (this.ctx && this.ctx.state === 'suspended') {
           this.ctx.resume();
         }
@@ -49,10 +44,20 @@ class SoundSystem {
       } catch (e) {}
     };
 
-    ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click'].forEach(evt => {
-      window.addEventListener(evt, unlock, { passive: true });
-      document.addEventListener(evt, unlock, { passive: true });
-    });
+    if (typeof window !== 'undefined') {
+      ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click'].forEach(evt => {
+        window.addEventListener(evt, unlock, { passive: true });
+        if (typeof document !== 'undefined') document.addEventListener(evt, unlock, { passive: true });
+      });
+
+      if (typeof document !== 'undefined') {
+        document.addEventListener('visibilitychange', () => {
+          if (!document.hidden && this.ctx && this.ctx.state === 'suspended') {
+            this.ctx.resume();
+          }
+        });
+      }
+    }
   }
 
   ensureContext() {
@@ -333,7 +338,7 @@ class SoundSystem {
         gain.gain.exponentialRampToValueAtTime(0.001, pt + n.dur);
 
         osc.connect(gain);
-        gain.connect(this.ctx.destination);
+        gain.connect(this.masterGain || this.ctx.destination);
         osc.start(pt);
         osc.stop(pt + n.dur);
       });
@@ -373,7 +378,7 @@ class SoundSystem {
 
       noise.connect(filter);
       filter.connect(gain);
-      gain.connect(this.ctx.destination);
+      gain.connect(this.masterGain || this.ctx.destination);
 
       noise.start(t);
       noise.stop(t + dur);
@@ -575,7 +580,7 @@ class SoundSystem {
     if (this.ctx) {
       this.bgmMasterGain = this.ctx.createGain();
       this.bgmMasterGain.gain.setValueAtTime(this.bgmMuted ? 0 : this.bgmVolumeFactor, this.ctx.currentTime);
-      this.bgmMasterGain.connect(this.ctx.destination);
+      this.bgmMasterGain.connect(this.masterGain || this.ctx.destination);
     }
 
     // Rich, significantly boosted base volume level (up from 0.07 -> 0.28)
@@ -647,7 +652,7 @@ class SoundSystem {
 
     if (this.ctx && !this.bgmMasterGain) {
       this.bgmMasterGain = this.ctx.createGain();
-      this.bgmMasterGain.connect(this.ctx.destination);
+      this.bgmMasterGain.connect(this.masterGain || this.ctx.destination);
     }
 
     if (this.bgmMasterGain && this.ctx) {
@@ -669,7 +674,7 @@ class SoundSystem {
 
     if (this.ctx && !this.bgmMasterGain) {
       this.bgmMasterGain = this.ctx.createGain();
-      this.bgmMasterGain.connect(this.ctx.destination);
+      this.bgmMasterGain.connect(this.masterGain || this.ctx.destination);
     }
 
     if (this.bgmMasterGain && this.ctx) {
@@ -690,7 +695,7 @@ class SoundSystem {
     if (!this.bgmMasterGain) {
       this.bgmMasterGain = this.ctx.createGain();
       this.bgmMasterGain.gain.setValueAtTime(this.bgmMuted ? 0 : this.bgmVolumeFactor, this.ctx.currentTime);
-      this.bgmMasterGain.connect(this.ctx.destination);
+      this.bgmMasterGain.connect(this.masterGain || this.ctx.destination);
     }
 
     try {
