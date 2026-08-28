@@ -508,6 +508,95 @@ class UIManager {
     }
   }
 
+  generateCharacterPortrait(type) {
+    if (!this.portraitCache) this.portraitCache = {};
+    if (this.portraitCache[type]) return this.portraitCache[type];
+
+    if (typeof THREE === 'undefined' || typeof document === 'undefined') return null;
+
+    try {
+      const canvas = document.createElement('canvas');
+      canvas.width = 180;
+      canvas.height = 180;
+
+      const renderer = new THREE.WebGLRenderer({
+        canvas: canvas,
+        alpha: true,
+        antialias: true,
+        preserveDrawingBuffer: true
+      });
+      if (!renderer || !renderer.render) return null;
+
+      renderer.setSize(180, 180, false);
+      renderer.setPixelRatio(1);
+      renderer.setClearColor(0x000000, 0);
+
+      const scene = new THREE.Scene();
+      const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 20);
+
+      // Studio three-point lighting
+      const ambLight = new THREE.AmbientLight(0xffffff, 0.95);
+      scene.add(ambLight);
+
+      const keyLight = new THREE.DirectionalLight(0xfff8e7, 1.25);
+      keyLight.position.set(1.5, 3.2, 2.2);
+      scene.add(keyLight);
+
+      const rimLight = new THREE.DirectionalLight(0x93c5fd, 0.65);
+      rimLight.position.set(-2.0, 2.0, -1.5);
+      scene.add(rimLight);
+
+      let charMesh = null;
+
+      if (type === 'PLAYER') {
+        camera.position.set(0.24, 1.62, 1.10);
+        camera.lookAt(0, 1.50, 0);
+        if (typeof Player !== 'undefined') {
+          const playerObj = new Player(scene);
+          if (playerObj.applyEquippedHat) playerObj.applyEquippedHat();
+          charMesh = playerObj.mesh;
+          scene.add(charMesh);
+        }
+      } else if (type === 'CASHIER') {
+        camera.position.set(0.22, 1.62, 1.10);
+        camera.lookAt(0, 1.50, 0);
+        if (typeof HelperCashier !== 'undefined') {
+          const cashierObj = new HelperCashier(scene, { x: 0, z: 0 });
+          cashierObj.mesh.rotation.y = Math.PI; // Face camera (+Z)
+          charMesh = cashierObj.mesh;
+          scene.add(charMesh);
+        }
+      } else {
+        // STOCKER, FARMER, HARVESTER, BAKER, CHEF
+        if (type === 'CHEF') {
+          camera.position.set(0.26, 1.68, 1.22);
+          camera.lookAt(0, 1.55, 0);
+        } else {
+          camera.position.set(0.24, 1.62, 1.12);
+          camera.lookAt(0, 1.51, 0);
+        }
+        if (typeof HelperWorker !== 'undefined') {
+          const workerObj = new HelperWorker(scene, type, { x: 0, z: 0 });
+          charMesh = workerObj.mesh;
+          scene.add(charMesh);
+        }
+      }
+
+      if (charMesh) {
+        renderer.render(scene, camera);
+        const dataUrl = canvas.toDataURL ? canvas.toDataURL('image/png') : null;
+        if (renderer.dispose) renderer.dispose();
+        if (dataUrl && dataUrl.length > 50) {
+          this.portraitCache[type] = dataUrl;
+          return dataUrl;
+        }
+      }
+    } catch (e) {
+      // Fallback gracefully if WebGL context not available
+    }
+    return null;
+  }
+
   renderUpgradeModal() {
     const list = document.getElementById('upgrade-list');
     if (!list) return;
@@ -606,6 +695,7 @@ class UIManager {
       const capUpg = CONFIG.UPGRADES.capacity;
       const curSpeed = speedUpg.levels[speedUpg.currentLevel];
       const curCap = capUpg.levels[capUpg.currentLevel];
+      const playerPortraitUrl = this.generateCharacterPortrait('PLAYER');
 
       // Hero Character Portrait Card
       const heroCard = document.createElement('div');
@@ -613,7 +703,10 @@ class UIManager {
       heroCard.innerHTML = `
         <div class="player-hero-portrait-wrap">
           <div class="player-avatar-ring">
-            <span class="player-avatar-emoji">🧑‍🌾</span>
+            ${playerPortraitUrl 
+              ? `<img class="player-avatar-img" src="${playerPortraitUrl}" alt="Farm Mart Owner">` 
+              : `<span class="player-avatar-emoji">🧑‍🌾</span>`
+            }
             <span class="player-avatar-badge">👑</span>
           </div>
         </div>
@@ -681,11 +774,12 @@ class UIManager {
       const workersRoster = [
         {
           id: 'helper_farmer',
+          type: 'FARMER',
           name: 'Barnaby',
           title: 'Livestock & Grain Farm Hand',
-          specialty: '🐮 Cow & 🥚 Egg Specialist',
-          avatar: '🥚',
-          hatTheme: 'Egg Shell Hat & Cowhide Pattern',
+          specialty: 'Cow & Egg Specialist',
+          specialtyIcon: '🥚',
+          hatTheme: 'Egg Shell Hat & Cowhide Clothes',
           badgeColor: '#0288d1',
           tasks: [
             'Harvests Golden Wheat from agricultural fields',
@@ -696,10 +790,11 @@ class UIManager {
         },
         {
           id: 'helper_stocker',
+          type: 'STOCKER',
           name: 'Toby',
           title: 'Tomato Specialist & Canning Stocker',
-          specialty: '🍅 Tomato Harvester & Canning Stacker',
-          avatar: '🍅',
+          specialty: 'Tomato & Canning Specialist',
+          specialtyIcon: '🍅',
           hatTheme: 'Tomato Cap with Green Leaf & Stem',
           badgeColor: '#e53935',
           tasks: [
@@ -711,10 +806,11 @@ class UIManager {
         },
         {
           id: 'helper_harvester',
+          type: 'HARVESTER',
           name: 'Cooper',
           title: 'Agricultural Field Harvester',
-          specialty: '🌽 Sweetcorn & 🌾 Grain Harvester',
-          avatar: '🌽',
+          specialty: 'Sweetcorn & Grain Specialist',
+          specialtyIcon: '🌽',
           hatTheme: 'Sweetcorn Husk Cap & Golden Crown',
           badgeColor: '#f57f17',
           tasks: [
@@ -726,10 +822,11 @@ class UIManager {
         },
         {
           id: 'helper_baker',
+          type: 'BAKER',
           name: 'Pierre',
           title: 'Artisan Bread Baker',
-          specialty: '🍞 Bakery Oven & Batch Stacker',
-          avatar: '🍞',
+          specialty: 'Artisan Bakery Specialist',
+          specialtyIcon: '🍞',
           hatTheme: 'Golden Brioche Loaf Baker Beret',
           badgeColor: '#8d6e63',
           tasks: [
@@ -741,10 +838,11 @@ class UIManager {
         },
         {
           id: 'helper_chef',
+          type: 'CHEF',
           name: 'Chef Jean',
           title: 'Master Patissier',
-          specialty: '🎂 Royal Strawberry Cake Creator',
-          avatar: '👨‍🍳',
+          specialty: 'Royal Pastry & Cake Specialist',
+          specialtyIcon: '🎂',
           hatTheme: 'Iconic Tall Pleated Toque & French Ascot',
           badgeColor: '#c62828',
           tasks: [
@@ -756,10 +854,11 @@ class UIManager {
         },
         {
           id: 'helper_cashier',
+          type: 'CASHIER',
           name: 'Penny & Sam',
           title: 'Express Checkout Cashiers',
-          specialty: '💵 Front Desk & Cash Register',
-          avatar: '👩‍💼',
+          specialty: 'Front Desk & Checkout Specialist',
+          specialtyIcon: '💵',
           hatTheme: 'Store Uniform & Cashier Sun Visor',
           badgeColor: '#8e24aa',
           tasks: [
@@ -772,12 +871,17 @@ class UIManager {
 
       workersRoster.forEach(w => {
         const isHired = (CONFIG.UNLOCKS[w.id] && CONFIG.UNLOCKS[w.id].unlocked);
+        const portraitUrl = this.generateCharacterPortrait(w.type);
         const card = document.createElement('div');
         card.className = `worker-roster-card ${isHired ? 'worker-hired' : 'worker-locked'}`;
         card.innerHTML = `
           <div class="worker-card-header">
-            <div class="worker-avatar-box" style="border-color: ${w.badgeColor};">
-              <span class="worker-avatar-icon">${w.avatar}</span>
+            <div class="worker-portrait-frame ${isHired ? 'portrait-hired' : 'portrait-locked'}" style="border-color: ${w.badgeColor};">
+              ${portraitUrl 
+                ? `<img class="worker-portrait-img" src="${portraitUrl}" alt="${w.name}">` 
+                : `<span class="worker-avatar-fallback">${w.specialtyIcon}</span>`
+              }
+              ${!isHired ? `<span class="worker-portrait-lock">🔒</span>` : ''}
             </div>
             <div class="worker-header-info">
               <div class="worker-name-row">
@@ -787,7 +891,10 @@ class UIManager {
                 </span>
               </div>
               <span class="worker-title">${w.title}</span>
-              <span class="worker-specialty">${w.specialty}</span>
+              <span class="worker-specialty-badge">
+                <span class="specialty-indicator-icon">${w.specialtyIcon}</span>
+                <span class="specialty-text">${w.specialty}</span>
+              </span>
             </div>
           </div>
 

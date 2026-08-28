@@ -681,16 +681,24 @@ html, body {
 }
 
 .player-avatar-ring {
-  width: 72px;
-  height: 72px;
+  width: 76px;
+  height: 76px;
   border-radius: 50%;
-  background: linear-gradient(180deg, #10b981 0%, #047857 100%);
+  background: radial-gradient(circle at 50% 40%, #047857 0%, #064e3b 100%);
   border: 3px solid #facc15;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 16px rgba(250, 204, 21, 0.4), 0 4px 10px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 18px rgba(250, 204, 21, 0.45), 0 4px 12px rgba(0, 0, 0, 0.4);
   position: relative;
+  overflow: hidden;
+}
+
+.player-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.15) translateY(2px);
 }
 
 .player-avatar-emoji {
@@ -711,6 +719,7 @@ html, body {
   justify-content: center;
   border: 1.5px solid #1e293b;
   box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+  z-index: 2;
 }
 
 .player-hero-identity {
@@ -801,14 +810,14 @@ html, body {
 /* Worker Management Roster Card */
 .worker-roster-card {
   background: #1e293b;
-  border-radius: 16px;
+  border-radius: 18px;
   padding: 12px 14px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   border: 1.5px solid #334155;
-  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 10px;
   transition: transform 0.15s ease, border-color 0.15s ease;
 }
 
@@ -818,31 +827,64 @@ html, body {
 }
 
 .worker-roster-card.worker-locked {
-  opacity: 0.82;
+  opacity: 0.85;
   background: #0f172a;
 }
 
 .worker-card-header {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
 }
 
-.worker-avatar-box {
-  width: 48px;
-  height: 48px;
-  min-width: 48px;
-  border-radius: 14px;
-  background: #0f172a;
+/* Large 3D Character Portrait Frame */
+.worker-portrait-frame {
+  width: 82px;
+  height: 82px;
+  min-width: 82px;
+  border-radius: 18px;
+  background: radial-gradient(circle at 50% 40%, #334155 0%, #0f172a 100%);
   border: 2.5px solid #38bdf8;
+  position: relative;
+  overflow: hidden;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+  transition: filter 0.2s ease, border-color 0.2s ease;
 }
 
-.worker-avatar-icon {
-  font-size: 26px;
+.worker-portrait-frame.portrait-hired {
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.35), 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.worker-portrait-frame.portrait-locked {
+  filter: grayscale(0.85) opacity(0.65);
+  border-color: #475569 !important;
+}
+
+.worker-portrait-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.15) translateY(2px);
+  pointer-events: none;
+}
+
+.worker-avatar-fallback {
+  font-size: 34px;
+}
+
+.worker-portrait-lock {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  font-size: 13px;
+  background: rgba(15, 23, 42, 0.85);
+  padding: 2px 5px;
+  border-radius: 6px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+  z-index: 2;
 }
 
 .worker-header-info {
@@ -850,7 +892,7 @@ html, body {
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .worker-name-row {
@@ -861,7 +903,7 @@ html, body {
 }
 
 .worker-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 900;
   color: #ffffff;
 }
@@ -886,7 +928,7 @@ html, body {
 }
 
 .worker-title {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 800;
   color: #facc15;
   white-space: nowrap;
@@ -894,10 +936,32 @@ html, body {
   text-overflow: ellipsis;
 }
 
-.worker-specialty {
+.worker-specialty-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2px 8px;
+  border-radius: 8px;
   font-size: 11px;
   font-weight: 700;
-  color: #94a3b8;
+  color: #bae6fd;
+  width: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.specialty-indicator-icon {
+  font-size: 13px;
+}
+
+.specialty-text {
+  font-size: 11px;
+  font-weight: 700;
+  color: #bae6fd;
 }
 
 .worker-outfit-pill {
@@ -1955,13 +2019,11 @@ html, body {
   .worker-roster-card {
     padding: 10px 10px;
   }
-  .worker-avatar-box {
-    width: 42px;
-    height: 42px;
-    min-width: 42px;
-  }
-  .worker-avatar-icon {
-    font-size: 22px;
+  .worker-portrait-frame {
+    width: 68px;
+    height: 68px;
+    min-width: 68px;
+    border-radius: 14px;
   }
 }
 
@@ -1998,5 +2060,11 @@ html, body {
   }
   .player-stats-grid {
     grid-template-columns: 1fr;
+  }
+  .worker-portrait-frame {
+    width: 58px;
+    height: 58px;
+    min-width: 58px;
+    border-radius: 12px;
   }
 }
