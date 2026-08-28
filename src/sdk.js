@@ -197,6 +197,13 @@ class CrazySDKWrapper {
 
   loadGameState() {
     try {
+      if (this.isInitialized && window.CrazyGames && window.CrazyGames.SDK && window.CrazyGames.SDK.data) {
+        const cloudData = window.CrazyGames.SDK.data.getItem('organic_farm_mart_save');
+        if (cloudData) return JSON.parse(cloudData);
+      }
+    } catch (e) {}
+
+    try {
       const data = localStorage.getItem('organic_farm_mart_save');
       return data ? JSON.parse(data) : null;
     } catch (e) {
