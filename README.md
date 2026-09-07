@@ -1,28 +1,64 @@
-# 🌾 Organic Farm Market - 3D Arcade Idle Tycoon (CrazyGames Ready)
+# 🌾 Organic Farm Mart — 3D Arcade Idle Tycoon
 
-A fast-paced, high-performance 3D casual arcade-idle / store tycoon game built for **CrazyGames.com** using **Three.js** and procedural low-poly aesthetics.
+[![Live Demo](https://img.shields.io/badge/Play%20Now-Vercel%20Live-brightgreen?style=for-the-badge&logo=vercel)](https://organic-farm-mart.vercel.app/)
+[![JavaScript](https://img.shields.io/badge/Three.js-WebGL-black?style=for-the-badge&logo=three.js)](https://threejs.org/)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg?style=for-the-badge)](LICENSE)
 
----
-
-## 🎮 How to Play
-1. **Move Your Farmer**:
-   - **Desktop**: `W`, `A`, `S`, `D` or Arrow Keys (or click & drag the on-screen joystick).
-   - **Mobile / Touch**: Touch & drag the virtual joystick.
-2. **Harvest Crops**: Walk onto the garden plots (e.g. 🍅 Tomato Patch) to harvest ripe crops onto your backpack stack.
-3. **Restock Shelves**: Walk up to the matching display stands to stack your goods for customers.
-4. **Checkout Shoppers**: Customers take items, queue up at the Cash Register. Stand behind the register (or hire a cashier) to ring them up!
-5. **Collect Cash**: Step into the money collection zone to vacuum up dollar bill stacks.
-6. **Expand Your Farm ($ Tiles)**: Step on glowing dollar ground tiles to pour money into new farm plots (🌾 Wheat Field), livestock pens (🐔 Chicken Coop, 🐄 Cow Barn), higher-tier market stands, and hired workers.
-7. **Upgrade Abilities**: Open the ⭐ **Upgrades** menu to boost Backpack Capacity, Player Move Speed, and Crop Growth Rates.
+> A vibrant, high-performance 3D casual arcade-idle / farm-to-table supermarket tycoon game built with **Three.js (WebGL)** and procedural low-poly aesthetics.
 
 ---
 
-## 🚀 How to Run Locally
+### 🚀 Play the Game Live:
+👉 **[https://organic-farm-mart.vercel.app/](https://organic-farm-mart.vercel.app/)** 👈
 
-You can run the game with Node.js built-in HTTP server:
+---
+
+## 🌟 Game Overview
+
+Step into the boots of an ambitious farmer who transforms a single tomato patch into a thriving, multi-department organic grocery empire. 
+
+* 🍅 **Harvest & Farm**: Grow tomatoes, wheat, and sweetcorn in outdoor soil patches.
+* 🐔 **Livestock Care**: Feed the chicken coop and dairy pasture to produce fresh eggs and whole milk.
+* 🥖 **Artisanal Processing**: Turn raw ingredients into strawberry jams, bakery sourdough bread, and celebration cakes.
+* 👥 **Hire Helper Staff**: Employ automated harvesters, shelf stockers, artisan bakers, and cashiers.
+* ⚡ **Upgrades & Outfits**: Upgrade player movement speed, backpack capacity, and unlock exclusive cosmetic hats on the global high-score leaderboard.
+* ☕ **Grand Café Expansion**: Unlock all retail stands to reveal the future Grand Café terrace teaser!
+
+---
+
+## 🎮 How to Play & Controls
+
+### 🖥️ Desktop (Keyboard & Mouse):
+* **`W` `A` `S` `D`** or **Arrow Keys**: Move your character.
+* **Left Click & Drag**: Virtual on-screen joystick.
+* **`E` / `Space`**: Quick-interact / close popups.
+
+### 📱 Mobile & Tablet:
+* **Touch & Drag**: Responsive floating virtual joystick.
+* **Tap UI Buttons**: Access Upgrades, Quests, Photo Mode, and Leaderboards.
+
+---
+
+## 🛠️ Tech Stack & Architecture
+
+* **Graphics Engine**: [Three.js (WebGL)](https://threejs.org/) with soft shadow mapping and low-poly cartoon shading.
+* **Camera Design**: 36° narrow-FOV top-down isometric view with frame-rate independent spring follow.
+* **Audio Synthesis**: 100% procedural Web Audio API with a lookahead hardware clock scheduler (zero external MP3 assets, zero lag).
+* **Package Size**: Ultra-lightweight **~1 MB total package** (**0.2 MB** initial payload) running at a locked **60 FPS**.
+* **Cloud & Platform Integration**: Integrated with CrazyGames SDK v3 Data Module for cloud saves and master gain portal muting.
+
+---
+
+## 💻 Running Locally
+
+To run the game locally on your machine:
 
 ```bash
-cd organic-farm-mart
+# Clone the repository
+git clone https://github.com/Mukesh-Yadav-4/MINI-SUPER-MART.git
+cd MINI-SUPER-MART
+
+# Start local server
 npm start
 ```
 
@@ -30,10 +66,7 @@ Then open your browser to **[http://localhost:8080](http://localhost:8080)**.
 
 ---
 
-## 🕹️ CrazyGames.com Publishing Guide
-1. **SDK Integration**:
-   - `CrazyGames SDK v3` is already configured in `index.html` and wrapped safely in `src/sdk.js`.
-   - Supports **Rewarded Ads** (2X Revenue Boost, Instant Harvest) and **Midgame Ads** on major store expansions.
-   - Works seamlessly in both offline/local testing and live on CrazyGames iframe.
-2. **Export for Submission**:
-   - Simply zip all files in this folder (`index.html`, `style.css`, `src/`) and upload the `.zip` archive directly to the **CrazyGames Developer Portal**!
+## 🌐 Live Deployment
+
+* **Production URL**: [https://organic-farm-mart.vercel.app/](https://organic-farm-mart.vercel.app/)
+* **Platform**: Vercel Global Edge Network
